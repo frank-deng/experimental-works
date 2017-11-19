@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<meta charset='UTF-8'/>
+		<meta name='viewport' id='viewport' content='width=device-width,initial-scale=1.0,minimum-scale=1.0,maximum-scale=1.0,user-scalable=no'/>
+		<title>WebGL/three.js测试</title>
+		<style type='text/css'>
+body{
+	position:absolute;
+	left:0;
+	right:0;
+	top:0;
+	bottom:5em;
+	display:block;
+	width:100%;
+	margin:0;
+	padding:0;
+}
+#webgl_container{
+	position:absolute;
+	left:0;
+	right:0;
+	top:0;
+	bottom:0;
+}
+#logger_element{
+	display:block;
+	position:fixed;
+	left:0;
+	right:0;
+	bottom:0;
+	height:6em;
+	font-size:1em;
+	line-height:1.1em;
+	font-family:monospace;
+	font-weight:normal;
+	color:#000;
+	background-color:#ccc;
+	border-top:1px solid #000;
+	margin:0;
+	padding:0;
+}
+        </style>
+		<script type='text/javascript' src='mobile_logger.min.js'></script>
+		<script type='text/javascript' src='three.min.js'></script>
+		<script type='text/javascript'>
+window.addEventListener('load', function(){
+	MobileLogger.bind(document.getElementById('logger_element'));
+});
+		</script>
+	</head>
+	<body>
+		<div id="webgl_container"></div>
+		<pre id='logger_element'></pre>
+	</body>
+	<script type='text/javascript'>
+'use strict'
+var container = document.getElementById('webgl_container');
+var scene = new THREE.Scene();
+var camera = new THREE.PerspectiveCamera(45, container.offsetWidth / container.offsetHeight, 1, 4000);
+camera.position.set(0,0,3);
+var light = new THREE.DirectionalLight(0xFFFFFF, 1.5);
+light.position.set(0,0,1);
+scene.add(light);
+var map = new THREE.TextureLoader().load('hahaha.jpg');
+var material = new THREE.MeshPhongMaterial({map:map});
+var geometry = new THREE.CubeGeometry(1,1,1);
+var cube = new THREE.Mesh(geometry, material);
+cube.rotation.x = Math.PI/5;
+cube.rotation.y = Math.PI/5;
+scene.add(cube);
+
+var renderer = new THREE.WebGLRenderer({antialias:true});
+renderer.setPixelRatio(window.devicePixelRatio);
+renderer.setSize(container.offsetWidth, container.offsetHeight);
+container.appendChild(renderer.domElement);
+var animation = function(){
+	renderer.render(scene, camera);
+	cube.rotation.y += 0.005;
+}
+setInterval(animation, 1000/60);
+    </script>
+</html>
+
