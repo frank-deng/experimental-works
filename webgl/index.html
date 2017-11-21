@@ -77,8 +77,9 @@ container.appendChild(renderer.domElement);
 var animation = function(){
 	renderer.render(scene, camera);
 	cube.rotation.y += 0.005;
+	requestAnimationFrame(animation);
 }
-setInterval(animation, 1000/60);
+animation();
     </script>
 </html>
 
