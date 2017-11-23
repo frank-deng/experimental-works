@@ -57,31 +57,53 @@ window.addEventListener('load', function(){
 'use strict'
 var container = document.getElementById('webgl_container');
 var scene = new THREE.Scene();
+scene.background = new THREE.Color(0xcce0ff);
 var camera = new THREE.PerspectiveCamera(45, container.offsetWidth / container.offsetHeight, 1, 4000);
-camera.position.set(0,0,3);
-var light = new THREE.DirectionalLight(0xFFFFFF, 1.5);
-light.position.set(0,0,1);
+camera.position.set(0,50,100);
+
+var bgLight = new THREE.AmbientLight(0xffffff, 0.5);
+scene.add(bgLight);
+
+var light = new THREE.DirectionalLight(0xFFFFFF, 1);
+light.position.set(0,100,100);
 scene.add(light);
+
+var groundGeometry = new THREE.PlaneGeometry(200,100);
+var groundMaterial = new THREE.MeshPhysicalMaterial({color:0x66cc66, side:THREE.DoubleSide});
+var ground = new THREE.Mesh(groundGeometry, groundMaterial);
+ground.position.x = 0;
+ground.position.y = 0;
+ground.position.z = 0;
+ground.rotation.x = Math.PI/2;
+scene.add(ground);
+
 var map = new THREE.TextureLoader().load('hahaha.jpg');
+
+var geometry = new THREE.CubeGeometry(20,20,20);
 var material = new THREE.MeshPhongMaterial({map:map});
-var geometry = new THREE.CubeGeometry(1,1,1);
 var cube = new THREE.Mesh(geometry, material);
-cube.rotation.x = Math.PI/5;
-cube.rotation.y = Math.PI/5;
+cube.position.y = 10;
 scene.add(cube);
+
+var geometry = new THREE.SphereGeometry(6,60,60);
+var material = new THREE.MeshPhongMaterial({map:map});
+var ball = new THREE.Mesh(geometry, material);
+ball.position.y = 26;
+scene.add(ball);
 
 var renderer = new THREE.WebGLRenderer({antialias:true});
 renderer.setPixelRatio(window.devicePixelRatio);
 renderer.setSize(container.offsetWidth, container.offsetHeight);
 container.appendChild(renderer.domElement);
 
+camera.lookAt(new THREE.Vector3(0,0,0));
+
 var isAnimating = true;
 var animation = function(){
 	renderer.render(scene, camera);
 	if (isAnimating) {
-		cube.rotation.y += 0.05;
-		cube.rotation.x += 0.05;
-		cube.rotation.z += 0.05;
+		ball.rotation.y += 0.005;
+		cube.rotation.y -= 0.005;
 	}
 	requestAnimationFrame(animation);
 }
