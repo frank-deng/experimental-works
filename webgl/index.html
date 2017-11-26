@@ -91,6 +91,23 @@ var ball = new THREE.Mesh(geometry, material);
 ball.position.y = 26;
 scene.add(ball);
 
+var ballsGrp = new THREE.Group();
+var balls = new Array(3);
+for (var i = 0; i < balls.length; i++) {
+	var geometry = new THREE.SphereGeometry(5,60,60);
+	var material = new THREE.MeshPhongMaterial({color:0x6666FF});
+	balls[i] = new THREE.Mesh(geometry, material);
+	balls[i].position.y = 0;
+	var angleFrag = Math.PI*2/balls.length;
+	balls[i].position.x = Math.cos(angleFrag * i) * 20;
+	balls[i].position.z = Math.sin(angleFrag * i) * 20;
+	ballsGrp.add(balls[i]);
+}
+scene.add(ballsGrp);
+ballsGrp.position.x = -50;
+ballsGrp.position.y = 5;
+ballsGrp.position.z = 0;
+
 var renderer = new THREE.WebGLRenderer({antialias:true});
 renderer.setPixelRatio(window.devicePixelRatio);
 renderer.setSize(container.offsetWidth, container.offsetHeight);
@@ -104,6 +121,7 @@ var animation = function(){
 	if (isAnimating) {
 		ball.rotation.y += 0.005;
 		cube.rotation.y -= 0.005;
+		ballsGrp.rotation.y += 0.01;
 	}
 	requestAnimationFrame(animation);
 }
