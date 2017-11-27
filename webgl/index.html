@@ -60,7 +60,7 @@ var container = document.getElementById('webgl_container');
 var scene = new THREE.Scene();
 scene.background = new THREE.Color(0xcce0ff);
 var camera = new THREE.PerspectiveCamera(60, container.offsetWidth / container.offsetHeight, 1, 4000);
-camera.position.set(0,10,100);
+camera.position.set(0,30,100);
 
 var bgLight = new THREE.AmbientLight(0xffffff, 0.5);
 scene.add(bgLight);
@@ -128,12 +128,28 @@ for (var i = 0; i < points.length; i++) {
 	paperGeometry.vertices.push(points[i]);
 }
 paperGeometry.faces.push(new THREE.Face3(0,1,2));
-paperGeometry.faces.push(new THREE.Face3(2,1,3));
+paperGeometry.faces.push(new THREE.Face3(3,2,1));
 paperGeometry.faces.push(new THREE.Face3(2,3,4));
-paperGeometry.faces.push(new THREE.Face3(4,3,5));
-paperGeometry.computeFaceNormals();
-paperGeometry.computeVertexNormals();
-var material = new THREE.MeshPhongMaterial({color:0xFF66FF, side:THREE.DoubleSide});
+paperGeometry.faces.push(new THREE.Face3(5,4,3));
+
+var uv = [
+	new THREE.Vector2(0,0),
+	new THREE.Vector2(1,0),
+	new THREE.Vector2(1,1),
+	new THREE.Vector2(0,1),
+]
+var uvAll = [
+	[uv[2], uv[3], uv[1]],
+	[uv[0], uv[1], uv[3]],
+	[uv[2], uv[3], uv[1]],
+	[uv[0], uv[1], uv[3]],
+];
+for (var i = 0; i < uvAll.length; i++){
+	paperGeometry.faceVertexUvs[0].push(uvAll[i]);
+}
+
+var map = new THREE.TextureLoader().load('hahaha.jpg');
+var material = new THREE.MeshPhongMaterial({map:map, side:THREE.FrontSide});
 var paper = new THREE.Mesh(paperGeometry, material) ;
 scene.add(paper);
 paper.position.x = 50;
