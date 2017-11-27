@@ -10,7 +10,7 @@ body{
 	left:0;
 	right:0;
 	top:0;
-	bottom:5em;
+	bottom:6em;
 	display:block;
 	width:100%;
 	margin:0;
@@ -43,6 +43,7 @@ body{
         </style>
 		<script type='text/javascript' src='mobile_logger.min.js'></script>
 		<script type='text/javascript' src='three.min.js'></script>
+		<script type='text/javascript' src='FlyControls.js'></script>
 		<script type='text/javascript'>
 window.addEventListener('load', function(){
 	MobileLogger.bind(document.getElementById('logger_element'));
@@ -58,23 +59,29 @@ window.addEventListener('load', function(){
 var container = document.getElementById('webgl_container');
 var scene = new THREE.Scene();
 scene.background = new THREE.Color(0xcce0ff);
-var camera = new THREE.PerspectiveCamera(45, container.offsetWidth / container.offsetHeight, 1, 4000);
-camera.position.set(0,50,100);
+var camera = new THREE.PerspectiveCamera(60, container.offsetWidth / container.offsetHeight, 1, 4000);
+camera.position.set(0,10,100);
 
 var bgLight = new THREE.AmbientLight(0xffffff, 0.5);
 scene.add(bgLight);
 
-var light = new THREE.DirectionalLight(0xFFFFFF, 1);
-light.position.set(0,100,100);
+var light = new THREE.DirectionalLight(0xFFFFFF, 0.5);
+light.position.set(0,200,300);
 scene.add(light);
 
-var groundGeometry = new THREE.PlaneGeometry(200,100);
-var groundMaterial = new THREE.MeshPhysicalMaterial({color:0x66cc66, side:THREE.DoubleSide});
+var map = new THREE.TextureLoader().load('FloorsCheckerboard_S_Diffuse.jpg', function(texture){
+	texture.wrapS = texture.wrapT = THREE.RepeatWrapping;
+	texture.offset.set(0, 0);
+	texture.repeat.set(16, 16);
+});
+var groundGeometry = new THREE.PlaneGeometry(2000,1000);
+var groundMaterial = new THREE.MeshLambertMaterial({color:0x008800, map:map, side:THREE.FrontSide});
+groundMaterial.reflectivity = 0;
 var ground = new THREE.Mesh(groundGeometry, groundMaterial);
 ground.position.x = 0;
 ground.position.y = 0;
 ground.position.z = 0;
-ground.rotation.x = Math.PI/2;
+ground.rotation.x = -Math.PI/2;
 scene.add(ground);
 
 var map = new THREE.TextureLoader().load('hahaha.jpg');
@@ -92,7 +99,7 @@ ball.position.y = 26;
 scene.add(ball);
 
 var ballsGrp = new THREE.Group();
-var balls = new Array(3);
+var balls = new Array(7);
 for (var i = 0; i < balls.length; i++) {
 	var geometry = new THREE.SphereGeometry(5,60,60);
 	var material = new THREE.MeshPhongMaterial({color:0x6666FF});
@@ -137,11 +144,19 @@ renderer.setPixelRatio(window.devicePixelRatio);
 renderer.setSize(container.offsetWidth, container.offsetHeight);
 container.appendChild(renderer.domElement);
 
-camera.lookAt(new THREE.Vector3(0,0,0));
+var clock = new THREE.Clock();
+var controls = new THREE.FlyControls( camera );
+controls.movementSpeed = 30;
+controls.domElement = container;
+controls.rollSpeed = Math.PI / 6;
+controls.autoForward = false;
+controls.dragToLook = true;
 
-var isAnimating = true;
+var isAnimating = false;
 var animation = function(){
+	var delta = clock.getDelta();
 	renderer.render(scene, camera);
+	controls.update(delta);
 	if (isAnimating) {
 		ball.rotation.y += 0.005;
 		cube.rotation.y -= 0.005;
@@ -151,6 +166,14 @@ var animation = function(){
 	requestAnimationFrame(animation);
 }
 animation();
+
+window.addEventListener('resize', function(){
+	var SCREEN_WIDTH = container.offsetWidth;
+	var SCREEN_HEIGHT  = container.offsetHeight;
+	renderer.setSize(SCREEN_WIDTH, SCREEN_HEIGHT);
+	camera.aspect = SCREEN_WIDTH / SCREEN_HEIGHT;
+	camera.updateProjectionMatrix();
+});
 
 var dom = renderer.domElement;
 dom.addEventListener('mouseup', function(event){
