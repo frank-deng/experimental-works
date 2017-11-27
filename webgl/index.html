@@ -175,11 +175,14 @@ window.addEventListener('resize', function(){
 	camera.updateProjectionMatrix();
 });
 
-var dom = renderer.domElement;
-dom.addEventListener('mouseup', function(event){
-	event.preventDefault();
-	isAnimating = !isAnimating;
-}, false);
+document.addEventListener('keydown', function(event){
+	var key = window.event ? event.keyCode : event.which;
+	switch (key){
+		case 13:
+			isAnimating = !isAnimating;
+		break;
+	}
+});
     </script>
 </html>
 
