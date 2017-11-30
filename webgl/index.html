@@ -198,7 +198,7 @@ var showTime = function(){
 	var hour = ('0'+date.getHours()).substr(-2);
 	var minute = ('0'+date.getMinutes()).substr(-2);
 	var second = ('0'+date.getSeconds()).substr(-2);
-	var text = `${hour}:${minute}:${second}`;
+	var text = hour+':'+minute+':'+second;
 	ctx.fillStyle = '#FFFFFF';
 	ctx.fillRect(10,256-100,502,256);
 	ctx.fillStyle = '#0000FF';
