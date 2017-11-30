@@ -40,6 +40,9 @@ body{
 	margin:0;
 	padding:0;
 }
+#canvas_texture{
+	display:none;
+}
         </style>
 		<script type='text/javascript' src='mobile_logger.min.js'></script>
 		<script type='text/javascript' src='three.min.js'></script>
@@ -52,6 +55,7 @@ window.addEventListener('load', function(){
 	</head>
 	<body>
 		<div id="webgl_container"></div>
+		<canvas id='canvas_texture' width='512' height='512'></canvas>
 		<pre id='logger_element'></pre>
 	</body>
 	<script type='text/javascript'>
@@ -84,12 +88,23 @@ ground.position.z = 0;
 ground.rotation.x = -Math.PI/2;
 scene.add(ground);
 
-var map = new THREE.TextureLoader().load('hahaha.jpg');
+//var map = new THREE.TextureLoader().load('hahaha.jpg');
+var map = new THREE.Texture(document.getElementById('canvas_texture'));
 var geometry = new THREE.CubeGeometry(20,20,20);
 var material = new THREE.MeshPhongMaterial({map:map});
 var cube = new THREE.Mesh(geometry, material);
 cube.position.y = 10;
 scene.add(cube);
+
+var ctx = document.getElementById('canvas_texture').getContext('2d');
+ctx.fillStyle = '#FFFFFF';
+ctx.fillRect(0,0,512,512);
+var gradient = ctx.createLinearGradient(0,0,512,0);
+gradient.addColorStop(0, '#ff0000');
+gradient.addColorStop(1, '#00ff00');
+ctx.fillStyle = gradient;
+ctx.fillRect(0,512-40,512,512);
+map.needsUpdate = true;
 
 var map = new THREE.TextureLoader().load('earth_atmos_2048.jpg');
 var geometry = new THREE.SphereGeometry(6,60,60);
