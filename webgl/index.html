@@ -162,6 +162,12 @@ scene.add(paper);
 paper.position.x = 50;
 paper.position.y = 10;
 
+var material = new THREE.MeshPhongMaterial({map:canvasmap, side:THREE.DoubleSide});
+var paper2 = new THREE.Mesh(paperGeometry, material) ;
+scene.add(paper2);
+paper2.position.x = 30;
+paper2.position.y = 10;
+
 var renderer = new THREE.WebGLRenderer({antialias:true});
 renderer.setPixelRatio(window.devicePixelRatio);
 renderer.setSize(container.offsetWidth, container.offsetHeight);
@@ -201,7 +207,7 @@ var showTime = function(){
 }
 setInterval(showTime,250);
 
-var isAnimating = false;
+var isAnimating = true;
 var animation = function(){
 	var delta = clock.getDelta();
 	renderer.render(scene, camera);
@@ -211,6 +217,7 @@ var animation = function(){
 		cube.rotation.y -= 0.005;
 		ballsGrp.rotation.y += 0.01;
 		paper.rotation.y -= 0.01;
+		paper2.rotation.y += 0.01;
 	}
 	requestAnimationFrame(animation);
 }
