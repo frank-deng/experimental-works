@@ -89,22 +89,12 @@ ground.rotation.x = -Math.PI/2;
 scene.add(ground);
 
 //var map = new THREE.TextureLoader().load('hahaha.jpg');
-var map = new THREE.Texture(document.getElementById('canvas_texture'));
+var canvasmap = new THREE.Texture(document.getElementById('canvas_texture'));
 var geometry = new THREE.CubeGeometry(20,20,20);
-var material = new THREE.MeshPhongMaterial({map:map});
+var material = new THREE.MeshPhongMaterial({map:canvasmap});
 var cube = new THREE.Mesh(geometry, material);
 cube.position.y = 10;
 scene.add(cube);
-
-var ctx = document.getElementById('canvas_texture').getContext('2d');
-ctx.fillStyle = '#FFFFFF';
-ctx.fillRect(0,0,512,512);
-var gradient = ctx.createLinearGradient(0,0,512,0);
-gradient.addColorStop(0, '#ff0000');
-gradient.addColorStop(1, '#00ff00');
-ctx.fillStyle = gradient;
-ctx.fillRect(0,512-40,512,512);
-map.needsUpdate = true;
 
 var map = new THREE.TextureLoader().load('earth_atmos_2048.jpg');
 var geometry = new THREE.SphereGeometry(6,60,60);
@@ -184,6 +174,32 @@ controls.domElement = container;
 controls.rollSpeed = Math.PI / 6;
 controls.autoForward = false;
 controls.dragToLook = true;
+
+var ctx = document.getElementById('canvas_texture').getContext('2d');
+ctx.fillStyle = '#FFFFFF';
+ctx.fillRect(0,0,512,512);
+var gradient = ctx.createLinearGradient(0,0,512,0);
+gradient.addColorStop(0, '#ff0000');
+gradient.addColorStop(1, '#00ff00');
+ctx.fillStyle = gradient;
+ctx.fillRect(0,512-40,512,512);
+canvasmap.needsUpdate = true;
+
+ctx.font = '100px Sans';
+ctx.textAlign = 'left';
+var showTime = function(){
+	var date = new Date();
+	var hour = ('0'+date.getHours()).substr(-2);
+	var minute = ('0'+date.getMinutes()).substr(-2);
+	var second = ('0'+date.getSeconds()).substr(-2);
+	var text = `${hour}:${minute}:${second}`;
+	ctx.fillStyle = '#FFFFFF';
+	ctx.fillRect(10,256-100,502,256);
+	ctx.fillStyle = '#0000FF';
+	ctx.fillText(text,10,256);
+	canvasmap.needsUpdate = true;
+}
+setInterval(showTime,250);
 
 var isAnimating = false;
 var animation = function(){
