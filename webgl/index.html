@@ -43,6 +43,16 @@ body{
 #canvas_texture{
 	display:none;
 }
+#comment_2d{
+	position:fixed;
+	display:block;
+	left:0;
+	top:0;
+	color:#000;
+	background-color:rgba(255,127,255,0.5);
+	border:1px solid #000;
+	border-radius:6px;
+}
         </style>
 		<script type='text/javascript' src='mobile_logger.min.js'></script>
 		<script type='text/javascript' src='three.min.js'></script>
@@ -55,6 +65,7 @@ window.addEventListener('load', function(){
 	</head>
 	<body>
 		<div id="webgl_container"></div>
+		<div id="comment_2d">Hahaha~~~</div>
 		<canvas id='canvas_texture' width='512' height='512'></canvas>
 		<pre id='logger_element'></pre>
 	</body>
@@ -88,10 +99,9 @@ ground.position.z = 0;
 ground.rotation.x = -Math.PI/2;
 scene.add(ground);
 
-//var map = new THREE.TextureLoader().load('hahaha.jpg');
-var canvasmap = new THREE.Texture(document.getElementById('canvas_texture'));
+var map = new THREE.TextureLoader().load('hahaha.jpg');
 var geometry = new THREE.CubeGeometry(20,20,20);
-var material = new THREE.MeshPhongMaterial({map:canvasmap});
+var material = new THREE.MeshPhongMaterial({map:map});
 var cube = new THREE.Mesh(geometry, material);
 cube.position.y = 10;
 scene.add(cube);
@@ -162,6 +172,7 @@ scene.add(paper);
 paper.position.x = 50;
 paper.position.y = 10;
 
+var canvasmap = new THREE.Texture(document.getElementById('canvas_texture'));
 var material = new THREE.MeshPhongMaterial({map:canvasmap, side:THREE.DoubleSide});
 var paper2 = new THREE.Mesh(paperGeometry, material) ;
 scene.add(paper2);
@@ -207,6 +218,8 @@ var showTime = function(){
 }
 setInterval(showTime,250);
 
+var comment_2d = document.getElementById('comment_2d');
+var offsetVector = new THREE.Vector3(0, 10, 4);
 var isAnimating = true;
 var animation = function(){
 	var delta = clock.getDelta();
@@ -218,6 +231,18 @@ var animation = function(){
 		ballsGrp.rotation.y += 0.01;
 		paper.rotation.y -= 0.01;
 		paper2.rotation.y += 0.01;
+	}
+	var vector = new THREE.Vector3();
+	vector.setFromMatrixPosition(paper2.matrixWorld);
+	vector.add(offsetVector.clone().applyEuler(paper2.rotation));
+	vector.project(camera);
+	var x = vector.x, y = vector.y, z = vector.z;
+	if (x < 1 && x > -1 && y < 1 && y > -1 && z < 1) {
+		comment_2d.style.display = 'block';
+		comment_2d.style.left = (x + 1) / 2 * container.offsetWidth + 'px';
+		comment_2d.style.top = (-y + 1) / 2 * container.offsetHeight + 'px';
+	} else {
+		comment_2d.style.display = 'none';
 	}
 	requestAnimationFrame(animation);
 }
@@ -236,6 +261,27 @@ document.addEventListener('keydown', function(event){
 	switch (key){
 		case 13:
 			isAnimating = !isAnimating;
+		break;
+	}
+});
+
+var raycaster = new THREE.Raycaster();
+var mouse = new THREE.Vector2();
+container.addEventListener('mousedown', function(event){
+	mouse.x = (event.offsetX / event.target.offsetWidth) * 2 - 1;
+	mouse.y = -(event.offsetY / event.target.offsetHeight) * 2 + 1;
+	raycaster.setFromCamera(mouse, camera);
+	var intersects = raycaster.intersectObjects(scene.children);
+	if (!intersects || !(intersects.length)) {
+		return;
+	}
+	switch (intersects[0].object) {
+		case cube:
+			isAnimating = !isAnimating;
+		break;
+		case paper2:
+			var uv = intersects[0].uv;
+			console.dir(intersects[0].faceIndex, uv.x, uv.y);
 		break;
 	}
 });
