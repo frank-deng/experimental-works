@@ -56,6 +56,7 @@ body{
         </style>
 		<script type='text/javascript' src='mobile_logger.min.js'></script>
 		<script type='text/javascript' src='three.min.js'></script>
+		<script type='text/javascript' src='Tween.js'></script>
 		<script type='text/javascript' src='FlyControls.js'></script>
 		<script type='text/javascript'>
 window.addEventListener('load', function(){
@@ -218,35 +219,6 @@ var showTime = function(){
 }
 setInterval(showTime,250);
 
-var comment_2d = document.getElementById('comment_2d');
-var offsetVector = new THREE.Vector3(0, 10, 4);
-var isAnimating = true;
-var animation = function(){
-	var delta = clock.getDelta();
-	renderer.render(scene, camera);
-	controls.update(delta);
-	if (isAnimating) {
-		ball.rotation.y += 0.005;
-		cube.rotation.y -= 0.005;
-		ballsGrp.rotation.y += 0.01;
-		paper.rotation.y -= 0.01;
-		paper2.rotation.y += 0.01;
-	}
-	var vector = new THREE.Vector3();
-	vector.setFromMatrixPosition(paper2.matrixWorld);
-	vector.add(offsetVector.clone().applyEuler(paper2.rotation));
-	vector.project(camera);
-	var x = vector.x, y = vector.y, z = vector.z;
-	if (x < 1 && x > -1 && y < 1 && y > -1 && z < 1) {
-		comment_2d.style.display = 'block';
-		comment_2d.style.left = (x + 1) / 2 * container.offsetWidth + 'px';
-		comment_2d.style.top = (-y + 1) / 2 * container.offsetHeight + 'px';
-	} else {
-		comment_2d.style.display = 'none';
-	}
-	requestAnimationFrame(animation);
-}
-animation();
 
 window.addEventListener('resize', function(){
 	var SCREEN_WIDTH = container.offsetWidth;
@@ -265,8 +237,11 @@ document.addEventListener('keydown', function(event){
 	}
 });
 
+/* Raycaster for clicking 3d objects */
 var raycaster = new THREE.Raycaster();
 var mouse = new THREE.Vector2();
+var tween = new TWEEN.Tween(paper.position).to({y:5, z:10})
+	.chain(new TWEEN.Tween(paper.position).to({y:10, z:0}));
 container.addEventListener('mousedown', function(event){
 	mouse.x = (event.offsetX / event.target.offsetWidth) * 2 - 1;
 	mouse.y = -(event.offsetY / event.target.offsetHeight) * 2 + 1;
@@ -283,8 +258,47 @@ container.addEventListener('mousedown', function(event){
 			var uv = intersects[0].uv;
 			console.dir(intersects[0].faceIndex, uv.x, uv.y);
 		break;
+		case paper:
+			tween.start();
+		break;
 	}
 });
+
+//Use tween.js
+
+
+var comment_2d = document.getElementById('comment_2d');
+var offsetVector = new THREE.Vector3(0, 10, 4);
+var isAnimating = true;
+var animation = function(){
+	var delta = clock.getDelta();
+	renderer.render(scene, camera);
+	controls.update(delta);
+	if (isAnimating) {
+		ball.rotation.y += 0.005;
+		cube.rotation.y -= 0.005;
+		ballsGrp.rotation.y += 0.01;
+		paper.rotation.y -= 0.01;
+		paper2.rotation.y += 0.01;
+	}
+	
+	//Display div beside 3d object
+	var vector = new THREE.Vector3()
+		.setFromMatrixPosition(paper2.matrixWorld)
+		.add(offsetVector.clone().applyEuler(paper2.rotation))
+		.project(camera);
+	var x = vector.x, y = vector.y, z = vector.z;
+	if (x < 1 && x > -1 && y < 1 && y > -1 && z < 1) {
+		comment_2d.style.display = 'block';
+		comment_2d.style.left = (x + 1) / 2 * container.offsetWidth - comment_2d.offsetWidth + 'px';
+		comment_2d.style.top = (-y + 1) / 2 * container.offsetHeight + 'px';
+	} else {
+		comment_2d.style.display = 'none';
+	}
+	TWEEN.update();
+	requestAnimationFrame(animation);
+}
+animation();
     </script>
 </html>
 
