@@ -9,18 +9,16 @@ target = [];
 data = [];
 with open('data.csv') as fp:
     for row in csv.reader(fp):
-        x, y = float(row[0])/120.0, float(row[1])/120.0
+        x, y = float(row[0]), float(row[1])
         input.append([x]);
         target.append([y]);
         data.append((x,y));
 
 input = np.array(input[:]);
 target = np.array(target[:]);
-net = nl.net.newff([[-1, 1]], [1]);
+net = nl.net.newff([[0, 120]], [1]);
 net.init();
 err = net.train(input, target, epochs=1000, show=1, goal=0.0001);
-for layer in net.layers:
-    print(layer.np);
 
 def newton_method(data):
     t = np.mat([[0.0], [0.0]]);
@@ -45,5 +43,17 @@ def newton_method(data):
         t -= np.dot(hessian.I, np.mat([[j0], [j1]]));
     return np.asarray(t)[0][0], np.asarray(t)[1][0];
 
-print(newton_method(data));
+theta = newton_method(data);
+
+import matplotlib as mpl;
+mpl.use('Agg');
+import matplotlib.pyplot as plt;
+fig = plt.figure(figsize=(20.48, 15.36));
+ax = fig.add_subplot(1,1,1);
+#x_data = [n[0] for n in data];
+x_data = list(np.arange(0,1,0.01));
+ax.scatter(x_data, [n[1] for n in data], s=4, c='#006600');
+ax.plot(x_data, [theta[0]+theta[1]*n for n in x_data], '-', lw=2, color='#ff0000');
+ax.plot(x_data, [net.sim([[n]])[0] for n in x_data], '-', lw=4, color='#0000ff');
+fig.savefig('/sdcard/devel/plot.png', bbox_inches='tight', pad_inches=0);
 exit();
