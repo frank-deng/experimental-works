@@ -1,18 +1,20 @@
 #!/usr/bin/env python3
 
-import csv, math;
+import csv, math, random;
 import numpy as np;
 import neurolab as nl;
 
 input = [];
 target = [];
 data = [];
-with open('data.csv') as fp:
-    for row in csv.reader(fp):
-        x, y = float(row[0]), float(row[1])
-        input.append([x]);
-        target.append([y]);
-        data.append((x,y));
+for x in np.arange(0,1,0.001):
+	y = 0.5*x+0.1;
+	x1 = x+random.uniform(-0.1, 0.1);
+	y1 = y+random.uniform(-0.1, 0.1);
+	if (x1>=0 and x1<=1 and y1>=0 and y1<=1):
+		input.append([x1]);
+		target.append([y1]);
+		data.append((x1,y1));
 
 input = np.array(input[:]);
 target = np.array(target[:]);
@@ -47,13 +49,15 @@ theta = newton_method(data);
 
 import matplotlib as mpl;
 mpl.use('Agg');
+
 import matplotlib.pyplot as plt;
 fig = plt.figure(figsize=(20.48, 15.36));
 ax = fig.add_subplot(1,1,1);
-#x_data = [n[0] for n in data];
+
+ax.scatter(input, target, s=4, c='#006600');
 x_data = list(np.arange(0,1,0.01));
-ax.scatter(x_data, [n[1] for n in data], s=4, c='#006600');
 ax.plot(x_data, [theta[0]+theta[1]*n for n in x_data], '-', lw=2, color='#ff0000');
-ax.plot(x_data, [net.sim([[n]])[0] for n in x_data], '-', lw=4, color='#0000ff');
+ax.plot(x_data, [net.sim([[n]])[0] for n in x_data], '-', lw=2, color='#0000ff');
 fig.savefig('/sdcard/devel/plot.png', bbox_inches='tight', pad_inches=0);
+
 exit();
