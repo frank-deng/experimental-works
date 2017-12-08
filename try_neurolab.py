@@ -7,18 +7,19 @@ import neurolab as nl;
 input = [];
 target = [];
 data = [];
-for x in np.arange(0,1,0.001):
-	y = 0.5*x+0.1;
-	x1 = x+random.uniform(-0.1, 0.1);
-	y1 = y+random.uniform(-0.1, 0.1);
-	if (x1>=0 and x1<=1 and y1>=0 and y1<=1):
-		input.append([x1]);
-		target.append([y1]);
-		data.append((x1,y1));
+min, max = -2, 2
+for x in np.arange(min,max,0.001):
+    y = 1.5*x-0.5;
+    x1 = x+random.uniform(-0.3, 0.3);
+    y1 = y+random.uniform(-0.3, 0.3);
+    if x1>min and x1<max and y1>min and y1<max:
+        input.append([x1]);
+        target.append([y1]);
+        data.append((x1,y1));
 
 input = np.array(input[:]);
 target = np.array(target[:]);
-net = nl.net.newff([[0, 120]], [1]);
+net = nl.net.newff([[-2.2, 2.2]], [1], [nl.trans.PureLin()]);
 net.init();
 err = net.train(input, target, epochs=1000, show=1, goal=0.0001);
 
@@ -55,7 +56,7 @@ fig = plt.figure(figsize=(20.48, 15.36));
 ax = fig.add_subplot(1,1,1);
 
 ax.scatter(input, target, s=4, c='#006600');
-x_data = list(np.arange(0,1,0.01));
+x_data = list(np.arange(-2,2,0.01));
 ax.plot(x_data, [theta[0]+theta[1]*n for n in x_data], '-', lw=2, color='#ff0000');
 ax.plot(x_data, [net.sim([[n]])[0] for n in x_data], '-', lw=2, color='#0000ff');
 fig.savefig('/sdcard/devel/plot.png', bbox_inches='tight', pad_inches=0);
