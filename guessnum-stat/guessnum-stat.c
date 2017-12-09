@@ -12,10 +12,10 @@
 #include "guessnum-stat.h"
 #define GUESS_CHANCES 12
 
-typedef union{uint64_t n; uint16_t c[4];} cv_t;
-inline uint64_t check(uint64_t ans, uint64_t guess){
+typedef union{uint32_t n; uint8_t c[4];} cv_t;
+inline uint32_t check(uint32_t ans, uint32_t guess){
 	cv_t cv_a, cv_g;
-	uint64_t i, j, result = 0;
+	uint32_t i, j, result = 0;
 	cv_a.n = ans; cv_g.n = guess;
 	for (i = 0; i < 4; i++) {
 		if (cv_a.c[i] == cv_g.c[i]) {
@@ -30,8 +30,8 @@ inline uint64_t check(uint64_t ans, uint64_t guess){
 	}
 	return result;
 }
-inline uint64_t guess(){
-	uint64_t ans = candidates[rand() % CANDIDATES_COUNT], cbuf[CANDIDATES_COUNT], *c = candidates, cl = CANDIDATES_COUNT, times = 0, ci, g, i, res;
+uint32_t guess(){
+	uint32_t ans = candidates[rand() % CANDIDATES_COUNT], cbuf[CANDIDATES_COUNT], *c = candidates, cl = CANDIDATES_COUNT, times = 0, ci, g, i, res;
 	while (times < GUESS_CHANCES) {
 		g = c[rand() % cl];
 		res = check(ans, g);
@@ -56,13 +56,13 @@ inline uint64_t guess(){
 
 typedef struct {
 	pthread_t tid;
-	uint64_t stat[GUESS_CHANCES + 1];
+	uint32_t stat[GUESS_CHANCES + 1];
 	int running;
 } thread_data_t;
 static int running = 1;
 
 static pthread_mutex_t report_mutex = PTHREAD_MUTEX_INITIALIZER;
-static uint64_t mstat[GUESS_CHANCES + 1];
+static unsigned long long mstat[GUESS_CHANCES + 1];
 
 static char *filename;
 static int proc_cnt;
@@ -81,7 +81,7 @@ void action_record(int sig){
 		thread_data[i].running = 0;
 	}
 }
-int read_file(char *filename, uint64_t *stat){
+int read_file(char *filename, unsigned long long *stat){
 	FILE *fp; int i;
 	char num[100] = "\0";
 
@@ -95,7 +95,7 @@ int read_file(char *filename, uint64_t *stat){
 	fclose(fp);
 	return 1;
 }
-int write_file(char *filename, uint64_t *stat){
+int write_file(char *filename, unsigned long long *stat){
 	FILE *fp; int i;
 
 	fp = fopen(filename, "w");
@@ -103,13 +103,13 @@ int write_file(char *filename, uint64_t *stat){
 		return 0;
 	}
 	for (i = 0; i < GUESS_CHANCES + 1; i++) {
-		fprintf(fp, "%lu\n", stat[i]);
+		fprintf(fp, "%llu\n", stat[i]);
 	}
 	fclose(fp);
 	return 1;
 }
 
-void report_stat(uint64_t *stat) {
+void report_stat(uint32_t *stat) {
 	int i;
 	pthread_mutex_lock(&report_mutex);
 	for (i = 0; i < GUESS_CHANCES + 1; i++) {

@@ -36,13 +36,13 @@ function check($na){
 #include <stdint.h>
 
 #define CANDIDATES_COUNT 5040
-uint64_t candidates[CANDIDATES_COUNT] = {
+uint32_t candidates[CANDIDATES_COUNT] = {
 <?php
 for ($n = 123; $n <= 9876; $n++) {
 	$na = int2bcd($n);
 	if (check($na)) {
-		echo sprintf("0x%04d%04d%04d%04d,\n", $na[0], $na[1], $na[2], $na[3]);
-		//echo sprintf("0x%02d%02d%02d%02d,\n", $na[0], $na[1], $na[2], $na[3]);
+		//echo sprintf("\t0x%04d%04d%04d%04d,\n", $na[0], $na[1], $na[2], $na[3]);
+		echo sprintf("\t0x%02d%02d%02d%02d,\n", $na[0], $na[1], $na[2], $na[3]);
 	}
 }
 ?>

@@ -308,6 +308,11 @@ int main(int argc, char *argv[]) {
 	int goldbach = 0;
 	unsigned long start, stop;
 
+	if (argc < 2) {
+		fprintf(stderr, "Usage: %s [-g] min max\n", argv[0]);
+		return 1;
+	}
+
 	//Check args
 	if (!strcmp(argv[1], "-g")) {
 		//Enter Goldbach mode
