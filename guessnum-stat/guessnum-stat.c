@@ -54,15 +54,16 @@ uint32_t guess(){
 	return times;
 }
 
+typedef unsigned long long stat_t;
 typedef struct {
 	pthread_t tid;
-	uint32_t stat[GUESS_CHANCES + 1];
+	stat_t stat[GUESS_CHANCES + 1];
 	int running;
 } thread_data_t;
 static int running = 1;
 
 static pthread_mutex_t report_mutex = PTHREAD_MUTEX_INITIALIZER;
-static unsigned long long mstat[GUESS_CHANCES + 1];
+static stat_t mstat[GUESS_CHANCES + 1];
 
 static char *filename;
 static int proc_cnt;
@@ -81,7 +82,7 @@ void action_record(int sig){
 		thread_data[i].running = 0;
 	}
 }
-int read_file(char *filename, unsigned long long *stat){
+int read_file(char *filename, stat_t *stat){
 	FILE *fp; int i;
 	char num[100] = "\0";
 
@@ -95,7 +96,7 @@ int read_file(char *filename, unsigned long long *stat){
 	fclose(fp);
 	return 1;
 }
-int write_file(char *filename, unsigned long long *stat){
+int write_file(char *filename, stat_t *stat){
 	FILE *fp; int i;
 
 	fp = fopen(filename, "w");
@@ -109,7 +110,7 @@ int write_file(char *filename, unsigned long long *stat){
 	return 1;
 }
 
-void report_stat(uint32_t *stat) {
+void report_stat(stat_t *stat) {
 	int i;
 	pthread_mutex_lock(&report_mutex);
 	for (i = 0; i < GUESS_CHANCES + 1; i++) {

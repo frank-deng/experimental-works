@@ -5,6 +5,7 @@
 #include <stdint.h>
 #include <time.h>
 #include <pthread.h>
+#include <sys/sysinfo.h>
 
 /* Prime table for prime numbers smaller than 128 */
 static const unsigned long prime_table[] =
@@ -255,7 +256,7 @@ void* goldbach_thread(void *param) {
 void primes_mode(unsigned long start, unsigned long stop) {
 	param_t param[THREAD_MAX];
 	pthread_t thread_all[THREAD_MAX];
-	uint8_t thread_count = sysconf(_SC_NPROCESSORS_ONLN) * 2, i;
+	uint8_t thread_count = get_nprocs(), i;
 	unsigned long block = (stop - start) / thread_count;
 	char data[24];
 	FILE *fp0, *fp;
@@ -291,7 +292,7 @@ void primes_mode(unsigned long start, unsigned long stop) {
 void goldbach_mode(unsigned long start, unsigned long stop) {
 	param_t param[THREAD_MAX];
 	pthread_t thread_all[THREAD_MAX];
-	uint8_t thread_count = sysconf(_SC_NPROCESSORS_ONLN) * 2, i;
+	uint8_t thread_count = get_nprocs(), i;
 	unsigned long block = (stop - start) / thread_count;
 
 	for (i = 0; i < thread_count; i++) {

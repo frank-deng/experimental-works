@@ -1,2 +1,5 @@
 .hidden
 *.o
+*.swp
+*.wav
+*.WAV
