@@ -54,7 +54,7 @@ def getJokes(page = 1, size = config.PAGESIZE):
             data['contentlist'][idx]['id'] = jokeid;
             text = data['contentlist'][idx]['text'];
             if text.find('<') < 0 or text.find('>') < 0:
-            	data['contentlist'][idx]['text'] = text.replace('\\n', '<br/>').replace('\n', '<br/>').replace('\\r', '').replace('\r', '');
+            	data['contentlist'][idx]['text'] = text.replace('\\n', '\n').replace('\n', '\n').replace('\\r', '').replace('\r', '');
         return data['contentlist'];
     except KeyError:
         return None, None;

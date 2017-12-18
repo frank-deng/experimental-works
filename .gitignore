@@ -1,6 +1,7 @@
 __pycache__
 .hidden
 config.py
+*.json
 *.o
 *.swp
 *.wav
