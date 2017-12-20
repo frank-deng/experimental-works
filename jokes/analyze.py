@@ -53,45 +53,54 @@ wordsAccepted = {}
 for joke in jokes:
     added = False;
     if 0 == joke['accept']:
-        rejectedCount += 1;
         for word in jieba.cut(joke['text']):
             if not wordsBlocked.get(word):
+                rejectedCount += 1;
                 wordsBlocked[word] = 1;
             elif not added:
+                rejectedCount += 1;
                 wordsBlocked[word] += 1;
                 added = True;
     elif 1 == joke['accept']:
-        acceptedCount += 1;
         for word in jieba.cut(joke['text']):
             if not wordsAccepted.get(word):
+                acceptedCount += 1;
                 wordsAccepted[word] = 1;
             elif not added:
+                acceptedCount += 1;
                 wordsAccepted[word] += 1;
                 added = True;
 
 for w in copy.deepcopy(wordsBlocked):
     if uselessWords.get(w):
         del wordsBlocked[w];
+        
+jokes2 = [
+'''
+妹子站在小通道哪里，我刚好要从那过，就和她说：麻烦，借过。结果妹子说：借过可以，什么时候还？？？
+''',
+'''
+课堂上老师点名：“刘华！”\n结果下面一孩子大声回到：“yeah！”\n老师很生气：“为什么不说‘到’？”\n孩子说：“那个字念‘烨’……”
+''',
+]
 
-#for w in wordsBlocked:
-#    print("%s,%s,%s"%(w, wordsAccepted.get(w), wordsBlocked.get(w)));
-
-pc = rejectedCount / len(jokes);
-for joke in models.getJokes(1, 30):
-    words0 = list(joke['text']);
-    words = {};
-    for w in words0:
-        words[w] = True;
-
-    pw = 1;
-    p1 = 1;
-    for word in words:
+#for item in models.getJokes(1, 10):
+#    joke = item['text'];
+for item in jokes2:
+    joke = item;
+    for word in jieba.cut(joke):
+        wb = 0;
         if wordsBlocked.get(word):
-            if wordsAccepted.get(word):
-                p1 *= wordsBlocked[word] / (wordsBlocked[word] + wordsAccepted[word]);
-                pw *= (wordsBlocked[word] + wordsAccepted[word]) / len(jokes);
-            else:
-                pw *= wordsBlocked[word] / len(jokes);
-    print(p1 * pc / pw);
-    print(joke['text']);
+            wb = wordsBlocked[word];
+        wa = 0;
+        if wordsAccepted.get(word):
+            wa = wordsAccepted[word];
+        if wb == 0:
+            continue;
+        p0 = (wb / rejectedCount);
+        p1 = rejectedCount / (rejectedCount + acceptedCount);
+        p2 = (wa + wb) / (rejectedCount + acceptedCount);
+        print(word, p0 * p1 / p2);
+    print(joke);
+    print('');
 
