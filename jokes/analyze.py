@@ -42,7 +42,7 @@ uselessWords = {
 with open('uselessWords.txt', 'r') as f:
     word = f.read();
     while word:
-        uselessWords[word] = True;
+        uselessWords[word.strip()] = True;
         word = f.read();
 
 wordsAccepted = {}
@@ -70,23 +70,23 @@ for joke in jokes:
         
 rejectedCount = 0;
 for w in wordsBlocked:
-	rejectedCount += wordsBlocked[w];
+    rejectedCount += wordsBlocked[w];
 acceptedCount = 0;
 for w in wordsAccepted:
-	acceptedCount += wordsAccepted[w];
+    acceptedCount += wordsAccepted[w];
+print(acceptedCount, rejectedCount);
         
 jokes2 = [
 {'text':'妹子站在小通道哪里，我刚好要从那过，就和她说：麻烦，借过。结果妹子说：借过可以，什么时候还？？？'},
 {'text':'课堂上老师点名：“刘华！”\n结果下面一孩子大声回到：“yeah！”\n老师很生气：“为什么不说‘到’？”\n孩子说：“那个字念‘烨’……”'},
+{"text": "在火车上想泡面吃，拿着调料袋甩啊甩的。。。一不小心嗖地就飞出去了，定睛一看，一个满头调料的男子转过身来，悠悠的说道：“姑娘，你是想泡我吗？”"},
 ]
 
 #for item in models.getJokes(1, 10):
-for item in jokes2:
-    joke = item['text'];
+for joke in jokes2:
     words = {};
-    for word in jieba.cut(joke):
+    for word in jieba.cut(joke['text']):
         words[word] = True;
-        
     pa, pb = 0, 0;
     for word in words:
         wa = wordsAccepted.get(word, 0);
@@ -103,7 +103,7 @@ for item in jokes2:
             pb = pb1;
         else:
             pb *= pb1;
-        print(pa1, pb1);
+        print(word, pa1, pb1);
     print(pa, pb, pa > pb);
     print(joke);
     print('');
