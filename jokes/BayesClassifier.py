@@ -21,6 +21,7 @@ class BayesClassifier:
             self.__pTypes[t] = None;
 
     def train(self, data):
+        # Merge given data into existing one
         for _type in data:
             __trainData = data[_type];
             __data = self.__data[_type];
@@ -34,6 +35,7 @@ class BayesClassifier:
                     __data[item] = __data.get(item, 0) + count;
                     self.__total[_type] += count;
 
+        # Start calculate
         allTypesTotal = sum(self.__total.values());
         for _type in self.__data:
             dataThisType = self.__data[_type];
@@ -43,7 +45,7 @@ class BayesClassifier:
             self.__pTypes[_type] = log(total / allTypesTotal);
 
     def getTrainedData(self):
-        return copy.deepCopy(self.__data);
+        return copy.deepcopy(self.__data);
 
     def classify(self, data):
         result = {};

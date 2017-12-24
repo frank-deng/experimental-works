@@ -1,4 +1,4 @@
-import json, urllib, httplib2, hashlib, jieba;
+import json, urllib, httplib2, hashlib, jieba, os, sys, fnmatch;
 from collections import OrderedDict;
 import config;
 
@@ -103,3 +103,28 @@ def cutText(text):
         words[word] = True;
     return words.keys();
 
+# Get words for training
+def getTrainingData(_dir):
+    jokes = [];
+    for fn in [os.path.join(_dir, f) for f in os.listdir(_dir) if os.path.isfile(os.path.join(_dir, f)) and fnmatch.fnmatch(f, '*.json')]:
+        with open(fn, 'r') as f:
+            jokes += json.loads(f.read());
+    return jokes;
+
+def processTrainingData(jokes):
+    wordsAccepted, wordsBlocked = {}, {};
+    wa, wb = {}, {};
+    for joke in jokes:
+        wa.clear();
+        wb.clear();
+        if 1 == joke['accept']:
+            for word in cutText(joke['text']):
+                wa[word] = wa.get(word, 1);
+        elif 0 == joke['accept']:
+            for word in cutText(joke['text']):
+                wb[word] = wb.get(word, 1);
+        for w in wa:
+            wordsAccepted[w] = wordsAccepted.get(w, 0) + wa[w];
+        for w in wb:
+            wordsBlocked[w] = wordsBlocked.get(w, 0) + wb[w];
+    return wordsAccepted, wordsBlocked;
