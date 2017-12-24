@@ -42,7 +42,7 @@ def showAPIFetchJSON(url, params = None):
     except KeyError:
         return None;
 
-def getJokes(page = 1, size = config.PAGESIZE):
+def getJokes(page = 1, size = 10):
     global cache;
     data = showAPIFetchJSON('http://route.showapi.com/341-1', {'page':page,'maxResult':size});
     if not data:
