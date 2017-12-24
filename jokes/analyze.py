@@ -1,7 +1,8 @@
 #!/usr/bin/env python3
 #coding=utf-8
 
-import jieba, json, copy;
+import jieba, json;
+from math import log;
 import models;
 
 jokes = None;
@@ -45,11 +46,8 @@ with open('uselessWords.txt', 'r') as f:
         uselessWords[word.strip()] = True;
         word = f.read();
 
-wordsAccepted = {}
-wordsBlocked = {}
-wa = {}
-wb = {}
-
+wordsAccepted, wordsBlocked = {}, {}
+wa, wb = {}, {}
 for joke in jokes:
     wa.clear();
     wb.clear();
@@ -68,43 +66,29 @@ for joke in jokes:
     for w in wb:
         wordsBlocked[w] = wordsBlocked.get(w, 0) + wb[w];
         
-rejectedCount = 0;
-for w in wordsBlocked:
-    rejectedCount += wordsBlocked[w];
-acceptedCount = 0;
+rejectedCount = sum(wordsBlocked.values());
+acceptedCount = sum(wordsAccepted.values());
 for w in wordsAccepted:
-    acceptedCount += wordsAccepted[w];
-print(acceptedCount, rejectedCount);
-        
+    wordsAccepted[w] = log((wordsAccepted[w] + 1) / (acceptedCount + 2));
+for w in wordsBlocked:
+    wordsBlocked[w] = log((wordsBlocked[w] + 1) / (rejectedCount + 2));
+
 jokes2 = [
 {'text':'妹子站在小通道哪里，我刚好要从那过，就和她说：麻烦，借过。结果妹子说：借过可以，什么时候还？？？'},
 {'text':'课堂上老师点名：“刘华！”\n结果下面一孩子大声回到：“yeah！”\n老师很生气：“为什么不说‘到’？”\n孩子说：“那个字念‘烨’……”'},
 {"text": "在火车上想泡面吃，拿着调料袋甩啊甩的。。。一不小心嗖地就飞出去了，定睛一看，一个满头调料的男子转过身来，悠悠的说道：“姑娘，你是想泡我吗？”"},
 ]
 
-#for item in models.getJokes(1, 10):
-for joke in jokes2:
+for joke in models.getJokes(1, 80):
+#for joke in jokes2:
     words = {};
     for word in jieba.cut(joke['text']):
         words[word] = True;
     pa, pb = 0, 0;
     for word in words:
-        wa = wordsAccepted.get(word, 0);
-        wb = wordsBlocked.get(word, 0);
-        if wa == 0 and wb == 0:
-            continue;
-        pa1 = (wa + 1) / (acceptedCount + 2);
-        pb1 = (wb + 1) / (rejectedCount + 2);
-        if pa == 0:
-            pa = pa1;
-        else:
-            pa *= pa1;
-        if pb == 0:
-            pb = pb1;
-        else:
-            pb *= pb1;
-        print(word, pa1, pb1);
-    print(pa, pb, pa > pb);
+        pa += wordsAccepted.get(word, 1 / (acceptedCount + 1));
+        pb += wordsBlocked.get(word, 1 / (rejectedCount + 1));
+    print(pa, pb, pa < pb);
     print(joke);
     print('');
 
