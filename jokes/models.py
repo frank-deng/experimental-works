@@ -1,7 +1,6 @@
-import json, urllib, httplib2, hashlib, threading, html, re;
-import config;
+import json, urllib, httplib2, hashlib, jieba;
 from collections import OrderedDict;
-import xml.dom.minidom as minidom;
+import config;
 
 def fetchJSON(url, headers = None, body = None):
     http = httplib2.Http(timeout = config.REQUEST_TIMEOUT);
@@ -58,4 +57,49 @@ def getJokes(page = 1, size = config.PAGESIZE):
         return data['contentlist'];
     except KeyError:
         return None, None;
+
+
+# Cut text and remove useless words
+__uselessWords = {
+    '':True,
+    '\r':True,
+    '\n':True,
+    ' ':True,
+    ',':True,
+    ':':True,
+    '?':True,
+    '!':True,
+    '"':True,
+    '<':True,
+    '>':True,
+    '/':True,
+    '　':True,
+    '、':True,
+    '，':True,
+    '。':True,
+    '：':True,
+    '？':True,
+    '！':True,
+    '“':True,
+    '”':True,
+    '‘':True,
+    '’':True,
+    '《':True,
+    '》':True,
+    '；':True,
+    '…':True,
+    '—':True,
+};
+with open(config.USELESS_WORDS_FILE, 'r') as f:
+    word = f.read();
+    while word:
+        __uselessWords[word.strip()] = True;
+        word = f.read();
+def cutText(text):
+    words = {};
+    for word in jieba.cut(text):
+        if word in __uselessWords:
+            continue;
+        words[word] = True;
+    return words.keys();
 

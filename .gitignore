@@ -10,3 +10,5 @@ config.py
 *.jpg
 *.bmp
 *.gif
+*.crd
+*.CRD

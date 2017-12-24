@@ -9,57 +9,19 @@ jokes = None;
 with open('data.json', 'r') as f:
     jokes = json.loads(f.read());
 
-uselessWords = {
-    '':True,
-    '\r':True,
-    '\n':True,
-    ' ':True,
-    ',':True,
-    ':':True,
-    '?':True,
-    '!':True,
-    '"':True,
-    '<':True,
-    '>':True,
-    '/':True,
-    '　':True,
-    '、':True,
-    '，':True,
-    '。':True,
-    '：':True,
-    '？':True,
-    '！':True,
-    '“':True,
-    '”':True,
-    '‘':True,
-    '’':True,
-    '《':True,
-    '》':True,
-    '；':True,
-    '…':True,
-    '—':True,
-};
-
-with open('uselessWords.txt', 'r') as f:
-    word = f.read();
-    while word:
-        uselessWords[word.strip()] = True;
-        word = f.read();
-
 wordsAccepted, wordsBlocked = {}, {}
 wa, wb = {}, {}
 for joke in jokes:
     wa.clear();
     wb.clear();
     if 1 == joke['accept']:
-        for word in jieba.cut(joke['text']):
-            if word in uselessWords:
-                continue;
+        for word in models.cutText(joke['text']):
+        #for word in jieba.cut(joke['text']):
+        #    if word in uselessWords:
+        #        continue;
             wa[word] = wa.get(word, 1);
     elif 0 == joke['accept']:
-        for word in jieba.cut(joke['text']):
-            if word in uselessWords:
-                continue;
+        for word in models.cutText(joke['text']):
             wb[word] = wb.get(word, 1);
     for w in wa:
         wordsAccepted[w] = wordsAccepted.get(w, 0) + wa[w];
@@ -73,22 +35,44 @@ for w in wordsAccepted:
 for w in wordsBlocked:
     wordsBlocked[w] = log((wordsBlocked[w] + 1) / (rejectedCount + 2));
 
-jokes2 = [
-{'text':'妹子站在小通道哪里，我刚好要从那过，就和她说：麻烦，借过。结果妹子说：借过可以，什么时候还？？？'},
-{'text':'课堂上老师点名：“刘华！”\n结果下面一孩子大声回到：“yeah！”\n老师很生气：“为什么不说‘到’？”\n孩子说：“那个字念‘烨’……”'},
-{"text": "在火车上想泡面吃，拿着调料袋甩啊甩的。。。一不小心嗖地就飞出去了，定睛一看，一个满头调料的男子转过身来，悠悠的说道：“姑娘，你是想泡我吗？”"},
-]
+# Test classifier
+passed = True;
+for joke in jokes:
+    pa = log(acceptedCount / (acceptedCount + rejectedCount));
+    pb = log(rejectedCount / (acceptedCount + rejectedCount));
+    for word in models.cutText(joke['text']):
+        pa += wordsAccepted.get(word, 0);
+        pb += wordsBlocked.get(word, 0);
+    accepted = (pa < pb);
+    if bool(joke['accept']) != accepted:
+        passed = False;
 
-for joke in models.getJokes(1, 80):
-#for joke in jokes2:
+if (passed):
+    print('Test on training cases passed.');
+else:
+    print('Test on training not passed.');
+    exit(1);
+
+jokesTest = None;
+good, bad = 0, 0;
+with open('test.json', 'r') as f:
+    jokesTest = json.loads(f.read());
+
+for joke in jokesTest:
     words = {};
     for word in jieba.cut(joke['text']):
         words[word] = True;
-    pa, pb = 0, 0;
+    pa = log(acceptedCount / (acceptedCount + rejectedCount))
+    pb = log(rejectedCount / (acceptedCount + rejectedCount))
     for word in words:
-        pa += wordsAccepted.get(word, 1 / (acceptedCount + 1));
-        pb += wordsBlocked.get(word, 1 / (rejectedCount + 1));
-    print(pa, pb, pa < pb);
-    print(joke);
-    print('');
+        pa += wordsAccepted.get(word, 0);
+        pb += wordsBlocked.get(word, 0);
+    accepted = (pa < pb);
+
+    if bool(joke['accept']) != accepted:
+        bad += 1;
+    else:
+        good += 1;
+
+print(good, bad);
 

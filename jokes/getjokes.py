@@ -1,12 +1,11 @@
 #!/usr/bin/env python3
 #coding=utf-8
 
-import models, jieba, json;
+import models, json;
 jsonData = [];
 for joke in models.getJokes(1, 80):
     jsonData.append({
         'text':joke['text'],
-        #'words':list(jieba.cut(joke['text'])),
         'accept':0,
     });
 with open('data.json', 'w') as f:
