@@ -6,14 +6,13 @@ from math import log;
 from models import cutText, getJokes, getTrainingData, processTrainingData;
 from BayesClassifier import BayesClassifier;
 
-jokes = getTrainingData('train_data/');
-wordsAccepted, wordsBlocked = processTrainingData(jokes);
 classifier = BayesClassifier(('accepted', 'rejected'));
-classifier.train({'accepted':wordsAccepted, 'rejected':wordsBlocked});
+with open('train.json', 'r') as f:
+    classifier.train(json.loads(f.read()));
 
 # Test classifier
 passed = True;
-for joke in jokes:
+for joke in getTrainingData('train_data'):
     accepted = classifier.classify(cutText(joke['text']));
     if bool(joke['accept']) != (accepted == 'accepted'):
         passed = False;
@@ -23,6 +22,7 @@ if (passed):
 else:
     print('Test on training not passed.');
     exit(1);
+
 
 with open('test.json', 'r') as f:
     jokesTest = json.loads(f.read());
@@ -34,6 +34,8 @@ for joke in jokesTest:
         bad += 1;
     else:
         good += 1;
+        print(joke['text']);
+        print('======');
 
 print(good, bad);
 

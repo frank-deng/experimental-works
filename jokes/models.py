@@ -1,4 +1,4 @@
-import json, urllib, httplib2, hashlib, jieba, os, sys, fnmatch;
+import json, urllib, httplib2, hashlib, jieba, os, sys, fnmatch, re;
 from collections import OrderedDict;
 import config;
 
@@ -64,15 +64,22 @@ __uselessWords = {
     '':True,
     '\r':True,
     '\n':True,
+    '\r\n':True,
     ' ':True,
     ',':True,
     ':':True,
     '?':True,
     '!':True,
     '"':True,
+    '*':True,
     '<':True,
     '>':True,
     '/':True,
+    '(':True,
+    ')':True,
+    '+':True,
+    '-':True,
+    '_':True,
     '　':True,
     '、':True,
     '，':True,
@@ -86,10 +93,18 @@ __uselessWords = {
     '’':True,
     '《':True,
     '》':True,
+    '（':True,
+    '）':True,
     '；':True,
     '…':True,
     '—':True,
+    '～':True,
 };
+__uselessRegex = [
+	r'\.+',
+	r'。+',
+	r'\d+',
+];
 with open(config.USELESS_WORDS_FILE, 'r') as f:
     word = f.read();
     while word:
@@ -98,7 +113,14 @@ with open(config.USELESS_WORDS_FILE, 'r') as f:
 def cutText(text):
     words = {};
     for word in jieba.cut(text):
-        if word in __uselessWords:
+        if __uselessWords.get(word):
+            continue;
+        regmatch = False;
+        for regex in __uselessRegex:
+            if re.match(regex, word):
+                regmatch = True;
+                break;
+        if regmatch:
             continue;
         words[word] = True;
     return words.keys();
