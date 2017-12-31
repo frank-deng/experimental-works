@@ -29,6 +29,7 @@ trainData = np.array(trainData);
 trainResult = np.array(trainResult);
 
 net = nl.net.newff([[0, 1]] * 32, [32, 10, 4], [nl.trans.LogSig(), nl.trans.LogSig(), nl.trans.LogSig()]);
+net.init();
 err = net.train(trainData, trainResult, epochs=1000, show=1, goal=0.0001)[-1];
 
 total = 10000;
