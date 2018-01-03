@@ -29,8 +29,9 @@ trainData = np.array(trainData);
 trainResult = np.array(trainResult);
 
 net = nl.net.newff([[0, 1]] * 32, [32, 10, 2], [nl.trans.LogSig(), nl.trans.LogSig(), nl.trans.LogSig()]);
+#net.trainf = nl.train.train_gda;
 net.init();
-err = net.train(trainData, trainResult, epochs=1000, show=1, goal=0.0001)[-1];
+net.train(trainData, trainResult, epochs=1000, show=1, goal=0.0001);
 
 total = 10000;
 good, bad = 0, 0
