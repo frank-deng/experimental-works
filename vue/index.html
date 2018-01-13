@@ -4,36 +4,81 @@
         <meta name='viewport' id='viewport' content='width=device-width,initial-scale=1.0,minimum-scale=1.0,maximum-scale=1.0,user-scalable=no'/>
         <meta charset='utf-8'/>
         <title>试试Vue.js</title>
+        <style>
+template{display:none;}
+#logger_element{
+	display:block;
+	position:fixed;
+	left:0;
+	right:0;
+	bottom:0;
+	height:6em;
+	font-size:1em;
+	line-height:1.1em;
+	font-family:monospace;
+	font-weight:normal;
+	color:#000;
+	background-color:#ccc;
+	border-top:1px solid #000;
+	margin:0;
+	padding:0;
+}
+        </style>
+        <script type='text/javascript' src='mobile_logger.min.js'></script>
         <script type='text/javascript'>
-window.addEventListener('error', function(e){
-	alert(e.filename+'\nLine '+e.lineno+'\n'+e.message);
+window.addEventListener('load', function(){
+	MobileLogger.bind(document.getElementById('logger_element'));
 });
         </script>
         <script type='text/javascript' src='vue.js'></script>
+        <script type='text/javascript' src='vue-router.js'></script>
     </head>
     <body>
         <div id='main'>
             <h1>哈哈哈～～～{{msg}}</h1>
             <input v-model='searchStr'/>
             <div v-for='c in str'>{{c}}</div>
+            <router-link to="/">Home</router-link>
+            <router-link to="/about">About</router-link>
+  </p>
+            <router-view></router-view>
         </div>
+        <pre id='logger_element'></pre>
     </body>
+    <template id='home'>Home</template>
+    <template id='about'>About</template>
+    <template id='miao'>Miao</template>
     <script type='text/javascript'>
-        var vm = new Vue({
-            el: '#main',
-            data: {
-                msg:'a',
-                searchStr:'',
-                str:'',
-            },
-            watch:{
-                searchStr: function(val){
-                    this.str = val;
-                }
-            }
-        });
-        setTimeout(function(){
-            vm.$data.msg = 'Frank!!!';
-        }, 1000);
+Vue.use(VueRouter);
+
+var Home = { template: 'home' }
+var About = { template: '#about' }
+var Miao = { template: '#miao' }
+    
+var router = new VueRouter({
+	routes:[
+		{path: '/', component: Home},
+		{path: '/about', component: About},
+		{path: '/miao', component: Miao},
+	]
+});
+
+var vm = new Vue({
+	el: '#main',
+	data: {
+		msg:'a',
+		searchStr:'',
+		str:'',
+	},
+	watch:{
+		searchStr: function(val){
+			this.str = val;
+		}
+	},
+	router:router,
+});
+setTimeout(function(){
+	vm.$data.msg = 'Frank!!!';
+}, 1000);
     </script>
 </html>
