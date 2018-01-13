@@ -38,22 +38,24 @@ window.addEventListener('load', function(){
             <h1>哈哈哈～～～{{msg}}</h1>
             <input v-model='searchStr'/>
             <div v-for='c in str'>{{c}}</div>
-            <router-link to="/">Home</router-link>
-            <router-link to="/about">About</router-link>
-  </p>
+			<p>
+				<router-link to="/">Home</router-link>
+				<router-link to="/about">About</router-link>
+				<router-link to="/miao">Miao</router-link>
+			</p>
             <router-view></router-view>
         </div>
         <pre id='logger_element'></pre>
     </body>
-    <template id='home'>Home</template>
-    <template id='about'>About</template>
-    <template id='miao'>Miao</template>
+	<template id='home'><p>Home</p></template>
+	<template id='about'><p>About</p></template>
+	<template id='miao'><p>Miao</p></template>
     <script type='text/javascript'>
 Vue.use(VueRouter);
 
-var Home = { template: 'home' }
-var About = { template: '#about' }
-var Miao = { template: '#miao' }
+var Home = { template: document.getElementById('home').innerHTML }
+var About = { template: document.getElementById('about').innerHTML }
+var Miao = { template: document.getElementById('miao').innerHTML }
     
 var router = new VueRouter({
 	routes:[
