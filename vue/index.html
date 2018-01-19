@@ -48,14 +48,28 @@ window.addEventListener('load', function(){
         <pre id='logger_element'></pre>
     </body>
 	<template id='home'><p>Home</p></template>
-	<template id='about'><p>About</p></template>
+	<template id='about'><p>About <span>{{time0}}</span></p></template>
 	<template id='miao'><p>Miao</p></template>
     <script type='text/javascript'>
 Vue.use(VueRouter);
 
-var Home = { template: document.getElementById('home').innerHTML }
-var About = { template: document.getElementById('about').innerHTML }
-var Miao = { template: document.getElementById('miao').innerHTML }
+var Home = { template: document.getElementById('home') }
+var About = {
+	template: document.getElementById('about'),
+	data: function(){
+		return {
+			time0: 'aaa',
+		};
+	},
+	//props: ['time0'],
+	created() {
+    	this.$root.ebus.$on('updateTime',function(time) {
+    		this.time0 = time;
+    		console.log(time);
+		});
+	},
+};
+var Miao = { template: document.getElementById('miao') }
     
 var router = new VueRouter({
 	routes:[
@@ -68,19 +82,25 @@ var router = new VueRouter({
 var vm = new Vue({
 	el: '#main',
 	data: {
+		ebus: new Vue(),
 		msg:'a',
 		searchStr:'',
 		str:'',
+		time0: String(new Date()),
 	},
 	watch:{
 		searchStr: function(val){
 			this.str = val;
-		}
+		},
 	},
 	router:router,
 });
 setTimeout(function(){
 	vm.$data.msg = 'Frank!!!';
+}, 1000);
+setTimeout(function(){
+	vm.$data.time0 = String(new Date());
+	vm.$data.ebus.$emit('updateTime', vm.$data.time0);
 }, 1000);
     </script>
 </html>
