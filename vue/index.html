@@ -24,12 +24,12 @@ template{display:none;}
 	padding:0;
 }
         </style>
-        <script type='text/javascript' src='mobile_logger.min.js'></script>
+        <!--script type='text/javascript' src='mobile_logger.min.js'></script>
         <script type='text/javascript'>
 window.addEventListener('load', function(){
 	MobileLogger.bind(document.getElementById('logger_element'));
 });
-        </script>
+        </script-->
         <script type='text/javascript' src='vue.js'></script>
         <script type='text/javascript' src='vue-router.js'></script>
     </head>
@@ -37,70 +37,119 @@ window.addEventListener('load', function(){
         <div id='main'>
             <h1>哈哈哈～～～{{msg}}</h1>
             <input v-model='searchStr'/>
-            <div v-for='c in str'>{{c}}</div>
+			<p>{{str}}</p>
+			<p>{{str | repeat('烫', '锟斤拷')}}</p>
 			<p>
 				<router-link to="/">Home</router-link>
 				<router-link to="/about">About</router-link>
 				<router-link to="/miao">Miao</router-link>
 			</p>
             <router-view></router-view>
+            <div v-for='c in str'>{{c}}</div>
         </div>
         <pre id='logger_element'></pre>
     </body>
-	<template id='home'><p>Home</p></template>
-	<template id='about'><p>About <span>{{time0}}</span></p></template>
+	<template id='home'>
+		<div>
+			<p>Home</p>
+            <input v-model='searchStr'/>
+			<div>{{searchStr}}</div>
+			<div>{{msg | repeat('烫', '锟斤拷')}}</div>
+		</div>
+	</template>
+	<template id='about'>
+		<div>
+			<p>About</p>
+			<p>{{time}}</p>
+			<p>{{msg}}</p>
+		</div>
+	</template>
 	<template id='miao'><p>Miao</p></template>
     <script type='text/javascript'>
 Vue.use(VueRouter);
-
-var Home = { template: document.getElementById('home') }
-var About = {
-	template: document.getElementById('about'),
-	data: function(){
-		return {
-			time0: 'aaa',
-		};
-	},
-	//props: ['time0'],
-	created() {
-    	this.$root.ebus.$on('updateTime',function(time) {
-    		this.time0 = time;
-    		console.log(time);
-		});
-	},
-};
-var Miao = { template: document.getElementById('miao') }
-    
-var router = new VueRouter({
-	routes:[
-		{path: '/', component: Home},
-		{path: '/about', component: About},
-		{path: '/miao', component: Miao},
-	]
+Vue.filter('repeat', function(val, text, a){
+	var result = a;
+	for (var i = 0; i < val.length; i++) {
+		result += text;
+	}
+	return result;
 });
 
+var Home = {
+	template: document.getElementById('home'),
+	data: function(){
+		return {
+			searchStr: 'Miao',
+		};
+	},
+	props: {
+		msg: String,
+	},
+	beforeRouteEnter: function(to, from, next){
+		console.log('enter');
+		console.log(to);
+		console.log(from);
+	},
+	beforeRouteLeave: function(to, from, next){
+		console.log('leave');
+		console.log(to);
+		console.log(from);
+	},
+}
+var About = {
+	template: document.getElementById('about'),
+	props: {
+		time: String,
+		msg: String,
+	},
+};
+var Miao = {
+	template: document.getElementById('miao'),
+}
+    
 var vm = new Vue({
 	el: '#main',
 	data: {
-		ebus: new Vue(),
 		msg:'a',
 		searchStr:'',
 		str:'',
-		time0: String(new Date()),
+		time: '',
 	},
 	watch:{
 		searchStr: function(val){
 			this.str = val;
 		},
 	},
-	router:router,
+	router: new VueRouter({
+		routes:[
+			{
+				path: '/',
+				component: Home,
+				props: function(){
+					return {
+						msg: vm ? vm.$data.str : '',
+					};
+				},
+			},
+			{
+				path: '/about',
+				component: About,
+				props: function(){
+					return {
+						time: vm ? vm.$data.time : String(new Date()),
+						msg: vm ? vm.$data.str : '',
+					};
+				},
+			},
+			{path: '/miao', component: Miao},
+		]
+	}),
 });
 setTimeout(function(){
 	vm.$data.msg = 'Frank!!!';
 }, 1000);
-setTimeout(function(){
-	vm.$data.time0 = String(new Date());
-	vm.$data.ebus.$emit('updateTime', vm.$data.time0);
+setInterval(function(){
+	vm.$data.time = String(new Date());
 }, 1000);
     </script>
 </html>
