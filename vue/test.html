@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<meta name='viewport' id='viewport' content='width=device-width,initial-scale=1.0,minimum-scale=1.0,maximum-scale=1.0,user-scalable=no'/>
+		<meta charset='UTF-8'/>
+		<title>二进制文件实验</title>
+		<style>
+template{display:none;}
+#logger_element{
+	display:block;
+	position:fixed;
+	left:0;
+	right:0;
+	bottom:0;
+	height:12em;
+	font-size:1em;
+	line-height:1.1em;
+	font-family:monospace;
+	font-weight:normal;
+	color:#000;
+	background-color:#ccc;
+	border-top:1px solid #000;
+	margin:0;
+	padding:0;
+}
+		</style>
+		<script type='text/javascript' src='mobile_logger.min.js'></script>
+        <script type='text/javascript'>
+window.addEventListener('load', function(){
+	MobileLogger.bind(document.getElementById('logger_element'));
+});
+        </script>
+		<script type='text/javascript' src='vue.js'></script>
+        <script type='text/javascript' src='vue-router.js'></script>
+	</head>
+	<body>
+		<div id='app'>
+			<input type='file' @change='onUploadFile'/>
+		</div>
+		<pre id='logger_element'></pre>
+	</body>
+	<script>
+var vm = new Vue({
+	el: '#app',
+	data: {
+		uploadedFile: undefined,
+	},
+	methods:{
+		onUploadFile: function(e){
+			var files = e.target.files || e.dataTransfer.files;
+			console.log('---');
+			console.dir(files);
+		},
+	},
+});
+	</script>
+</html>
