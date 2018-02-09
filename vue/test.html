@@ -40,6 +40,29 @@ window.addEventListener('load', function(){
 		<pre id='logger_element'></pre>
 	</body>
 	<script>
+function Font(){
+	var blob = undefined;
+
+	var reader = new FileReader();
+	reader.addEventListener('load', function(e){
+		blob = new Blob(this.result);
+	});
+	reader.addEventListener('abort', function(e){
+		blob = undefined;
+	});
+
+	this.load = function(fontfile){
+		reader.readAsBinaryString(fontfile);
+	}
+	this.save = function(){
+		if (undefined === blob) {
+			return undefined;
+		} else {
+			return URL.createObjectURL(blob);
+		}
+	}
+}
+var font = new Font();
 var vm = new Vue({
 	el: '#app',
 	data: {
@@ -48,8 +71,9 @@ var vm = new Vue({
 	methods:{
 		onUploadFile: function(e){
 			var files = e.target.files || e.dataTransfer.files;
-			console.log('---');
-			console.dir(files);
+			if (files.length) {
+				console.log(files[0]);
+			}
 		},
 	},
 });
