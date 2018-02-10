@@ -36,30 +36,44 @@ window.addEventListener('load', function(){
 	<body>
 		<div id='app'>
 			<input type='file' @change='onUploadFile'/>
+			<button @click='doShowDebug'>Debug</button>
 		</div>
 		<pre id='logger_element'></pre>
 	</body>
 	<script>
 function Font(){
-	var blob = undefined;
+	var buffer = undefined;
+	var view = undefined;
+
+	var validateBmp = function(buffer){
+		var view = new DataView(buffer);
+		var signature = view.getUint16();
+	}
 
 	var reader = new FileReader();
-	reader.addEventListener('load', function(e){
-		blob = new Blob(this.result);
+	reader.addEventListener('load', function(){
+		buffer = this.result;
 	});
-	reader.addEventListener('abort', function(e){
-		blob = undefined;
+	reader.addEventListener('abort', function(){
+		buffer = undefined;
 	});
 
+
 	this.load = function(fontfile){
-		reader.readAsBinaryString(fontfile);
+		reader.readAsArrayBuffer(fontfile);
 	}
 	this.save = function(){
-		if (undefined === blob) {
+		if (undefined === buffer) {
 			return undefined;
 		} else {
 			return URL.createObjectURL(blob);
 		}
+	}
+	this.debug = function(){
+		var sig = view.getUint16(0, true);
+		console.log(sig.toString(16));
+		var sig = view.getUint16(1, true);
+		console.log(sig.toString(16));
 	}
 }
 var font = new Font();
@@ -72,8 +86,11 @@ var vm = new Vue({
 		onUploadFile: function(e){
 			var files = e.target.files || e.dataTransfer.files;
 			if (files.length) {
-				console.log(files[0]);
+				font.load(files[0]);
 			}
+		},
+		doShowDebug: function(e){
+			font.debug();
 		},
 	},
 });
