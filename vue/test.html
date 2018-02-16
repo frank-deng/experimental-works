@@ -41,13 +41,13 @@ window.addEventListener('load', function(){
 		<pre id='logger_element'></pre>
 	</body>
 	<script>
-function Font(){
+function Font(buffer){
 	var buffer = undefined;
 	var view = undefined;
 
 	var validateBmp = function(buffer){
 		var view = new DataView(buffer);
-		var signature = view.getUint16();
+		var signature = view.getUint16(0, true);
 	}
 
 	var reader = new FileReader();
@@ -76,7 +76,8 @@ function Font(){
 		console.log(sig.toString(16));
 	}
 }
-var font = new Font();
+function FontLoader(){
+}
 var vm = new Vue({
 	el: '#app',
 	data: {
