@@ -37,6 +37,7 @@ window.addEventListener('load', function(){
 		<div id='app'>
 			<input type='file' @change='onUploadFile'/>
 			<button @click='onSaveFont'>Save</button>
+			<button @click='onShowChar'>Show</button>
 		</div>
 		<pre id='logger_element'></pre>
 	</body>
@@ -65,6 +66,24 @@ function FontPC98(bufferOrig){
 		if (planes != 1) {
 			throw new InvalidFormatError('Color plane not 1');
 		}
+		var bpp = view.getUint16(28, true);
+		if (bpp != 1) {
+			throw new InvalidFormatError('Color depth is not 1 bit');
+		}
+		var compression = view.getUint32(30, true);
+		if (compression != 0) {
+			throw new InvalidFormatError('Compressed not supported');
+		}
+
+		var width = view.getUint32(18, true);
+		var height = view.getUint32(22, true);
+		if (width != 2048 || height != 2048) {
+			throw new InvalidFormatError('Image resulotion is not 2048x2048');
+		}
+		var imgsize = view.getUint32(34, true);
+		if (imgsize != 2048*2048/8) {
+			throw new InvalidFormatError('Image size is not '+String(2048*2048/8));
+		}
 	}
 	validateBmp(bufferOrig);
 
@@ -74,6 +93,17 @@ function FontPC98(bufferOrig){
 
 	this.getBuffer = function(){
 		return buffer.slice(0);
+	}
+	this.getAnk = function(chr){
+		var result = [];
+		var offset = undefined;
+		for (var i = 0; i < 16; i++) {
+			offset = (2047 - i) * 256;
+			result.push((~view.getUint8(offset+chr)) & 0xFF);
+		}
+		return result;
+	}
+	this.getKanji = function(chr){
 	}
 }
 
@@ -145,7 +175,22 @@ var vm = new Vue({
 			} else {
 				console.warn('No font file uploaded');
 			}
-		}
+		},
+		onShowChar: function(e) {
+			var charModel = this.font.getAnk('j'.charCodeAt(0));
+			var str = '';
+			for (var i = 0; i < charModel.length; i++) {
+				for (var j = 7; j >= 0; j--) {
+					if (charModel[i] & (1 << j)) {
+						str += 1;
+					} else {
+						str += 0;
+					}
+				}
+				str += '\n';
+			}
+			console.log(str);
+		},
 	},
 });
 	</script>
