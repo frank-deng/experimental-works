@@ -36,63 +36,116 @@ window.addEventListener('load', function(){
 	<body>
 		<div id='app'>
 			<input type='file' @change='onUploadFile'/>
-			<button @click='doShowDebug'>Debug</button>
+			<button @click='onSaveFont'>Save</button>
 		</div>
 		<pre id='logger_element'></pre>
 	</body>
 	<script>
-function Font(buffer){
-	var buffer = undefined;
-	var view = undefined;
+function InvalidFormatError(msg) {
+	this.message = msg;
+	var error = new Error(this.message);
+	this.stack = error.stack;
+}
+InvalidFormatError.prototype = new Error();
+InvalidFormatError.prototype.name = InvalidFormatError.name;
+InvalidFormatError.prototype.constructor = InvalidFormatError;
 
+function FontPC98(bufferOrig){
+	var view = new DataView(bufferOrig);
 	var validateBmp = function(buffer){
-		var view = new DataView(buffer);
 		var signature = view.getUint16(0, true);
-	}
-
-	var reader = new FileReader();
-	reader.addEventListener('load', function(){
-		buffer = this.result;
-	});
-	reader.addEventListener('abort', function(){
-		buffer = undefined;
-	});
-
-
-	this.load = function(fontfile){
-		reader.readAsArrayBuffer(fontfile);
-	}
-	this.save = function(){
-		if (undefined === buffer) {
-			return undefined;
-		} else {
-			return URL.createObjectURL(blob);
+		if (signature != 0x4d42) {
+			throw new InvalidFormatError('Invalid signature');
+		}
+		var bmpsize = view.getUint32(2, true);
+		if (buffer.byteLength != bmpsize) {
+			throw new InvalidFormatError('BMP file size mismatch');
+		}
+		var planes = view.getUint16(26, true);
+		if (planes != 1) {
+			throw new InvalidFormatError('Color plane not 1');
 		}
 	}
-	this.debug = function(){
-		var sig = view.getUint16(0, true);
-		console.log(sig.toString(16));
-		var sig = view.getUint16(1, true);
-		console.log(sig.toString(16));
+	validateBmp(bufferOrig);
+
+	var offset = view.getUint32(10, true);
+	var buffer = bufferOrig.slice(0);
+	view = new DataView(buffer, offset);
+
+	this.getBuffer = function(){
+		return buffer.slice(0);
 	}
 }
-function FontLoader(){
+
+function FontManager(){
+	this.loadFont = function(params){
+		var reader = new FileReader();
+		reader.addEventListener('load', function(){
+			var font = undefined;
+			try {
+				font = new FontPC98(this.result);
+			} catch(e) {
+				if (typeof params.error === 'function'){
+					params.error(e, this.result);
+				}
+			}
+			if (typeof params.success === 'function'){
+				params.success(font);
+			}
+		});
+		reader.addEventListener('abort', function(e){
+			if (typeof params.abort === 'function'){
+				params.abort(e);
+			}
+		});
+		reader.readAsArrayBuffer(params.src);
+	}
+	this.saveFont = function(font){
+		if (!(font instanceof FontPC98)) {
+			throw Error('Not a saveable instance');
+		}
+		var file = new File([new Blob([font.getBuffer()])], 'font.bmp', {type: "image/x-bmp"});
+		var dataURL = window.URL.createObjectURL(file);
+		var link = document.createElement("a");
+		link.href = dataURL;
+		link.download = 'font.bmp';
+		document.body.appendChild(link);
+		link.click();
+		document.body.removeChild(link);
+		delete link;
+		window.URL.revokeObjectURL(dataURL);
+	}
 }
+
+var fontManager = new FontManager();
 var vm = new Vue({
 	el: '#app',
 	data: {
 		uploadedFile: undefined,
+		font: undefined,
 	},
 	methods:{
 		onUploadFile: function(e){
 			var files = e.target.files || e.dataTransfer.files;
 			if (files.length) {
-				font.load(files[0]);
+				fontManager.loadFont({
+					src: files[0],
+					success: function(font){
+						vm.font = font;
+					},
+					error: function(e, data){
+						throw e;
+					}
+				});
 			}
 		},
-		doShowDebug: function(e){
-			font.debug();
-		},
+		onSaveFont: function(e) {
+			if (this.font) {
+				fontManager.saveFont(this.font);
+			} else {
+				console.warn('No font file uploaded');
+			}
+		}
 	},
 });
 	</script>
