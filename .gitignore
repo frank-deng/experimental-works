@@ -12,3 +12,6 @@ config.py
 *.gif
 *.crd
 *.CRD
+*.ppm
+*.pgm
+*.pbm
