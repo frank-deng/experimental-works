@@ -31,10 +31,10 @@ def showImage(img, matchedPos = None, tempImg = None):
 
 def printMoves(moves):
     labelMoves = ('Up', 'Left', 'Right', 'Down');
-    textPrint = '';
-    for m in moves:
-        textPrint += labelMoves[m] + ' ';
-    print(textPrint);
+    if (len(moves) > 1):
+        print('Middle');
+    elif (len(moves) == 1):
+        print(labelMoves[moves[0]]);
 
 ellena = BLEllena();
 try:
@@ -45,7 +45,7 @@ try:
         if (None != status and status != lastStatus):
             lastStatus = status;
             if BLEllena.ELLENA_WATCHING == status:
-                print('Watching:');
+                print('\nWatching:');
             elif BLEllena.ELLENA_ACTIVE == status:
                 print('Operating...');
 
