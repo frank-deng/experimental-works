@@ -1,8 +1,7 @@
 #!/usr/bin/env python3
 
-from WindowGrabber import WindowGrabber;
-import numpy as np;
-import cv2;
+from BLEllena import BLEllena;
+import time;
 
 def writePpm(fname, pixbuf):
     with open(fname, 'wb') as f:
@@ -29,33 +28,35 @@ def showImage(img, matchedPos = None, tempImg = None):
             break;
     cv2.destroyAllWindows();
 
-npRunning = WindowGrabber.getWindowByTitle(r'Neko Project');
-if (len(npRunning) == 0):
-    print('Error: No instances of Neko Project II is running.');
-    exit(1);
-elif (len(npRunning) > 1):
-    print('Error: More than 1 instances of Neko Project II is running.');
-    exit(1);
-windowGrabber = WindowGrabber(npRunning[0]);
 
-#Capture image from Neko Project II
-pixbuf = windowGrabber.capture();
-cvimg = cv2.cvtColor(
-    np.fromstring(pixbuf.get_pixels(), np.uint8).reshape(
-        pixbuf.get_height(),
-        pixbuf.get_width(),
-        pixbuf.get_n_channels()
-    ),
-    cv2.COLOR_BGR2RGB
-);
+def printMoves(moves):
+    labelMoves = ('Up', 'Left', 'Right', 'Down');
+    textPrint = '';
+    for m in moves:
+        textPrint += labelMoves[m] + ' ';
+    print(textPrint);
 
-#Load sample image
-imgTitle = cv2.imread('images/title.png');
-imgDialogMode = cv2.imread('images/dialog_mode.png');
+ellena = BLEllena();
+try:
+    lastMove = [];
+    lastStatus = None;
+    while True:
+        status = ellena.getStatus();
+        if (None != status and status != lastStatus):
+            lastStatus = status;
+            if BLEllena.ELLENA_WATCHING == status:
+                print('Watching:');
+            elif BLEllena.ELLENA_ACTIVE == status:
+                print('Operating...');
 
-#Draw boxes for marking
-tempImg = imgTitle;
-res = cv2.matchTemplate(cvimg, tempImg, cv2.TM_CCOEFF_NORMED);
-loc = list(zip(*np.where(res >= 0.9)[::-1]));
-showImage(cvimg, loc, [tempImg] * len(loc));
+        if (BLEllena.ELLENA_WATCHING == status):
+            move = ellena.getMove();
+            if (len(move) and (set(lastMove) != set(move))):
+                printMoves(move);
+                lastMove = move;
+        else:
+            lastMove = [];
+        time.sleep(0.05);
+except KeyboardInterrupt:
+    pass;
 
