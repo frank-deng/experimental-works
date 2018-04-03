@@ -34,8 +34,12 @@ class KMeans:
         return result;
 
     def __getCenter(self, data, types, typesMap):
-        result = [[0, 0, 0]] * len(types);
+        #result = [[0, 0, 0]] * len(types);
         cntTypes = [0] * len(types);
+        result = [];
+        for i in range(len(types)):
+        	result.append([0, 0, 0]);
+        
         for i, vec in enumerate(data):
             _type = typesMap[i];
             result[_type][0] += data[i][0];
@@ -81,9 +85,8 @@ if __name__ == '__main__':
         exit(1);
 
     vec = ImgVector(Image.open(sys.argv[1]));
-    print(vec.vecs);
     kMeans = KMeans(vec.vecs);
-    result = kMeans.process(1);
+    result = kMeans.process(6);
     for row in result:
         print(row);
 
