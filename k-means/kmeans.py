@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 
-import sys, math;
+import sys, math, array;
 from PIL import Image;
 
 class ImgVector:
@@ -77,16 +77,22 @@ class KMeans:
         for cnt in range(times):
             typesMap = self.__getTypesMap(self.__data, types);
             types = self.__getCenter(self.__data, types, typesMap);
-        return types;
+        return types, typesMap;
         
 if __name__ == '__main__':
-    if len(sys.argv) < 2:
+    if len(sys.argv) < 3:
         print('Usage: %s image_file'%sys.argv[0]);
         exit(1);
-
-    vec = ImgVector(Image.open(sys.argv[1]));
+    srcPath, destPath = sys.argv[1], sys.argv[2];
+    
+    imgsrc = Image.open(srcPath);
+    vec = ImgVector(imgsrc);
     kMeans = KMeans(vec.vecs);
-    result = kMeans.process(6);
-    for row in result:
-        print(row);
+    palette, imgData = kMeans.process(6);
+    destImg = [];
+    for px in imgData:
+        destImg += [int(n) for n in palette[px]];
+    destBytes = array.array('B', destImg).tobytes();
+    destImg = Image.frombytes('RGB', imgsrc.size, destBytes);
+    destImg.save(destPath);
 
