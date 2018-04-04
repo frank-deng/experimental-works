@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 
 import sys, math, array;
+import numpy as np;
 from PIL import Image;
 
 class ImgVector:
@@ -19,12 +20,10 @@ class KMeans:
         self.__data = _data;
 
     def __getMinDistance(self, vec, types):
-        idx = 0; minDist = None;
-        for i, tvec in enumerate(types):
-            dist = ((tvec[0] - vec[0]) ** 2) + ((tvec[1] - vec[1]) ** 2) + ((tvec[2] - vec[2]) ** 2);
-            if (0 == i or dist < minDist):
-                idx = i;
-                minDist = dist;
+        vecs = np.array([vec]*len(types));
+        types = np.array(types);
+        res = np.square(types-vecs).sum(axis=1);
+        idx = np.where(res == res.min())[0][0];
         return idx;
 
     def __getTypesMap(self, data, types):
@@ -87,6 +86,7 @@ if __name__ == '__main__':
     
     imgsrc = Image.open(srcPath);
     vec = ImgVector(imgsrc);
+    imgsrc.close();
     kMeans = KMeans(vec.vecs);
     palette, imgData = kMeans.process(6);
     destImg = [];
