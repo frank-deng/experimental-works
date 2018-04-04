@@ -5,26 +5,21 @@ import numpy as np;
 from PIL import Image;
 
 class ImgVector:
-    vecs = [];
     def __init__(self, im):
         imData = im.load();
-        for px in imData:
-            print(px);
         w, h = im.size;
         self.w, self.h = w, h;
+        vecs = [];
         for y in range(h):
             for x in range(w):
                 px = imData[x, y];
-                self.vecs.append((px[0], px[1], px[2]));
+                vecs.append((px[0], px[1], px[2]));
+        self.vecs = np.array(vecs);
 
 class KMeans:
-    def __init__(self, _data):
-        self.__data = _data;
-
     def __getMinDistance(self, vec, types):
-        vecs = np.array([vec]*len(types));
-        res = np.square(types-vecs).sum(axis=1);
-        idx = np.where(res == res.min())[0][0];
+        dist = np.square(types - np.array([vec]*len(types))).sum(axis=1);
+        idx = np.where(dist == dist.min())[0][0];
         return idx;
 
     def __getTypesMap(self, data, types):
@@ -34,30 +29,25 @@ class KMeans:
         return result;
 
     def __getCenter(self, data, types):
-        cntTypes = [0] * len(types);
-        result = [];
-
-        for i in range(len(types)):
-            result.append([0, 0, 0]);
+        result = np.zeros(shape=(len(types), 3));
+        cnt = [0] * len(types);
         
+        ts = time.time();
         for vec in data:
             _type = self.__getMinDistance(vec, types);
-            result[_type][0] += vec[0];
-            result[_type][1] += vec[1];
-            result[_type][2] += vec[2];
-            cntTypes[_type] += 1;
+            result[_type] += vec;
+            cnt[_type] += 1;
+        print('Time: ', time.time() - ts);
 
-        for i in range(len(result)):
-            if (0 != cntTypes[i]):
-                result[i][0] /= cntTypes[i];
-                result[i][1] /= cntTypes[i];
-                result[i][2] /= cntTypes[i];
+        for i in range(len(types)):
+            if cnt[i] != 0:
+                result[i] /= cnt[i];
 
         result = np.array(result);
         delta = np.average(np.square(result - types));
         return result, delta;
 
-    def process(self, times = 8):
+    def process(self, data, times = 8):
         types = np.array([
             [0,    0,    0],
             [0,    0,    0x7f],
@@ -77,11 +67,11 @@ class KMeans:
             [0xff, 0xff, 0xff],
         ]);
         for cnt in range(times):
-            types, delta = self.__getCenter(self.__data, types);
+            types, delta = self.__getCenter(data, types);
             print('Delta: ', delta);
             if delta < 6:
                 break;
-        return types, self.__getTypesMap(self.__data, types);
+        return types, self.__getTypesMap(data, types);
         
 if __name__ == '__main__':
     if len(sys.argv) < 3:
@@ -92,8 +82,10 @@ if __name__ == '__main__':
     imgsrc = Image.open(srcPath);
     vec = ImgVector(imgsrc);
     imgsrc.close();
-    kMeans = KMeans(vec.vecs);
-    palette, imgData = kMeans.process();
+
+    kMeans = KMeans();
+    palette, imgData = kMeans.process(vec.vecs);
+
     destImg = [];
     for px in imgData:
         destImg += [int(n) for n in palette[px]];
