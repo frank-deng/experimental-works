@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 
-import sys, math, array;
+import sys, math, array, time;
 import numpy as np;
 from PIL import Image;
 
@@ -8,6 +8,8 @@ class ImgVector:
     vecs = [];
     def __init__(self, im):
         imData = im.load();
+        for px in imData:
+            print(px);
         w, h = im.size;
         self.w, self.h = w, h;
         for y in range(h):
@@ -21,29 +23,28 @@ class KMeans:
 
     def __getMinDistance(self, vec, types):
         vecs = np.array([vec]*len(types));
-        types = np.array(types);
         res = np.square(types-vecs).sum(axis=1);
         idx = np.where(res == res.min())[0][0];
         return idx;
 
     def __getTypesMap(self, data, types):
-        result = [None] * len(data);
+        result = [];
         for i, vec in enumerate(data):
-            result[i] = self.__getMinDistance(vec, types);
+            result.append(self.__getMinDistance(vec, types));
         return result;
 
-    def __getCenter(self, data, types, typesMap):
-        #result = [[0, 0, 0]] * len(types);
+    def __getCenter(self, data, types):
         cntTypes = [0] * len(types);
         result = [];
+
         for i in range(len(types)):
-        	result.append([0, 0, 0]);
+            result.append([0, 0, 0]);
         
-        for i, vec in enumerate(data):
-            _type = typesMap[i];
-            result[_type][0] += data[i][0];
-            result[_type][1] += data[i][1];
-            result[_type][2] += data[i][2];
+        for vec in data:
+            _type = self.__getMinDistance(vec, types);
+            result[_type][0] += vec[0];
+            result[_type][1] += vec[1];
+            result[_type][2] += vec[2];
             cntTypes[_type] += 1;
 
         for i in range(len(result)):
@@ -52,10 +53,12 @@ class KMeans:
                 result[i][1] /= cntTypes[i];
                 result[i][2] /= cntTypes[i];
 
-        return result;
+        result = np.array(result);
+        delta = np.average(np.square(result - types));
+        return result, delta;
 
-    def process(self, times = 6):
-        types = [
+    def process(self, times = 8):
+        types = np.array([
             [0,    0,    0],
             [0,    0,    0x7f],
             [0x7f, 0,    0],
@@ -72,11 +75,13 @@ class KMeans:
             [0,    0xff, 0xff],
             [0xff, 0xff, 0],
             [0xff, 0xff, 0xff],
-        ];
+        ]);
         for cnt in range(times):
-            typesMap = self.__getTypesMap(self.__data, types);
-            types = self.__getCenter(self.__data, types, typesMap);
-        return types, typesMap;
+            types, delta = self.__getCenter(self.__data, types);
+            print('Delta: ', delta);
+            if delta < 6:
+                break;
+        return types, self.__getTypesMap(self.__data, types);
         
 if __name__ == '__main__':
     if len(sys.argv) < 3:
@@ -88,7 +93,7 @@ if __name__ == '__main__':
     vec = ImgVector(imgsrc);
     imgsrc.close();
     kMeans = KMeans(vec.vecs);
-    palette, imgData = kMeans.process(6);
+    palette, imgData = kMeans.process();
     destImg = [];
     for px in imgData:
         destImg += [int(n) for n in palette[px]];
