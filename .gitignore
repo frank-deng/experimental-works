@@ -17,3 +17,4 @@ config.py
 *.pbm
 images/
 resume/resume.html
+.~lock.
