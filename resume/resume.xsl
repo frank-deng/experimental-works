@@ -10,7 +10,7 @@
 	<xsl:param name="month2"/>
 	<xsl:value-of select="$year"/>/<xsl:value-of select="$month"/><!--
 	--><xsl:choose>
-		<xsl:when test="$year2 != '' and $month2 != ''"> — <xsl:value-of select="$year2"/>/<xsl:value-of select="$month2"/></xsl:when>
+		<xsl:when test="$year2 != '' and $month2 != ''"> - <xsl:value-of select="$year2"/>/<xsl:value-of select="$month2"/></xsl:when>
 		<xsl:otherwise> 至今</xsl:otherwise>
 	</xsl:choose>
 </xsl:template>
@@ -23,6 +23,10 @@
 		<style type='text/css'><![CDATA[
 			th {
 				text-align: left;
+				padding-right: 5px;
+			}
+			td {
+				padding-right: 14px;
 			}
 			.warpline{
 				white-space: pre;
@@ -56,7 +60,7 @@
 			<xsl:sort select="time/from/year" data-type="number" order="descending"/>
 			<xsl:sort select="time/from/month" data-type="number" order="descending"/>
 			<h3><xsl:value-of select='name'/></h3>
-			<p><b>时间：</b><!--
+			<p>时间：<!--
 				--><xsl:call-template name="show-time">
 					<xsl:with-param name="year" select="time/from/year"/>
 					<xsl:with-param name="month" select="time/from/month"/>
