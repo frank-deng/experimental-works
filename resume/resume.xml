@@ -1,0 +1,61 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<?xml-stylesheet type="text/xsl" href="resume.xsl"?>
+<resume>
+	<main>
+		<name>邓磊</name>
+		<gender>男</gender>
+		<mobile>(+86)13382084679</mobile>
+		<email>13382084679@163.com</email>
+		<englishSkill>CET-6</englishSkill>
+		<direction>Web前端</direction>
+		<years>5</years>
+		<homepage>https://frank-deng.github.io/</homepage>
+		<github>https://github.com/frank-deng/</github>
+	</main>
+	<education>
+		<time>
+			<from><year>2009</year><month>9</month></from>
+			<to><year>2013</year><month>6</month></to>
+		</time>
+		<college>南京农业大学</college>
+		<major>计算机科学与技术专业</major>
+		<degree>本科</degree>
+	</education>
+	<selfAssessment>
+熟练掌握技能：JavaScript、Web前端、Python、Linux。
+能快速理解并熟练撰写英文文档。
+热爱技术，业余时间在GitHub上维护多个项目。
+	</selfAssessment>
+	<projects>
+		<project>
+			<time>
+				<from><year>2015</year><month>5</month></from>
+			</time>
+			<name>JavaScript Logger（GitHub项目）</name>
+			<desc>
+通过改写浏览器原有的console.log()、console.warn()、console.error()函数，实现将错误信息输出到页面中的DOM元素的功能。
+URL：https://github.com/frank-deng/js-mobile-logger
+			</desc>
+		</project>
+	</projects>
+	<working>
+		<company>
+			<name>中软国际</name>
+			<title>软件工程师</title>
+			<time>
+				<from><year>2015</year><month>5</month></from>
+				<to><year>2018</year><month>4</month></to>
+			</time>
+			<desc>负责花粉俱乐部网站的开发与维护。</desc>
+		</company>
+		<company>
+			<name>丝略软件（上海）有限公司</name>
+			<title>技术顾问</title>
+			<time>
+				<from><year>2013</year><month>11</month></from>
+				<to><year>2015</year><month>4</month></to>
+			</time>
+			<desc>以Oracle数据库开发为主，兼做电子商务网站项目（使用PHP）。</desc>
+		</company>
+	</working>
+</resume>

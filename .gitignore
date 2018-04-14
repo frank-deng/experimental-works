@@ -16,3 +16,4 @@ config.py
 *.pgm
 *.pbm
 images/
+resume/resume.html
