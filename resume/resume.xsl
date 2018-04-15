@@ -26,14 +26,14 @@
 				font-family: "WenQuanYi Micro Hei", "Microsoft YaHei", sans;
 			}
 			h1 {
-				margin: 8px 0;
+				margin: 12px 0;
 			}
 			h2 {
-				margin: 12px 0 4px 0;
+				margin: 10px 0;
 				border-bottom: 1px solid black;
 			}
 			h3 {
-				margin: 10px 0 4px 0;
+				margin: 10px 0;
 			}
 			p {
 				margin: 4px 0;
@@ -61,7 +61,9 @@
 			.maininfo td{
 				padding-right: 40px;
 			}
-			ul {
+			ul, li{
+				list-style: none;
+				padding: 0;
 			}
 			.project-experience {
 				page-break-inside: avoid;

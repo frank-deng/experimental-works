@@ -151,10 +151,10 @@
 			<name>丝略软件（上海）有限公司</name>
 			<title>技术顾问</title>
 			<time>
-				<from><year>2013</year><month>11</month></from>
+				<from><year>2013</year><month>7</month></from>
 				<to><year>2015</year><month>4</month></to>
 			</time>
-			<desc>以Oracle数据库开发为主，兼做电子商务网站项目（使用PHP）。</desc>
+			<desc>以Oracle数据库开发为主，兼做电子商务网站项目。</desc>
 		</company>
 	</companies>
 	<about>本简历使用xml格式的数据，并使用xslt模板将简历加工成HTML格式，可以在浏览器中直接打开xml文件以查看最终的显示结果，并直接使用浏览器提供的打印功能打印简历。</about>
