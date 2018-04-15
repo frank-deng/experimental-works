@@ -23,11 +23,10 @@
 			<degree>本科</degree>
 		</education>
 	</education-experience>
-	<self-assessment><!--
---><![CDATA[熟练掌握技能：JavaScript、Web前端、Python、Linux。
-能快速理解并熟练撰写英文文档。
-热爱技术，业余时间在GitHub上维护多个项目。]]><!--
-	--></self-assessment>
+	<self-assessment><![CDATA[熟练掌握技能：JavaScript、Web前端、Python、Linux。
+		能快速理解并熟练撰写英文文档。
+		热爱技术，业余时间在GitHub上维护多个项目。
+	]]></self-assessment>
 	<projects>
 		<project>
 			<time>
@@ -48,11 +47,84 @@
 		</project>
 		<project>
 			<time>
-				<from><year>2015</year><month>5</month></from>
+				<from><year>2017</year><month>11</month></from>
 			</time>
 			<name>JavaScript Logger（GitHub项目）</name>
 			<desc><![CDATA[通过改写浏览器原有的console.log()、console.warn()、console.error()函数，实现将错误信息输出到页面中的DOM元素的功能。
-URL：https://github.com/frank-deng/js-mobile-logger]]></desc>
+				URL：https://github.com/frank-deng/js-mobile-logger
+			]]></desc>
+		</project>
+		<project>
+			<time>
+				<from><year>2017</year><month>10</month></from>
+			</time>
+			<name>日文汉字读音查询工具（GitHub项目）</name>
+			<desc><![CDATA[用来查询日文汉字读音的工具，使用Webpack进行构建，使用localStorage对字典文件进行缓存。
+				URL：https://github.com/frank-deng/kanji-reading
+			]]></desc>
+		</project>
+		<project>
+			<time>
+				<from><year>2017</year><month>5</month></from>
+			</time>
+			<name>expression-calculator（GitHub项目）</name>
+			<desc><![CDATA[使用LL(1)语法分析器实现的表达式计算器，可以代替eval()实现相关功能以防止引入相关的安全风险。
+				URL：https://github.com/frank-deng/expression-calculator
+			]]></desc>
+		</project>
+		<project>
+			<time>
+				<from><year>2017</year><month>1</month></from>
+			</time>
+			<name>24点求解工具（GitHub项目）</name>
+			<desc><![CDATA[以逆波兰式的形式穷举所有可能的算式并计算出结果，与通常方法相比，减少了代码复杂度、计算量、以及重复结果的数量。
+				URL：https://github.com/frank-deng/24game-solver
+			]]></desc>
+		</project>
+		<project>
+			<time>
+				<from><year>2016</year><month>11</month></from>
+			</time>
+			<name>QPython文件服务器（GitHub项目）</name>
+			<desc><![CDATA[在Android QPython3上运行的文件服务器，使用bottle框架，并用其自带的模板引擎对文件列表页面进行处理，实现在移动端浏览器上有更好的显示效果。
+				URL：https://github.com/frank-deng/QPython-FileServer
+			]]></desc>
+		</project>
+		<project>
+			<time>
+				<from><year>2016</year><month>3</month></from>
+				<to><year>2016</year><month>4</month></to>
+			</time>
+			<name>EMUI官网</name>
+			<desc><![CDATA[对机型选择页面进行改进，使得页面可以根据浏览器窗口宽度自动调整布局，增强了用户体验。]]></desc>
+		</project>
+		<project>
+			<time>
+				<from><year>2016</year><month>3</month></from>
+			</time>
+			<name>js-lyrics歌词工具（GitHub项目）</name>
+			<desc><![CDATA[一个用于解析LRC文件的JavaScript库，可配合HTML5 audio标签使用。
+				URL：https://github.com/frank-deng/js-lyrics
+			]]></desc>
+		</project>
+		<project>
+			<time>
+				<from><year>2015</year><month>5</month></from>
+				<to><year>2018</year><month>4</month></to>
+			</time>
+			<name>花粉俱乐部</name>
+			<desc><![CDATA[官方网站：https://club.huawei.com
+				负责前端逻辑、APP接口和后台逻辑的开发、维护，以及安全检查、安全整改。
+				使用PHP+MySQL开发报告生成工具，实现自动为每个报告项目填写相应的历史确认结果，并生成Excel报告的功能，大大缩短了整理报告的时间，加快了每个版本的上线进度。
+			]]></desc>
+		</project>
+		<project>
+			<time>
+				<from><year>2014</year><month>9</month></from>
+				<to><year>2015</year><month>4</month></to>
+			</time>
+			<name>Simco Phase II CEMLI</name>
+			<desc><![CDATA[主要用于同步Oracle数据库和远端系统。负责根据客户要求完成并发程序的开发与测试。]]></desc>
 		</project>
 		<project>
 			<time>
@@ -61,7 +133,8 @@ URL：https://github.com/frank-deng/js-mobile-logger]]></desc>
 			</time>
 			<name>SugarBash</name>
 			<desc><![CDATA[面向女性的社交/电子商务网站。
-负责开发PC用前端页面、部份后端接口，以及网站的FireFox插件、Chrome插件、Safari插件。]]></desc>
+				负责开发PC用前端页面、部份后端接口，以及网站的FireFox插件、Chrome插件、Safari插件。
+			]]></desc>
 		</project>
 	</projects>
 	<companies>
@@ -84,4 +157,6 @@ URL：https://github.com/frank-deng/js-mobile-logger]]></desc>
 			<desc>以Oracle数据库开发为主，兼做电子商务网站项目（使用PHP）。</desc>
 		</company>
 	</companies>
+	<about>本简历使用xml格式的数据，并使用xslt模板将简历加工成HTML格式，可以在浏览器中直接打开xml文件以查看最终的显示结果，并直接使用浏览器提供的打印功能打印简历。</about>
 </resume>
+

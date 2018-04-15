@@ -8,9 +8,9 @@
 	<xsl:param name="month"/>
 	<xsl:param name="year2"/>
 	<xsl:param name="month2"/>
-	<xsl:value-of select="$year"/>/<xsl:value-of select="$month"/><!--
+	<xsl:value-of select="$year"/>年<xsl:value-of select="$month"/>月<!--
 	--><xsl:choose>
-		<xsl:when test="$year2 != '' and $month2 != ''"> - <xsl:value-of select="$year2"/>/<xsl:value-of select="$month2"/></xsl:when>
+		<xsl:when test="$year2 != '' and $month2 != ''"> - <xsl:value-of select="$year2"/>年<xsl:value-of select="$month2"/>月</xsl:when>
 		<xsl:otherwise> 至今</xsl:otherwise>
 	</xsl:choose>
 </xsl:template>
@@ -21,6 +21,33 @@
 		<meta charset='UTF-8'/>
 		<title><xsl:value-of select='/resume/main/name'/>　<xsl:value-of select='/resume/main/direction'/>　<xsl:value-of select='/resume/main/years'/>年</title>
 		<style type='text/css'><![CDATA[
+			body {
+				font-size: 16px;
+				font-family: "WenQuanYi Micro Hei", "Microsoft YaHei", sans;
+			}
+			h1 {
+				margin: 8px 0;
+			}
+			h2 {
+				margin: 12px 0 4px 0;
+				border-bottom: 1px solid black;
+			}
+			h3 {
+				margin: 10px 0 4px 0;
+			}
+			p {
+				margin: 4px 0;
+				white-space: pre-line;
+			}
+			table {
+				border-collapse: collapse;
+				border-spacing: 0px;
+				table-layout:fixed;
+			}
+			th, td {
+				white-space: nowrap;
+				vertical-align: top;
+			}
 			th {
 				text-align: left;
 				padding-right: 5px;
@@ -28,8 +55,16 @@
 			td {
 				padding-right: 14px;
 			}
-			.warpline{
-				white-space: pre;
+			.warpline {
+				white-space: normal;
+			}
+			.maininfo td{
+				padding-right: 40px;
+			}
+			ul {
+			}
+			.project-experience {
+				page-break-inside: avoid;
 			}
 		]]></style>
 	</head>
@@ -37,7 +72,7 @@
 		<h1><xsl:value-of select='/resume/main/name'/>　<xsl:value-of select='/resume/main/direction'/>　<xsl:value-of select='/resume/main/years'/>年</h1>
 
 		<h2>基本信息</h2>
-		<table>
+		<table class='maininfo'>
 			<tr>
 				<th>姓别</th><td><xsl:value-of select='/resume/main/gender'/></td>
 				<th>手机</th><td><xsl:value-of select='/resume/main/mobile'/></td>
@@ -53,23 +88,27 @@
 		</table>
 
 		<h2>自我评价</h2>
-		<p class='warpline'><xsl:value-of select='/resume/self-assessment'/></p>
+		<p><xsl:value-of select='/resume/self-assessment'/></p>
 
 		<h2>项目经验</h2>
+		<ul>
 		<xsl:for-each select='/resume/projects/project'>
 			<xsl:sort select="time/from/year" data-type="number" order="descending"/>
 			<xsl:sort select="time/from/month" data-type="number" order="descending"/>
-			<h3><xsl:value-of select='name'/></h3>
-			<p>时间：<!--
-				--><xsl:call-template name="show-time">
-					<xsl:with-param name="year" select="time/from/year"/>
-					<xsl:with-param name="month" select="time/from/month"/>
-					<xsl:with-param name="year2" select="time/to/year"/>
-					<xsl:with-param name="month2" select="time/to/month"/>
-				</xsl:call-template><!--
-			--></p>
-			<p class='warpline'><xsl:value-of select='desc'/></p>
+			<li class='project-experience'>
+				<h3><xsl:value-of select='name'/></h3>
+				<p>时间：<!--
+					--><xsl:call-template name="show-time">
+						<xsl:with-param name="year" select="time/from/year"/>
+						<xsl:with-param name="month" select="time/from/month"/>
+						<xsl:with-param name="year2" select="time/to/year"/>
+						<xsl:with-param name="month2" select="time/to/month"/>
+					</xsl:call-template><!--
+				--></p>
+				<p><xsl:value-of select='desc'/></p>
+			</li>
 		</xsl:for-each>
+		</ul>
 
 		<h2>工作经历</h2>
 		<table>
