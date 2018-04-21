@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <stdint.h>
 #include <stdlib.h>
+#include <string.h>
 #include <time.h>
 #include <malloc.h>
 #include <sys/types.h>
@@ -9,10 +10,32 @@
 
 #include <pthread.h>
 #include <sys/sysinfo.h>
-#include "guessnum-stat.h"
 #define GUESS_CHANCES 12
+#define CANDIDATES_COUNT 5040
 
+uint32_t numbers[CANDIDATES_COUNT];
+uint8_t check_table[CANDIDATES_COUNT][CANDIDATES_COUNT];
 typedef union{uint32_t n; uint8_t c[4];} cv_t;
+inline int isvalidnum(uint32_t n) {
+	cv_t cv; int i, j;
+	cv.n = n;
+	for (i = 0; i < 3; i++) {
+		for (j = i+1; j < 4; j++) {
+			if (cv.c[i] == cv.c[j]) {
+				return 0;
+			}
+		}
+	}
+	return 1;
+}
+inline int32_t int2bcd(int32_t n) {
+	cv_t cv;
+	cv.c[0] = n % 10;
+	cv.c[1] = (n / 10) % 10;
+	cv.c[2] = (n / 100) % 10;
+	cv.c[3] = (n / 1000) % 10;
+	return cv.n;
+}
 inline uint32_t check(uint32_t ans, uint32_t guess){
 	cv_t cv_a, cv_g;
 	uint32_t i, j, result = 0;
@@ -30,23 +53,55 @@ inline uint32_t check(uint32_t ans, uint32_t guess){
 	}
 	return result;
 }
-uint32_t guess(){
-	uint32_t ans = candidates[rand() % CANDIDATES_COUNT], cbuf[CANDIDATES_COUNT], *c = candidates, cl = CANDIDATES_COUNT, times = 0, ci, g, i, res;
-	while (times < GUESS_CHANCES) {
-		g = c[rand() % cl];
-		res = check(ans, g);
-		if (res == 0x40) {
-			return times + 1;
+inline void init(){
+	int cnt = 0;
+	uint32_t i, n;
+	uint16_t x, y;
+	for (i = 123; i <= 9877; i++) {
+		n = int2bcd(i);
+		if (isvalidnum(n)) {
+			numbers[cnt] = n;
+			cnt++;
 		}
-		times++;
-		ci = 0;
-		for (i = 0; i < cl; i++) {
-			if (res == check(c[i], g)) {
-				cbuf[ci] = c[i];
-				ci++;
+	}
+	for (y = 0; y < 5040; y++) {
+		for (x = 0; x < 5040; x++) {
+			check_table[y][x] = check(numbers[y], numbers[x]);
+		}
+	}
+}
+
+inline uint32_t guess(){
+	uint32_t ans = rand() % CANDIDATES_COUNT, candidates[CANDIDATES_COUNT], cl = CANDIDATES_COUNT, times = 0, ci, g, i, res;
+	while (times < GUESS_CHANCES) {
+		if (0 == times) {
+			g = rand() % CANDIDATES_COUNT;
+			res = check_table[ans][g];
+			if (res == 0x40) {
+				return times + 1;
+			}
+			times++;
+			for (i = 0, ci = 0; i < CANDIDATES_COUNT; i++) {
+				if (res == check_table[g][i]) {
+					candidates[ci] = i;
+					ci++;
+				}
+			}
+		} else {
+			g = candidates[rand() % cl];
+			res = check_table[ans][g];
+			if (res == 0x40) {
+				return times + 1;
+			}
+			times++;
+			for (i = 0, ci = 0; i < cl; i++) {
+				if (res == check_table[g][candidates[i]]) {
+					candidates[ci] = candidates[i];
+					ci++;
+				}
 			}
 		}
-		c = cbuf; cl = ci;
+		cl = ci;
 		if (cl == 0) {
 			return 0;
 		}
@@ -158,6 +213,7 @@ int main(int argc, char *argv[]) {
 	}
 	
 	filename = argv[1];
+	init();
 	read_file(filename, mstat);
 
 	proc_cnt = get_nprocs();
