@@ -94,7 +94,7 @@ image.addEventListener('load', function(){
 	var ctx = vm.$refs.canvasImage.getContext('2d');
 	ctx.drawImage(image,
 		0, 0, this.width, this.height,
-		0, 0, destSize.width, destSize.height,
+		0, 0, destSize.width, destSize.height
 	);
 	var canvasWidth = vm.$refs.canvasImage.width;
 	var canvasHeight = vm.$refs.canvasImage.height;
