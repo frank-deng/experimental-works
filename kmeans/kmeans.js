@@ -34,52 +34,54 @@
 			}
 			return imin;
 		},
-		getCentroids: function(targets, src) {
-			var count = new Array(targets.length);
-			var targetsNew = [];
+		getCentroids: function(centroids, src) {
+			var count = new Array(centroids.length);
+			var centroidsNew = new Array();
 
-			for (var i = 0; i < targetsNew.length; i++) {
-				targetsNew.push([0, 0, 0].slice());
+			for (var i = 0; i < centroids.length; i++) {
+				centroidsNew.push([0, 0, 0].slice());
 				count[i] = 0;
 			}
 
 			//Calculate centroids
+			var srcLen = src.length;
 			for (var i = 0; i < srcLen; i++) {
-				var idxMinTarget = this.getMinDistance(targets, src[i]);
-				targetsNew[idxMinTarget][0] += vec[0];
-				targetsNew[idxMinTarget][1] += vec[1];
-				targetsNew[idxMinTarget][2] += vec[2];
-				count[idxMinTarget] += 1;
+				var vec = src[i];
+				var idxMinDist = this.getMinDistance(centroids, vec);
+				centroidsNew[idxMinDist][0] += vec[0];
+				centroidsNew[idxMinDist][1] += vec[1];
+				centroidsNew[idxMinDist][2] += vec[2];
+				count[idxMinDist] += 1;
 			}
 
-			for (var i = 0; i < targetsNew.length; i++) {
+			//Calculate Delta
+			var delta = 0;
+			for (var i = 0; i < centroidsNew.length; i++) {
 				if (count[i]) {
-					targetsNew[i][0] /= count[i];
-					targetsNew[i][1] /= count[i];
-					targetsNew[i][2] /= count[i];
+					centroidsNew[i][0] /= count[i];
+					centroidsNew[i][1] /= count[i];
+					centroidsNew[i][2] /= count[i];
 				}
+
+				var n0 = centroidsNew[i][0] - centroids[i][0];
+				var n1 = centroidsNew[i][1] - centroids[i][1];
+				var n2 = centroidsNew[i][2] - centroids[i][2];
+				delta += n0*n0 + n1*n1 + n2*n2;
 			}
-			return targetsNew;
+			delta /= centroidsNew.length * 3
+
+			return {
+				result: centroidsNew,
+				delta: delta,
+			};
 		},
 		getMap: function(targets, src) {
-			result = [];
+			var srcLen = src.length, result = [];
 			for (var i = 0; i < srcLen; i++) {
-				var idxMinTarget = this.getMinDistance(targets, src[i]);
-				result.push(targets[idxMinTarget].slice());
+				var idxMinDist = this.getMinDistance(targets, src[i]);
+				result.push(targets[idxMinDist].slice());
 			}
 			return result;
-		},
-		getDelta: function(t0, t1) {
-			var len = t0.length;
-			var total = 0;
-			for (var i = 0; i < len; i++) {
-				var vec0 = t0[i], vec1 = t1[i];
-				var n0 = vec0[0]-vec1[0];
-				var n1 = vec0[1]-vec1[1];
-				var n2 = vec0[2]-vec1[2];
-				total += n0*n0 + n1*n1 + n2*n2;
-			}
-			return total / len / 3;
 		},
 		process: function(delta0, times0) {
 			var times = (undefined !== times0 ? times0 : 8);
@@ -87,14 +89,21 @@
 			var delta = 0;
 			var targets = this.targets;
 			while(times--) {
-				var targetsUpdated = this.getCentroids(targets, this.src);
-				delta = this.getDelta(targets, targetsUpdated);
-				targets = targetUpdated;
-				if (delta < minDelta) {
+				var centroids = this.getCentroids(targets, this.src);
+				targets = centroids.result;
+				if (centroids.delta < minDelta) {
 					break;
 				}
 			}
-			return this.getMap(target, this.src);
+
+			//Convert targets to integer
+			for (var i = 0; i < targets.length; i++) {
+				var target = targets[i];
+				for (var j = 0; j < target.length; j++) {
+					targets[i][j] = Math.round(target[j]);
+				}
+			}
+			return this.getMap(targets, this.src);
 		},
 	};
     return KMeans;
