@@ -37,8 +37,6 @@ window.addEventListener('load', function(){
         <div id='main'>
             <h1>哈哈哈～～～{{msg}}</h1>
             <input v-model='searchStr'/>
-			<p>{{str}}</p>
-			<p>{{str | repeat('烫', '锟斤拷')}}</p>
 			<p>
 				<router-link to="/">Home</router-link>
 				<router-link to="/about">About</router-link>
@@ -89,11 +87,13 @@ var Home = {
 		console.log('enter');
 		console.log(to);
 		console.log(from);
+		next();
 	},
 	beforeRouteLeave: function(to, from, next){
 		console.log('leave');
 		console.log(to);
 		console.log(from);
+		next();
 	},
 }
 var About = {
