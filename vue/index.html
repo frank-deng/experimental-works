@@ -43,6 +43,7 @@ window.addEventListener('load', function(){
 				<router-link to="/miao">Miao</router-link>
 			</p>
             <router-view></router-view>
+			<frank :msg='searchStr' :msg2='hahaha'></frank>
             <hr/>
         </div>
         <pre id='logger_element'></pre>
@@ -106,9 +107,13 @@ var About = {
 		time: String,
 		msg: String,
 	},
+	watch: {
+		time: function(v){
+			ebus.$emit('timechange', v);
+		},
+	},
 	methods:{
 		showDialog:function(e){
-			console.log(this.msg);
 			ebus.$emit('hahaha', '>'+this.msg);
 		}
 	},
@@ -116,6 +121,40 @@ var About = {
 var Miao = {
 	template: document.getElementById('miao'),
 }
+
+Vue.component('frank', {
+	template: '<div><p>{{tm}}</p><button @click="post">{{amsg}}</button></div>',
+	props: {
+		'msg': String,
+		'msg2': String,
+	},
+	watch: {
+		'msg': function(v) {
+			this.amsg = '>'+v;
+		},
+		'msg2': function(v) {
+			console.log('Frank:'+this.msg2);
+		},
+	},
+	data: function(){
+		return {
+			amsg: '*',
+			tm: '*',
+		};
+	},
+	methods:{
+		post: function(){
+			console.log(this);
+			this.$parent.$emit('post', this.amsg);
+		},
+	},
+	mounted:function(){
+		var _frank = this;
+		ebus.$on('timechange', function(v){
+			_frank.tm = '<'+v+'>';
+		});
+	}
+});
     
 var vm = new Vue({
 	el: '#main',
@@ -124,14 +163,12 @@ var vm = new Vue({
 		searchStr:'',
 		str:'',
 		time: '',
+		hahaha: '',
 	},
 	watch:{
 		searchStr: function(val){
 			this.str = val;
 		},
-		'$route':function(val){
-			console.log(val);
-		}
 	},
 	router: new VueRouter({
 		routes:[
@@ -164,6 +201,9 @@ var vm = new Vue({
 	}),
 	mounted: function(){
 		ebus.$on('hahaha', function(v){
+			this.hahaha = v;
+		});
+		this.$on('post', function(v){
 			alert(v);
 		});
 	},
