@@ -129,6 +129,9 @@ var vm = new Vue({
 		searchStr: function(val){
 			this.str = val;
 		},
+		'$route':function(val){
+			console.log(val);
+		}
 	},
 	router: new VueRouter({
 		routes:[
@@ -160,8 +163,8 @@ var vm = new Vue({
 		]
 	}),
 	mounted: function(){
-		ebus.$on('hahaha', function(v0, v1){
-			alert(v0, v1);
+		ebus.$on('hahaha', function(v){
+			alert(v);
 		});
 	},
 });
