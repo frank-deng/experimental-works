@@ -43,7 +43,7 @@ window.addEventListener('load', function(){
 				<router-link to="/miao">Miao</router-link>
 			</p>
             <router-view></router-view>
-            <div v-for='c in str'>{{c}}</div>
+            <hr/>
         </div>
         <pre id='logger_element'></pre>
     </body>
@@ -60,10 +60,12 @@ window.addEventListener('load', function(){
 			<p>About</p>
 			<p>{{time}}</p>
 			<p>{{msg}}</p>
+			<button @click="showDialog">Dialog</button>
 		</div>
 	</template>
 	<template id='miao'><p>Miao</p></template>
     <script type='text/javascript'>
+var ebus = new Vue();
 Vue.use(VueRouter);
 Vue.filter('repeat', function(val, text, a){
 	var result = a;
@@ -84,10 +86,12 @@ var Home = {
 		msg: String,
 	},
 	beforeRouteEnter: function(to, from, next){
+		next(function(vm){
+			console.log(vm.msg);
+		});
 		console.log('enter');
 		console.log(to);
 		console.log(from);
-		next();
 	},
 	beforeRouteLeave: function(to, from, next){
 		console.log('leave');
@@ -101,6 +105,12 @@ var About = {
 	props: {
 		time: String,
 		msg: String,
+	},
+	methods:{
+		showDialog:function(e){
+			console.log(this.msg);
+			ebus.$emit('hahaha', '>'+this.msg);
+		}
 	},
 };
 var Miao = {
@@ -140,10 +150,20 @@ var vm = new Vue({
 						msg: vm ? vm.$data.str : '',
 					};
 				},
+				mounted: function(){
+					this.$on('hahaha', function(v0, v1){
+						alert(v0, v1);
+					});
+				},
 			},
 			{path: '/miao', component: Miao},
 		]
 	}),
+	mounted: function(){
+		ebus.$on('hahaha', function(v0, v1){
+			alert(v0, v1);
+		});
+	},
 });
 setTimeout(function(){
 	vm.$data.msg = 'Frank!!!';
