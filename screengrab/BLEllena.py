@@ -64,5 +64,11 @@ class BLEllena(WindowGrabber):
             result.append(2);
         if (self.__matchPos(lightsHor, (456, 304))):
             result.append(3);
-        return result;
+
+        if (len(result) == 1):
+            return result[0];
+        elif (len(result) == 4):
+            return 4;
+        else:
+            return None;
 
