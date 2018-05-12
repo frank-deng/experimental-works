@@ -53,7 +53,7 @@ inline uint32_t check(uint32_t ans, uint32_t guess){
 	}
 	return result;
 }
-inline void init(){
+void init(){
 	int cnt = 0;
 	uint32_t i, n;
 	uint16_t x, y;
