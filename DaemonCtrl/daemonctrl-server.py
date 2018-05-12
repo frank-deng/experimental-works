@@ -28,6 +28,7 @@ except Exception as e:
 
 @bottle.route('/daemonctrl/')
 def listDaemons():
+    bottle.response.set_header("Access-Control-Allow-Origin", "*");
     result = {};
     for daemonName in daemon:
         instance = daemon[daemonName]['instance'];
@@ -39,6 +40,7 @@ def listDaemons():
 
 @bottle.route('/daemonctrl/<name:re:[A-Za-z0-9]+>/start')
 def startDaemon(name):
+    bottle.response.set_header("Access-Control-Allow-Origin", "*");
     if (None == daemon.get(name)):
         bottle.HTTPError(404, 'Unable to find daemon: %s.'%name);
     if daemon[name]['instance'].start():
@@ -48,6 +50,7 @@ def startDaemon(name):
 
 @bottle.route('/daemonctrl/<name:re:[A-Za-z0-9]+>/stop')
 def stopDaemon(name):
+    bottle.response.set_header("Access-Control-Allow-Origin", "*");
     if (None == daemon.get(name)):
         bottle.HTTPError(404, 'Unable to find daemon: %s.'%name);
     if daemon[name]['instance'].stop():
@@ -57,6 +60,7 @@ def stopDaemon(name):
 
 @bottle.route('/daemonctrl/<name:re:[A-Za-z0-9]+>/stat')
 def statDaemon(name):
+    bottle.response.set_header("Access-Control-Allow-Origin", "*");
     if (None == daemon.get(name)):
         bottle.HTTPError(404, 'Unable to find daemon: %s.'%name);
     _instance = daemon[name]['instance'];
