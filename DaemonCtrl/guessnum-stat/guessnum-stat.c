@@ -172,19 +172,13 @@ void report_stat(stat_t *stat) {
 		mstat[i] += stat[i];
 		stat[i] = 0;
 	}
-	write_file(filename, mstat);
 	pthread_mutex_unlock(&report_mutex);
 }
 void* thread_main(void *data){
-	while (running) {
-		while (((thread_data_t*)data)->running) {
-			(((thread_data_t*)data)->stat)[guess()]++;
-		}
-		report_stat(((thread_data_t*)data)->stat);
-		if (running) {
-			((thread_data_t*)data)->running = 1;
-		}
+	while (((thread_data_t*)data)->running) {
+		(((thread_data_t*)data)->stat)[guess()]++;
 	}
+	report_stat(((thread_data_t*)data)->stat);
 	return ((void*)0);
 }
 int main(int argc, char *argv[]) {
@@ -223,16 +217,18 @@ int main(int argc, char *argv[]) {
 	signal(SIGUSR1, action_record);
 
 	thread_data = malloc(sizeof(thread_data_t) * proc_cnt);
-	for (i = 0; i < proc_cnt; i++) {
-		for (j = 0; j < GUESS_CHANCES + 1; j++) {
-			thread_data[i].stat[j] = 0;
+	while (running){
+		for (i = 0; i < proc_cnt; i++) {
+			for (j = 0; j < GUESS_CHANCES + 1; j++) {
+				thread_data[i].stat[j] = 0;
+			}
+			thread_data[i].running = 1;
+			pthread_create(&(thread_data[i].tid), NULL, thread_main, &(thread_data[i]));
 		}
-		thread_data[i].running = 1;
-		pthread_create(&(thread_data[i].tid), NULL, thread_main, &(thread_data[i]));
-	}
-
-	for (i = 0; i < proc_cnt; i++) {
-		pthread_join(thread_data[i].tid, NULL);
+		for (i = 0; i < proc_cnt; i++) {
+			pthread_join(thread_data[i].tid, NULL);
+		}
+		write_file(filename, mstat);
 	}
 	free(thread_data);
 
