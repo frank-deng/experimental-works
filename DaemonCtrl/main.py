@@ -28,7 +28,6 @@ except Exception as e:
 
 @bottle.route('/daemonctrl/')
 def listDaemons():
-    bottle.response.set_header("Access-Control-Allow-Origin", "*");
     result = {};
     for daemonName in daemon:
         instance = daemon[daemonName]['instance'];
@@ -40,7 +39,6 @@ def listDaemons():
 
 @bottle.route('/daemonctrl/<name:re:[A-Za-z0-9]+>/start')
 def startDaemon(name):
-    bottle.response.set_header("Access-Control-Allow-Origin", "*");
     if (None == daemon.get(name)):
         bottle.HTTPError(404, 'Unable to find daemon: %s.'%name);
     if daemon[name]['instance'].start():
@@ -50,7 +48,6 @@ def startDaemon(name):
 
 @bottle.route('/daemonctrl/<name:re:[A-Za-z0-9]+>/stop')
 def stopDaemon(name):
-    bottle.response.set_header("Access-Control-Allow-Origin", "*");
     if (None == daemon.get(name)):
         bottle.HTTPError(404, 'Unable to find daemon: %s.'%name);
     if daemon[name]['instance'].stop():
@@ -60,7 +57,6 @@ def stopDaemon(name):
 
 @bottle.route('/daemonctrl/<name:re:[A-Za-z0-9]+>/stat')
 def statDaemon(name):
-    bottle.response.set_header("Access-Control-Allow-Origin", "*");
     if (None == daemon.get(name)):
         bottle.HTTPError(404, 'Unable to find daemon: %s.'%name);
     _instance = daemon[name]['instance'];
@@ -73,5 +69,15 @@ def statDaemon(name):
     stdout, stderr = process.communicate();
     bottle.response.set_header("Content-Type", "text/plain");
     return stdout;
+
+@bottle.route('/<path:path>')
+def staticFileHandler(path):
+    if (not path):
+        path = 'index.html';
+    return bottle.static_file(path, root=os.path.dirname(os.path.abspath(__file__)) + os.sep + 'html');
+
+@bottle.route('/')
+def indexHandler():
+    return staticFileHandler('index.html');
 
 bottle.run(host=args.host[0], port=args.port[0]);

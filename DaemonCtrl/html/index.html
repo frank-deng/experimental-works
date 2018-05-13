@@ -36,7 +36,7 @@ window.addEventListener('load', function(){
     </head>
     <body>
         <div id='main'>
-			<div v-for='(instance, name, idx) in daemons'>
+			<div v-for='(instance, name, idx) in daemons' track-by="name">
 				<h2>{{name}}</h2>
 				<p>
 					<button @click='start(name)'>Start</button>
@@ -50,11 +50,18 @@ window.addEventListener('load', function(){
         <pre id='logger_element'></pre>
     </body>
     <script type='text/javascript'>
+'use strict'
 var sendRequest = function(url, respHandler) {
 	var xhr = new XMLHttpRequest();
 	xhr.addEventListener('readystatechange', function(){
 		if ('function' === typeof(respHandler)){
-			respHandler(this.response);
+			let content = this.response;
+			let isJSON = false;
+			try {
+				content = JSON.parse(this.response);
+				isJSON = true;
+			} catch(e){}
+			respHandler(content, isJSON);
 		}
 	});
 	xhr.open('GET', url);
@@ -65,28 +72,29 @@ var vm = new Vue({
 	el: '#main',
 	data: {
 		daemons : {
-			'2048': {
-				stat: undefined,
-			},
-			'guessnum': {
-				stat: undefined,
-			},
 		},
 	},
 	methods: {
 		start: (name)=>{
-			sendRequest(`http://127.0.0.1:8081/daemonctrl/${name}/start`, (content)=>{
+			sendRequest(`http://${window.location.host}/daemonctrl/${name}/start`, (content)=>{
 			});
 		},
 		stop: (name)=>{
-			sendRequest(`http://127.0.0.1:8081/daemonctrl/${name}/stop`, (content)=>{
+			sendRequest(`http://${window.location.host}/daemonctrl/${name}/stop`, (content)=>{
 			});
 		},
 		stat: (name)=>{
-			sendRequest(`http://127.0.0.1:8081/daemonctrl/${name}/stat`, (content)=>{
+			sendRequest(`http://${window.location.host}/daemonctrl/${name}/stat`, (content)=>{
 				vm.daemons[name].stat = content;
 			});
 		},
+	},
+	mounted: ()=>{
+		sendRequest(`http://${window.location.host}/daemonctrl/`, (daemons)=>{
+			for (let daemonName in daemons) {
+				vm.$set(vm.daemons, daemonName, {stat: undefined});
+			}
+		});
 	},
 });
     </script>
