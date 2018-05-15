@@ -62,5 +62,6 @@ class DaemonCtrl:
         os.kill(pid, signal.SIGINT);
         while None != self.getpid():
             time.sleep(0.1);
+        os.remove(self.__pidFile);
         return True;
 
