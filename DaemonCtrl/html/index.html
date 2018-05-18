@@ -33,6 +33,7 @@ window.addEventListener('load', function(){
 });
         </script>
         <script type='text/javascript' src='vue.js'></script>
+		<script type='text/javascript' src='vue-resource.js'></script>
     </head>
     <body>
         <div id='main'>
@@ -51,23 +52,7 @@ window.addEventListener('load', function(){
     </body>
     <script type='text/javascript'>
 'use strict'
-var sendRequest = function(url, respHandler) {
-	var xhr = new XMLHttpRequest();
-	xhr.addEventListener('readystatechange', function(){
-		if ('function' === typeof(respHandler)){
-			let content = this.response;
-			let isJSON = false;
-			try {
-				content = JSON.parse(this.response);
-				isJSON = true;
-			} catch(e){}
-			respHandler(content, isJSON);
-		}
-	});
-	xhr.open('GET', url);
-	xhr.send();
-}
-
+Vue.use('vue-resources');
 var vm = new Vue({
 	el: '#main',
 	data: {
@@ -75,24 +60,26 @@ var vm = new Vue({
 		},
 	},
 	methods: {
-		start: (name)=>{
-			sendRequest(`http://${window.location.host}/daemonctrl/${name}/start`, (content)=>{
+		start: function(name){
+			this.$http.get(`http://${window.location.host}/daemonctrl/${name}/start`).then((resp)=>{
+				console.log(resp.body.status);
 			});
 		},
-		stop: (name)=>{
-			sendRequest(`http://${window.location.host}/daemonctrl/${name}/stop`, (content)=>{
+		stop: function(name){
+			this.$http.get(`http://${window.location.host}/daemonctrl/${name}/stop`).then((resp)=>{
+				console.log(resp.body.status);
 			});
 		},
-		stat: (name)=>{
-			sendRequest(`http://${window.location.host}/daemonctrl/${name}/stat`, (content)=>{
-				vm.daemons[name].stat = content;
+		stat: function(name){
+			this.$http.get(`http://${window.location.host}/daemonctrl/${name}/stat`).then((resp)=>{
+				vm.daemons[name].stat = resp.body;
 			});
 		},
 	},
-	mounted: ()=>{
-		sendRequest(`http://${window.location.host}/daemonctrl/`, (daemons)=>{
-			for (let daemonName in daemons) {
-				vm.$set(vm.daemons, daemonName, {stat: undefined});
+	mounted: function(){
+		this.$http.get(`http://${window.location.host}/daemonctrl/`).then((resp)=>{
+			for (let daemonName in resp.body) {
+				this.$set(vm.daemons, daemonName, {stat: undefined});
 			}
 		});
 	},
