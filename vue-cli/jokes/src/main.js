@@ -15,6 +15,9 @@ new Vue({
   el: '#app',
   router,
   components: { App },
-  template: '<App/>'
+  template: '<App/>',
+  mounted(){
+	  document.title = '笑话大全';
+  },
 })
 

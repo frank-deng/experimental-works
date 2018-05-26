@@ -1,6 +1,9 @@
 <template>
 	<div>
-		{{msg}}
+		<div v-for='joke in jokes'>
+			<p v-text='joke.title'></p>
+			<p v-html='joke.text'></p>
+		</div>
 	</div>
 </template>
 
