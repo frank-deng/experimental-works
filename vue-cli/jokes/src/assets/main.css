@@ -1,6 +1,7 @@
 body {
 	margin: 0;
-	padding: 40px 10px 10px 10px;
+	padding: 40px 0 10px 0;
+	background-color: #bdc3c7;
 }
 h1{
 	position: fixed;
@@ -14,4 +15,20 @@ h1{
 	padding: 0 10px;
 	font-weight: normal;
 	font-size: 24px;
+}
+.joke{
+	background-color: #ffffff;
+	color: #2c3e50;
+	padding: 8px;
+	margin: 8px 0;
+}
+.joke .title{
+	font-size: 18px;
+	border-bottom: 1px solid #eeeeee;
+	margin: 0 0 8px 0;
+	padding: 0;
+}
+.joke .text{
+	margin: 0;
+	padding: 0;
 }

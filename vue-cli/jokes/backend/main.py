@@ -24,8 +24,9 @@ import models, urllib;
 from multiprocessing.pool import ThreadPool;
 @route('/')
 def index():
+    pageNum = request.query.getone('page', default='1')
     response.set_header('Access-Control-Allow-Origin', '*');
-    return models.fetchJokes();
+    return models.fetchJokes(pageNum);
 
 run(host=args.host, port=args.port);
 

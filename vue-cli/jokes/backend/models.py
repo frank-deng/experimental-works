@@ -29,8 +29,8 @@ def showAPIFetchJSON(url, params = None):
     except KeyError:
         return None;
 
-def fetchJokes():
+def fetchJokes(page = 1, pageSize = 50):
     return showAPIFetchJSON('http://route.showapi.com/341-1', {
-        'page': 1,
-        'maxResult': 50,
+        'page': int(page),
+        'maxResult': pageSize,
     });
