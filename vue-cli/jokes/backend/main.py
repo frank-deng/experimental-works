@@ -28,5 +28,5 @@ def index():
     response.set_header('Access-Control-Allow-Origin', '*');
     return models.fetchJokes(pageNum);
 
-run(host=args.host, port=args.port);
+run(server='eventlet', host=args.host, port=args.port);
 

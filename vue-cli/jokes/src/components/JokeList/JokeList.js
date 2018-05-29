@@ -8,13 +8,19 @@ export default {
 	},
 	methods: {
 		loadNewPage(){
-			this.$http.get(`http://localhost:8082?page=${this.page}`).then((resp)=>{
-				this.jokes.concat(resp.body.contentlist);
+			return this.$http.get(`http://localhost:8082?page=${this.page}`).then((resp)=>{
+				for (let item of resp.body.contentlist) {
+					this.jokes.push(item);
+				}
+				this.page++;
 			});
-			this.page++;
 		},
 	},
 	mounted(){
-		this.loadNewPage();
+		this.loadNewPage().then(()=>{
+			return this.loadNewPage();
+		}).then(()=>{;
+			return this.loadNewPage();
+		});
 	},
 }
