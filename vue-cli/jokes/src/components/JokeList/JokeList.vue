@@ -12,6 +12,6 @@
 
 <style scoped>
 	.text{
-		white-space: pre-wrap;
+		white-space: pre-line;
 	}
 </style>
