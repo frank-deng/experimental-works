@@ -5,6 +5,7 @@ import Vue from 'vue'
 import App from './App'
 import router from './router'
 import VueResource from 'vue-resource'
+import JokeList from '@/components/JokeList/JokeList.vue'
 
 Vue.config.productionTip = false;
 
@@ -17,7 +18,7 @@ new Vue({
   components: { App },
   template: '<App/>',
   mounted(){
-	  document.title = '笑话大全';
+    document.title = '笑话大全';
   },
 })
 
