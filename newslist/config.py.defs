@@ -1,0 +1,6 @@
+import os;
+SHOWAPI_APPID="12345";
+SHOWAPI_SECRET="nnn";
+HEWEATHER_KEY="nnn";
+REQUEST_TIMEOUT=7
+STATIC_ROOT=os.path.dirname(os.path.abspath(__file__)) + os.sep + '..' + os.sep + 'dist'
