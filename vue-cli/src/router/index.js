@@ -1,0 +1,25 @@
+import Vue from 'vue'
+import Router from 'vue-router'
+import IndexPage from '@/components/IndexPage/IndexPage.vue'
+import DynamicTable from '@/components/DynamicTable/DynamicTable.vue'
+
+Vue.use(Router);
+let router = new Router({
+	routes: [
+		{
+			path: '/',
+			name: '首页',
+			component: IndexPage,
+		},
+		{
+			path: '/DynamicTable',
+			name: '动态添加表头和填写项目',
+			component: DynamicTable,
+		},
+	],
+});
+router.beforeEach((to, from, next)=>{
+	document.title = to.name;
+	next();
+});
+export default router;
