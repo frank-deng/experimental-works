@@ -1,7 +1,9 @@
 import Vue from 'vue'
 import Router from 'vue-router'
+
 import IndexPage from '@/components/IndexPage/IndexPage.vue'
 import DynamicTable from '@/components/DynamicTable/DynamicTable.vue'
+import WebAudioAPI from '@/components/WebAudioAPI/WebAudioAPI.vue'
 
 Vue.use(Router);
 let router = new Router({
@@ -15,6 +17,11 @@ let router = new Router({
 			path: '/DynamicTable',
 			name: '动态添加表头和填写项目',
 			component: DynamicTable,
+		},
+		{
+			path: '/WebAudioAPI',
+			name: 'WebAudioAPI实验',
+			component: WebAudioAPI,
 		},
 	],
 });
