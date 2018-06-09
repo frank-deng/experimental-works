@@ -40,9 +40,10 @@ ul, li{
 	font-family:monospace;
 	font-weight:normal;
 	color:#000;
-	background-color:#ffd7dd;
+	background-color:#ecf5ff;
+	border-top: 1px solid #b3d8ff;
 	margin:0;
-	padding:1px 0 0 0;
+	padding:0;
 	z-index: 100;
 }
 </style>
