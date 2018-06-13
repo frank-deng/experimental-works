@@ -3,6 +3,7 @@
 		<el-button type='primary' @click='updateTime'>更新时间</el-button>
 		<el-button type='primary' @click='doTimeout'>超时请求</el-button>
 		<el-button type='primary' @click='frequentRequest'>{{timerReq ? '停止请求' : '大量请求'}}</el-button>
+		<p>{{message}}</p>
 	</div>
 </template>
 <script>
@@ -25,10 +26,12 @@ export default{
 		return {
 			time: '',
 			timerReq: undefined,
+			message: '',
 		}
 	},
 	methods: {
 		updateTime(){
+			this.$beep(true);
 			this.request('http://localhost:8081/time.do');
 		},
 		doTimeout(){
@@ -38,6 +41,8 @@ export default{
 			if (this.timerReq){
 				clearInterval(this.timerReq);
 				this.timerReq = undefined;
+				this.message = '';
+				this.$beep(false);
 			} else {
 				this.timerReq = setInterval(()=>{
 					this.request('http://localhost:8081/time.do');
@@ -55,7 +60,10 @@ export default{
 				console.log(String(new Date()), 'timeout', e);
 			});
 			xhr.open('GET', url);
-			xhr.send();
+			if (!xhr.send()){
+				this.message = 'Too many requests';
+				this.$beep(true);
+			}
 		},
 	},
 }
