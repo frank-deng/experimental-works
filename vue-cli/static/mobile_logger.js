@@ -44,21 +44,21 @@
 	console.log = function(){
 		var arg = arguments;
 		try{
-			consoleLog(arg.length > 1 ? arg : arg[0]);
+			consoleLog.apply(this, _slice.call(arg));
 		}catch(e){}
 		logHandler(arg.length > 1 ? _slice.call(arg).join(' ') : arg[0]);
 	}
 	console.warn = function(){
 		var arg = arguments;
 		try{
-			consoleWarn(arg.length > 1 ? arg : arg[0]);
+			consoleWarn.apply(this, _slice.call(arg));
 		}catch(e){}
 		logHandler('[Warn] '+(arg.length > 1 ? _slice.call(arg).join(' ') : arg[0]));
 	}
 	console.dir = function(){
 		var arg = arguments;
 		try{
-			consoleDir(arg.length > 1 ? arg : arg[0]);
+			consoleDir.apply(this, _slice.call(arg));
 		}catch(e){}
 		for (var i = 0; i < arg.length; i++){
 			var e = arg[i];
@@ -74,7 +74,7 @@
 	console.error = function(){
 		var arg = arguments;
 		try{
-			consoleError(arg.length > 1 ? arg : arg[0]);
+			consoleError.apply(this, _slice.call(arg));
 		}catch(e){}
 		logHandler('[Error] '+(arg.length > 1 ? _slice.call(arg).join(' ') : arg[0]));
 	}

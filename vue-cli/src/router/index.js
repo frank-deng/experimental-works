@@ -4,6 +4,7 @@ import Router from 'vue-router'
 import IndexPage from '@/components/IndexPage/IndexPage.vue'
 import DynamicTable from '@/components/DynamicTable/DynamicTable.vue'
 import WebAudioAPI from '@/components/WebAudioAPI/WebAudioAPI.vue'
+import XHRTry from '@/components/XHRTry/index.vue'
 
 Vue.use(Router);
 let router = new Router({
@@ -22,6 +23,11 @@ let router = new Router({
 			path: '/WebAudioAPI',
 			name: 'WebAudioAPI实验',
 			component: WebAudioAPI,
+		},
+		{
+			path: '/XHRTry',
+			name: 'XHR实验',
+			component: XHRTry,
 		},
 	],
 });
