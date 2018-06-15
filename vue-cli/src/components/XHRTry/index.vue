@@ -11,14 +11,39 @@ var brake = 0;
 setInterval(()=>{
 	brake = 0;
 }, 200);
-XMLHttpRequest.prototype._send = XMLHttpRequest.prototype.send;
-XMLHttpRequest.prototype.send = function(content){
+
+var _slice = Array.prototype.slice;
+var xhrproto = XMLHttpRequest.prototype
+xhrproto._send = xhrproto.send;
+xhrproto._open = xhrproto.open;
+xhrproto.send = function(content){
 	if (brake){
 		return false;
 	}
 	this._send(content);
 	brake = 1;
 	return true;
+}
+xhrproto.open = function(){
+	this.method = arguments[0];
+	return this._open.apply(this, _slice.call(arguments));
+}
+var _XMLHttpRequest = XMLHttpRequest;
+XMLHttpRequest = function(){
+	var xhr = new _XMLHttpRequest();
+	xhr.addEventListener('load', function(e){
+		console.log('[XHR] '+this.method+' '+this.responseURL+' '+this.status+' '+this.statusText);
+	});
+	xhr.addEventListener('timeout', function(e){
+		console.log('timeout', this);
+	});
+	xhr.addEventListener('error', function(e){
+		console.log('error', this);
+	});
+	xhr.addEventListener('abort', function(e){
+		console.log('aborted', this);
+	});
+	return xhr;
 }
 
 export default{
@@ -31,7 +56,6 @@ export default{
 	},
 	methods: {
 		updateTime(){
-			this.$beep(true);
 			this.request('http://localhost:8081/time.do');
 		},
 		doTimeout(){
@@ -42,7 +66,7 @@ export default{
 				clearInterval(this.timerReq);
 				this.timerReq = undefined;
 				this.message = '';
-				this.$beep(false);
+				//this.$beep(false);
 			} else {
 				this.timerReq = setInterval(()=>{
 					this.request('http://localhost:8081/time.do');
@@ -52,19 +76,29 @@ export default{
 		request(url){
 			var vm = this;
 			var xhr = new XMLHttpRequest();
-			xhr.timeout = 6666;
-			xhr.addEventListener('readystatechange', function(e){
-				console.log(String(new Date()), 'finished', this.readyState);
-			});
-			xhr.addEventListener('timeout', function(e){
-				console.log(String(new Date()), 'timeout', e);
-			});
+			xhr.timeout = 2333;
+			xhr.onload = function(){
+				console.log('onload');
+			}
 			xhr.open('GET', url);
 			if (!xhr.send()){
 				this.message = 'Too many requests';
-				this.$beep(true);
+				//this.$beep(true);
 			}
 		},
+	},
+	mounted(){
+		var a = function(){}
+		a.prototype.show = function(){
+			return 'hahaha';
+		}
+		var b = function(){
+			var aa = new a();
+			aa.hahaha = '2333';
+			return aa;
+		}
+		var k = new b();
+		console.log(k.hahaha, k.show());
 	},
 }
 </script>
