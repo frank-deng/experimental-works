@@ -7,45 +7,6 @@
 	</div>
 </template>
 <script>
-var brake = 0;
-setInterval(()=>{
-	brake = 0;
-}, 200);
-
-var _slice = Array.prototype.slice;
-var xhrproto = XMLHttpRequest.prototype
-xhrproto._send = xhrproto.send;
-xhrproto._open = xhrproto.open;
-xhrproto.send = function(content){
-	if (brake){
-		return false;
-	}
-	this._send(content);
-	brake = 1;
-	return true;
-}
-xhrproto.open = function(){
-	this.method = arguments[0];
-	return this._open.apply(this, _slice.call(arguments));
-}
-var _XMLHttpRequest = XMLHttpRequest;
-XMLHttpRequest = function(){
-	var xhr = new _XMLHttpRequest();
-	xhr.addEventListener('load', function(e){
-		console.log('[XHR] '+this.method+' '+this.responseURL+' '+this.status+' '+this.statusText);
-	});
-	xhr.addEventListener('timeout', function(e){
-		console.log('timeout', this);
-	});
-	xhr.addEventListener('error', function(e){
-		console.log('error', this);
-	});
-	xhr.addEventListener('abort', function(e){
-		console.log('aborted', this);
-	});
-	return xhr;
-}
-
 export default{
 	data(){
 		return {
@@ -76,9 +37,9 @@ export default{
 		request(url){
 			var vm = this;
 			var xhr = new XMLHttpRequest();
-			xhr.timeout = 2333;
+			xhr.timeout = 2000;
 			xhr.onload = function(){
-				console.log('onload');
+				console.log(this.responseText);
 			}
 			xhr.open('GET', url);
 			if (!xhr.send()){
