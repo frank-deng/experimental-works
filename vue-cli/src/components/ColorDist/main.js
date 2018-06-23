@@ -44,18 +44,29 @@ export default{
 
 			let colorsAll = Object.keys(colorDist);
 			var dotGeometry = new THREE.Geometry();
-			var material = new THREE.PointsMaterial({
-				color: 0xff0000,
-				size: 1,
-			});
-			for (let hexColor of colorsAll) {
-				let color = hex2rgb(hexColor);
-				let geometry = new THREE.Geometry();
-				geometry.vertices.push(new THREE.Vector3(color.r, color.g, color.b));
-				let ball = new THREE.Points(geometry, material);
-				this.balls.push(ball);
-				this.ballsGrp.add(ball);
+
+			let i = 0, grouplen = 100;
+			let colorProcessor = ()=>{
+				for (let g = 0; g < grouplen; g++){
+					if (i >= colorsAll.length) {
+						return;
+					}
+					let hexColor = colorsAll[i];
+					let color = hex2rgb(hexColor);
+					let material = new THREE.PointsMaterial({
+						color: parseInt(hexColor, 16),
+						size: 1,
+					});
+					let geometry = new THREE.Geometry();
+					geometry.vertices.push(new THREE.Vector3(color.r, color.g, color.b));
+					let ball = new THREE.Points(geometry, material);
+					this.balls.push(ball);
+					this.ballsGrp.add(ball);
+					i++;
+				}
+				setTimeout(colorProcessor, 0);
 			}
+			setTimeout(colorProcessor, 0);
 		},
 	},
 	methods:{
@@ -72,7 +83,7 @@ export default{
 				var ctx = canvas.getContext('2d');
 				ctx.drawImage(this,
 					0, 0, this.width, this.height,
-					0, 0, this.width, this.height
+					0, 0, canvas.width, canvas.height
 				);
 				vm.imgData = ctx.getImageData(0, 0, canvas.width, canvas.height);
 			});
