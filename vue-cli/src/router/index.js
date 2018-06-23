@@ -5,6 +5,7 @@ import IndexPage from '@/components/IndexPage/IndexPage.vue'
 import DynamicTable from '@/components/DynamicTable/DynamicTable.vue'
 import WebAudioAPI from '@/components/WebAudioAPI/WebAudioAPI.vue'
 import XHRTry from '@/components/XHRTry/index.vue'
+import WebGLTry from '@/components/WebGLTry/index.vue'
 
 Vue.use(Router);
 let router = new Router({
@@ -28,6 +29,11 @@ let router = new Router({
 			path: '/XHRTry',
 			name: 'XHR实验',
 			component: XHRTry,
+		},
+		{
+			path: '/WebGL',
+			name: 'WebGL/three.js测试',
+			component: WebGLTry,
 		},
 	],
 });
