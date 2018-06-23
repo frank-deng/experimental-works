@@ -6,10 +6,6 @@ config.py
 *.swp
 *.wav
 *.WAV
-*.png
-*.jpg
-*.bmp
-*.gif
 *.crd
 *.CRD
 *.ppm
