@@ -5,6 +5,8 @@ import App from './App'
 import router from './router'
 import ElementUI from 'element-ui'
 import 'element-ui/lib/theme-chalk/index.css'
+import DelayMapBatch from 'delay-map-batch'
+global.DelayMapBatch = DelayMapBatch;
 
 Vue.config.productionTip = false
 Vue.use(ElementUI, {zIndex: 3000 });

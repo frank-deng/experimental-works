@@ -42,31 +42,21 @@ export default{
 				}
 			}
 
-			let colorsAll = Object.keys(colorDist);
 			var dotGeometry = new THREE.Geometry();
-
-			let i = 0, grouplen = 100;
-			let colorProcessor = ()=>{
-				for (let g = 0; g < grouplen; g++){
-					if (i >= colorsAll.length) {
-						return;
-					}
-					let hexColor = colorsAll[i];
-					let color = hex2rgb(hexColor);
-					let material = new THREE.PointsMaterial({
-						color: parseInt(hexColor, 16),
-						size: 1,
-					});
-					let geometry = new THREE.Geometry();
-					geometry.vertices.push(new THREE.Vector3(color.r, color.g, color.b));
-					let ball = new THREE.Points(geometry, material);
-					this.balls.push(ball);
-					this.ballsGrp.add(ball);
-					i++;
-				}
-				setTimeout(colorProcessor, 0);
-			}
-			setTimeout(colorProcessor, 0);
+			DelayMapBatch(Object.keys(colorDist), (hexColor)=>{
+				let color = hex2rgb(hexColor);
+				let material = new THREE.PointsMaterial({
+					color: parseInt(hexColor, 16),
+					size: 1,
+				});
+				let geometry = new THREE.Geometry();
+				geometry.vertices.push(new THREE.Vector3(color.r, color.g, color.b));
+				let ball = new THREE.Points(geometry, material);
+				this.balls.push(ball);
+				this.ballsGrp.add(ball);
+			}, {
+				batchSize: 1000,
+			})
 		},
 	},
 	methods:{
@@ -113,7 +103,7 @@ export default{
 			texture.offset.set(0, 0);
 			texture.repeat.set(16, 16);
 		});
-		var groundGeometry = new THREE.PlaneGeometry(2000,1000);
+		var groundGeometry = new THREE.PlaneGeometry(4000,2000);
 		var groundMaterial = new THREE.MeshLambertMaterial({color:0x008800, map:map, side:THREE.FrontSide});
 		groundMaterial.reflectivity = 0;
 		var ground = new THREE.Mesh(groundGeometry, groundMaterial);
