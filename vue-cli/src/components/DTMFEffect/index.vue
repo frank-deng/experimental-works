@@ -1,5 +1,11 @@
 <template>
-	<div>
+	<div class='mainFrame'>
+		<el-row>
+			<el-col :span='24'>
+				<p class='itemTitle'>音量</p>
+				<el-slider v-model="volume" :min='0' :max='1' :step='0.001' :show-tooltip='false'></el-slider>
+			</el-col>
+		</el-row>
 		<el-row class='dialPad' :gutter='2'>
 			<el-col	:span='8'>
 				<div class='dialBtn' @mousedown='dial("7")' @touchstart='dial("7")' @mouseup='dial()' @touchend='dial()'>7</div>
@@ -41,10 +47,20 @@
 	</div>
 </template>
 <style scoped>
+.mainFrame {
+	position: relative;
+	width: 100%;
+	height: 100%;
+}
+.itemTitle{
+	display: block;
+	margin: 2px 0;
+	padding: 0;
+}
 .dialBtn {
 	display: block;
 	width: 100%;
-	line-height: 80px;
+	line-height: 100%;
 	background-color: rgb(64,158,255);
 	color: #ffffff;
 	text-align: center;
@@ -58,9 +74,13 @@
 	bottom: 0;
 	left: 1px;
 	right: 1px;
+	top: 60px;
 }
 .el-col {
 	margin-bottom: 2px;
+}
+.el-slider{
+	margin: 0 12px;
 }
 </style>
 <script src="./main.js"></script>

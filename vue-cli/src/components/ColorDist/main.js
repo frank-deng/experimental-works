@@ -146,7 +146,7 @@ export default{
 		var controls = new THREE.FlyControls( camera );
 		controls.movementSpeed = 100;
 		controls.domElement = container;
-		controls.rollSpeed = Math.PI / 12;
+		controls.rollSpeed = Math.PI / 6;
 		controls.autoForward = false;
 		controls.dragToLook = true;
 

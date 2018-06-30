@@ -22,7 +22,8 @@ export default {
   right: 0;
   top: 0;
   bottom: 30%;
-  padding: 8px;
+  padding: 0;
+  margin: 0;
 }
 ul, li{
 	margin: 0;
