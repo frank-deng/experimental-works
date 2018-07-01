@@ -5,6 +5,10 @@
 				<p class='itemTitle'>音量</p>
 				<el-slider v-model="volume" :min='0' :max='1' :step='0.001' :show-tooltip='false'></el-slider>
 			</el-col>
+			<el-col :span='24'>
+				<p class='itemTitle'>按键声音量</p>
+				<el-slider v-model="volumeKeyPress" :min='0' :max='1' :step='0.001' :show-tooltip='false'></el-slider>
+			</el-col>
 		</el-row>
 		<div class='dialPad' @touchend='dial()' @mouseup='dial()'>
 			<div class='dialBtn' @mousedown='dial("7")' @touchstart='dial("7")'><i>7</i></div>

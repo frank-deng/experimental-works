@@ -17,6 +17,7 @@ export default{
 		return {
 			dialNum: undefined,
 			volume: undefined,
+			volumeKeyPress: undefined,
 			audioCtx: undefined,
 			freq0: undefined,
 			freq1: undefined,
@@ -56,8 +57,10 @@ export default{
 		'volume'(volume){
 			this.gain0.gain.setValueAtTime(volume * 0.5, this.audioCtx.currentTime);
 			this.gain1.gain.setValueAtTime(volume * 0.5, this.audioCtx.currentTime);
-			this.soundEffect.keyPressGain.gain.setValueAtTime(1, this.audioCtx.currentTime);
-		}
+		},
+		'volumeKeyPress'(volume){
+			this.soundEffect.keyPressGain.gain.setValueAtTime(volume, this.audioCtx.currentTime);
+		},
 	},
 	methods: {
 		changeVolume(vol){
@@ -84,6 +87,7 @@ export default{
 		this.soundEffect.keyPressGain.connect(this.audioCtx.destination);
 
 		this.volume = 0.5;
+		this.volumeKeyPress = 0.5;
 
 		//Load keyboard sound effect
 		this.$http.get('static/keypress.ogg', {responseType: 'arraybuffer'}).then((resp)=>{
