@@ -3,13 +3,16 @@
 import Vue from 'vue'
 import App from './App'
 import router from './router'
+import VueResource from 'vue-resource';
 import ElementUI from 'element-ui'
 import 'element-ui/lib/theme-chalk/index.css'
 import DelayMapBatch from 'delay-map-batch'
+import loadSound from '@/js/util.js'
 global.DelayMapBatch = DelayMapBatch;
 
 Vue.config.productionTip = false
 Vue.use(ElementUI, {zIndex: 3000 });
+Vue.use(VueResource);
 
 /* eslint-disable no-new */
 new Vue({

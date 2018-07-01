@@ -6,19 +6,19 @@
 				<el-slider v-model="volume" :min='0' :max='1' :step='0.001' :show-tooltip='false'></el-slider>
 			</el-col>
 		</el-row>
-		<div class='dialPad'>
-			<div class='dialBtn' @mousedown='dial("7")' @touchstart='dial("7")' @mouseup='dial()' @touchend='dial()'><i>7</i></div>
-			<div class='dialBtn' @mousedown='dial("8")' @touchstart='dial("8")' @mouseup='dial()' @touchend='dial()'><i>8</i></div>
-			<div class='dialBtn' @mousedown='dial("9")' @touchstart='dial("9")' @mouseup='dial()' @touchend='dial()'><i>9</i></div>
-			<div class='dialBtn' @mousedown='dial("4")' @touchstart='dial("4")' @mouseup='dial()' @touchend='dial()'><i>4</i></div>
-			<div class='dialBtn' @mousedown='dial("5")' @touchstart='dial("5")' @mouseup='dial()' @touchend='dial()'><i>5</i></div>
-			<div class='dialBtn' @mousedown='dial("6")' @touchstart='dial("6")' @mouseup='dial()' @touchend='dial()'><i>6</i></div>
-			<div class='dialBtn' @mousedown='dial("1")' @touchstart='dial("1")' @mouseup='dial()' @touchend='dial()'><i>1</i></div>
-			<div class='dialBtn' @mousedown='dial("2")' @touchstart='dial("2")' @mouseup='dial()' @touchend='dial()'><i>2</i></div>
-			<div class='dialBtn' @mousedown='dial("3")' @touchstart='dial("3")' @mouseup='dial()' @touchend='dial()'><i>3</i></div>
-			<div class='dialBtn' @mousedown='dial("*")' @touchstart='dial("*")' @mouseup='dial()' @touchend='dial()'><i>*</i></div>
-			<div class='dialBtn' @mousedown='dial("0")' @touchstart='dial("0")' @mouseup='dial()' @touchend='dial()'><i>0</i></div>
-			<div class='dialBtn' @mousedown='dial("#")' @touchstart='dial("#")' @mouseup='dial()' @touchend='dial()'><i>#</i></div>
+		<div class='dialPad' @touchend='dial()' @mouseup='dial()'>
+			<div class='dialBtn' @mousedown='dial("7")' @touchstart='dial("7")'><i>7</i></div>
+			<div class='dialBtn' @mousedown='dial("8")' @touchstart='dial("8")'><i>8</i></div>
+			<div class='dialBtn' @mousedown='dial("9")' @touchstart='dial("9")'><i>9</i></div>
+			<div class='dialBtn' @mousedown='dial("4")' @touchstart='dial("4")'><i>4</i></div>
+			<div class='dialBtn' @mousedown='dial("5")' @touchstart='dial("5")'><i>5</i></div>
+			<div class='dialBtn' @mousedown='dial("6")' @touchstart='dial("6")'><i>6</i></div>
+			<div class='dialBtn' @mousedown='dial("1")' @touchstart='dial("1")'><i>1</i></div>
+			<div class='dialBtn' @mousedown='dial("2")' @touchstart='dial("2")'><i>2</i></div>
+			<div class='dialBtn' @mousedown='dial("3")' @touchstart='dial("3")'><i>3</i></div>
+			<div class='dialBtn' @mousedown='dial("*")' @touchstart='dial("*")'><i>*</i></div>
+			<div class='dialBtn' @mousedown='dial("0")' @touchstart='dial("0")'><i>0</i></div>
+			<div class='dialBtn' @mousedown='dial("#")' @touchstart='dial("#")'><i>#</i></div>
 		</div>
 	</div>
 </template>
