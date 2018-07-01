@@ -2,7 +2,7 @@
 	<div class='mainFrame'>
 		<el-row>
 			<el-col :span='24'>
-				<p class='itemTitle'>音量</p>
+				<p class='itemTitle'>DTMF音量</p>
 				<el-slider v-model="volume" :min='0' :max='1' :step='0.001' :show-tooltip='false'></el-slider>
 			</el-col>
 			<el-col :span='24'>
@@ -45,7 +45,7 @@
 	bottom: 0;
 	left: 1px;
 	right: 1px;
-	top: 120px;
+	top: 150px;
 	overflow: auto;
 }
 .dialBtn {
