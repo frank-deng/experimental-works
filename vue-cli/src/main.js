@@ -7,7 +7,6 @@ import VueResource from 'vue-resource';
 import ElementUI from 'element-ui'
 import 'element-ui/lib/theme-chalk/index.css'
 import DelayMapBatch from 'delay-map-batch'
-import loadSound from '@/js/util.js'
 global.DelayMapBatch = DelayMapBatch;
 
 Vue.config.productionTip = false
