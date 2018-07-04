@@ -21,31 +21,3 @@ new Vue({
   template: '<App/>'
 })
 
-var beepData = {
-	audioCtx: undefined,
-	oscillator: undefined,
-	timeout: undefined,
-}
-beepData.audioCtx = new AudioContext();
-Vue.prototype.$beep = function(beep){
-	clearTimeout(beepData.timeout);
-	beepData.timeout = undefined;
-	if (!beep && beepData.oscillator){
-		beepData.oscillator.stop();
-		beepData.oscillator = undefined;
-	} else if (beep) {
-		if (!beepData.oscillator){
-			let oscillator = beepData.audioCtx.createOscillator();
-			oscillator.type = 'square';
-			oscillator.frequency.setValueAtTime(2000, beepData.audioCtx.currentTime);
-			oscillator.connect(beepData.audioCtx.destination);
-			oscillator.start();
-			beepData.oscillator = oscillator;
-		}
-		beepData.timeout = setTimeout(()=>{
-			beepData.oscillator.stop();
-			beepData.oscillator = undefined;
-			beepData.timeout = undefined;
-		}, 1000);
-	}
-}

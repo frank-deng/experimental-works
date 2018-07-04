@@ -2,11 +2,11 @@ import Vue from 'vue'
 import Router from 'vue-router'
 
 import IndexPage from '@/components/IndexPage/IndexPage.vue'
-import WebAudioAPI from '@/components/WebAudioAPI/WebAudioAPI.vue'
-import XHRTry from '@/components/XHRTry/index.vue'
-import WebGLTry from '@/components/WebGLTry/index.vue'
-import ColorDist from '@/components/ColorDist/index.vue'
 import DTMFEffect from '@/components/DTMFEffect/index.vue'
+import WebAudioAPI from '@/components/WebAudioAPI/WebAudioAPI.vue'
+import ColorDist from '@/components/ColorDist/index.vue'
+import WebGLTry from '@/components/WebGLTry/index.vue'
+import MathML from '@/components/MathML/index.vue'
 
 Vue.use(Router);
 let router = new Router({
@@ -17,19 +17,9 @@ let router = new Router({
 			component: IndexPage,
 		},
 		{
-			path: '/WebAudioAPI',
-			name: 'WebAudioAPI实验',
-			component: WebAudioAPI,
-		},
-		{
-			path: '/XHRTry',
-			name: 'XHR实验',
-			component: XHRTry,
-		},
-		{
-			path: '/WebGL',
-			name: 'WebGL/three.js测试',
-			component: WebGLTry,
+			path: '/dtmf',
+			name: 'DTMF音效',
+			component: DTMFEffect,
 		},
 		{
 			path: '/colordist',
@@ -37,9 +27,19 @@ let router = new Router({
 			component: ColorDist,
 		},
 		{
-			path: '/dtmf',
-			name: 'DTMF音效',
-			component: DTMFEffect,
+			path: '/WebAudioAPI',
+			name: 'WebAudioAPI实验',
+			component: WebAudioAPI,
+		},
+		{
+			path: '/WebGL',
+			name: 'WebGL/three.js测试',
+			component: WebGLTry,
+		},
+		{
+			path: '/MathML',
+			name: 'MathML测试',
+			component: MathML,
 		},
 	],
 });
