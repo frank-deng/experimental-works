@@ -17,6 +17,7 @@
     "@tweenjs/tween.js": "^17.2.0",
     "delay-map-batch": "^0.1.0",
     "element-ui": "^2.3.9",
+    "mathjax": "^2.7.4",
     "three": "^0.93.0",
     "vue": "^2.5.2",
     "vue-resource": "^1.5.1",
