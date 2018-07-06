@@ -42,6 +42,23 @@ export default{
 				}
 			}
 
+			console.log(`Color count: ${Object.keys(colorDist).length}`);
+
+			//Reduce sample points if color count is too large
+			if (Object.keys(colorDist).length > Math.pow(0xFF >> 4, 3)) {
+				colorDist = {};
+				for (let i = 0; i < count; i++){
+					let hex = rgb2hex(imgData.data[4*i] & 0xf0, imgData.data[4*i+1] & 0xf0, imgData.data[4*i+2] & 0xf0);
+					if (colorDist[hex]) {
+						colorDist[hex]++;
+					} else {
+						colorDist[hex] = 1;
+					}
+				}
+			}
+
+			console.log(`Color count: ${Object.keys(colorDist).length}`);
+
 			var dotGeometry = new THREE.Geometry();
 			DelayMapBatch(Object.keys(colorDist), (hexColor)=>{
 				let color = hex2rgb(hexColor);
