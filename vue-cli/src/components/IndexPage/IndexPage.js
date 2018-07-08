@@ -1,4 +1,5 @@
 import { routeInfo } from '../../router';
+import { beep98 } from '../../js/beep98.js';
 export default {
 	data(){
 		return {
@@ -16,5 +17,6 @@ export default {
 				this.routeInfo.push(route);
 			}
 		}
+		beep98(0.2);
 	},
 };

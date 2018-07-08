@@ -21,15 +21,14 @@ export default{
 			uploadedFiles: [],
 			imgData: undefined,
 			ballsGrp: undefined,
-			balls: [],
+			points: undefined,
 		};
 	},
 	watch:{
 		'imgData': function(imgData){
-			this.balls.map((ball)=>{
-				this.ballsGrp.remove(ball);
-			});
-			this.balls = [];
+			if (this.points){
+				this.ballsGrp.remove(this.points);
+			}
 
 			let count = imgData.width * imgData.height;
 			let colorDist = {};
@@ -44,36 +43,21 @@ export default{
 
 			console.log(`Color count: ${Object.keys(colorDist).length}`);
 
-			//Reduce sample points if color count is too large
-			if (Object.keys(colorDist).length > Math.pow(0xFF >> 4, 3)) {
-				colorDist = {};
-				for (let i = 0; i < count; i++){
-					let hex = rgb2hex(imgData.data[4*i] & 0xf0, imgData.data[4*i+1] & 0xf0, imgData.data[4*i+2] & 0xf0);
-					if (colorDist[hex]) {
-						colorDist[hex]++;
-					} else {
-						colorDist[hex] = 1;
-					}
-				}
-			}
-
-			console.log(`Color count: ${Object.keys(colorDist).length}`);
-
-			var dotGeometry = new THREE.Geometry();
-			DelayMapBatch(Object.keys(colorDist), (hexColor)=>{
+			var material = new THREE.PointsMaterial({
+				vertexColors: true,
+			});
+			var geometry = new THREE.Geometry();
+			geometry.colors = [];
+			Object.keys(colorDist).map((hexColor)=>{
 				let color = hex2rgb(hexColor);
-				let material = new THREE.PointsMaterial({
-					color: parseInt(hexColor, 16),
-					size: 1,
-				});
-				let geometry = new THREE.Geometry();
 				geometry.vertices.push(new THREE.Vector3(color.r, color.g, color.b));
-				let ball = new THREE.Points(geometry, material);
-				this.balls.push(ball);
-				this.ballsGrp.add(ball);
-			}, {
-				batchSize: 1000,
-			})
+				geometry.colors.push(new THREE.Color(parseInt(`0x${hexColor}`)));
+			});
+			this.points = new THREE.Points(geometry, material);
+			this.points.position.x = 2;
+			this.points.position.y = 2;
+			this.points.position.z = 2;
+			this.ballsGrp.add(this.points);
 		},
 	},
 	methods:{
@@ -132,21 +116,21 @@ export default{
 
 		var ballsGrp = new THREE.Group();
 		scene.add(ballsGrp);
-		ballsGrp.position.x = 0;
-		ballsGrp.position.y = 1;
-		ballsGrp.position.z = 0;
+		ballsGrp.position.x = 7;
+		ballsGrp.position.y = 7;
+		ballsGrp.position.z = 7;
 		this.ballsGrp = ballsGrp;
 
 		//Draw lines for ballsGrp
-		var geometry = new THREE.CubeGeometry(255,255,255);
+		var geometry = new THREE.CubeGeometry(260,260,260);
 		var material = new THREE.MeshPhongMaterial({
 			color: 0xffffff,
 			side:THREE.BackSide,
 		});
 		var cube = new THREE.Mesh(geometry, material);
-		cube.position.x = 128;
-		cube.position.y = 128;
-		cube.position.z = 128;
+		cube.position.x = 130;
+		cube.position.y = 130;
+		cube.position.z = 130;
 		ballsGrp.add(cube);
 	
 		//Internal light for color display
