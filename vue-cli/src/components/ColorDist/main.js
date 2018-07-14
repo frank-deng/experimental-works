@@ -1,6 +1,7 @@
 window.THREE = require('three');
 require('imports-loader?THREE=three!@/js/FlyControls.js').default;
 const TWEEN = require('@tweenjs/tween.js');
+import {DragHandler} from './dragHandler.js';
 
 function rgb2hex(r,g,b){
 	return ('00'+r.toString(16)).slice(-2)
@@ -14,83 +15,120 @@ function hex2rgb(str){
 		b: parseInt(str.slice(4, 6), 16),
 	};
 }
+var centerPoint = {
+	x: 130,
+	y: 130,
+	z: 130,
+};
 
 export default{
 	data(){
 		return {
 			uploadedFiles: [],
-			imgData: undefined,
+
+			speed: 1,
+			speedDistance: 10,
+			horAngle: 0,
+			verAngle: 0,
+			distance: 520,
+
+			mouseHorAngle: 0,
+			mouseVerAngle: 0,
+
+			offsetHorAngle: 0,
+			offsetVerAngle: 0,
+			offsetDistance: 0,
+
+			camera: undefined,
 			ballsGrp: undefined,
 			points: undefined,
 		};
-	},
-	watch:{
-		'imgData': function(imgData){
-			if (this.points){
-				this.ballsGrp.remove(this.points);
-			}
-
-			let count = imgData.width * imgData.height;
-			let colorDist = {};
-			for (let i = 0; i < count; i++){
-				let hex = rgb2hex(imgData.data[4*i], imgData.data[4*i+1], imgData.data[4*i+2]);
-				if (colorDist[hex]) {
-					colorDist[hex]++;
-				} else {
-					colorDist[hex] = 1;
-				}
-			}
-
-			console.log(`Color count: ${Object.keys(colorDist).length}`);
-
-			var material = new THREE.PointsMaterial({
-				vertexColors: true,
-			});
-			var geometry = new THREE.Geometry();
-			geometry.colors = [];
-			Object.keys(colorDist).map((hexColor)=>{
-				let color = hex2rgb(hexColor);
-				geometry.vertices.push(new THREE.Vector3(color.r, color.g, color.b));
-				geometry.colors.push(new THREE.Color(parseInt(`0x${hexColor}`)));
-			});
-			this.points = new THREE.Points(geometry, material);
-			this.points.position.x = 2;
-			this.points.position.y = 2;
-			this.points.position.z = 2;
-			this.ballsGrp.add(this.points);
-		},
 	},
 	methods:{
 		doUpload(){
 			this.$refs.upload.click();
 		},
 		fileUploaded(e){
-			var vm = this;
-			var image = new Image();
-			image.addEventListener('load', function(){
-				var canvas = document.createElement('canvas');
-				canvas.width = this.width;
-				canvas.height = this.height;
-				var ctx = canvas.getContext('2d');
-				ctx.drawImage(this,
-					0, 0, this.width, this.height,
+			new Promise((resolve, reject)=>{
+				let reader = new FileReader();
+				reader.addEventListener('load', function(event){
+					resolve(event.target.result);
+				});
+				reader.readAsDataURL(e.target.files[0]);
+			}).then((src)=>{
+				return new Promise((resolve, reject)=>{
+					let image = new Image();
+					image.addEventListener('load', function(){
+						resolve(this);
+					});
+					image.src = src;
+				});
+			}).then((image)=>{
+				let canvas = document.createElement('canvas');
+				canvas.width = image.width;
+				canvas.height = image.height;
+				let ctx = canvas.getContext('2d');
+				ctx.drawImage(image,
+					0, 0, image.width, image.height,
 					0, 0, canvas.width, canvas.height
 				);
-				vm.imgData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+				let imgData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+				let count = imgData.width * imgData.height;
+				let colorDist = {};
+				for (let i = 0; i < count; i++){
+					let hex = rgb2hex(imgData.data[4*i], imgData.data[4*i+1], imgData.data[4*i+2]);
+					if (colorDist[hex]) {
+						colorDist[hex]++;
+					} else {
+						colorDist[hex] = 1;
+					}
+				}
+
+				var material = new THREE.PointsMaterial({
+					vertexColors: true,
+				});
+				var geometry = new THREE.Geometry();
+				geometry.colors = [];
+				Object.keys(colorDist).map((hexColor)=>{
+					let color = hex2rgb(hexColor);
+					geometry.vertices.push(new THREE.Vector3(color.r, color.g, color.b));
+					geometry.colors.push(new THREE.Color(parseInt(hexColor, 16)));
+				});
+
+				if (this.points){
+					this.ballsGrp.remove(this.points);
+				}
+				this.points = new THREE.Points(geometry, material);
+				Object.assign(this.points.position, {x:2, y:2, z:2});
+				this.ballsGrp.add(this.points);
+			}).catch((e)=>{
+				throw e;
 			});
-			var reader = new FileReader();
-			reader.addEventListener('load', function(event){
-				image.src = event.target.result;
-			});
-			reader.readAsDataURL(e.target.files[0]);
+		},
+		moveVer(offset){
+			this.verAngle += offset;
+			if (this.verAngle <= -89) {
+				this.verAngle = -89;
+			} else if (this.verAngle >= 89) {
+				this.verAngle = 89;
+			}
+		},
+		moveHor(offset){
+			this.horAngle += offset;
+		},
+		moveDistance(offset){
+			this.distance += offset;
+			if (this.distance >= 1000) {
+				this.distance = 1000;
+			} else if (this.distance <= 1) {
+				this.distance = 1;
+			}
 		},
 	},
 	mounted(){
 		var container = this.$refs.webglContainer;
 		var scene = new THREE.Scene();
-		scene.background = new THREE.Color(0xcce0ff);
-		var camera = new THREE.PerspectiveCamera(45, container.offsetWidth / container.offsetHeight, 1, 4000);
-		camera.position.set(128,128,666);
+		scene.background = new THREE.Color(0x010101);
 
 		var bgLight = new THREE.AmbientLight(0xffffff, 0.5);
 		scene.add(bgLight);
@@ -99,43 +137,30 @@ export default{
 		light.position.set(0,2000,3000);
 		scene.add(light);
 
-		var map = new THREE.TextureLoader().load('static/FloorsCheckerboard_S_Diffuse.jpg', function(texture){
-			texture.wrapS = texture.wrapT = THREE.RepeatWrapping;
-			texture.offset.set(0, 0);
-			texture.repeat.set(16, 16);
-		});
-		var groundGeometry = new THREE.PlaneGeometry(4000,2000);
-		var groundMaterial = new THREE.MeshLambertMaterial({color:0x008800, map:map, side:THREE.FrontSide});
-		groundMaterial.reflectivity = 0;
-		var ground = new THREE.Mesh(groundGeometry, groundMaterial);
-		ground.position.x = 0;
-		ground.position.y = 0;
-		ground.position.z = 0;
-		ground.rotation.x = -Math.PI/2;
-		scene.add(ground);
-
 		var ballsGrp = new THREE.Group();
 		scene.add(ballsGrp);
-		ballsGrp.position.x = 7;
-		ballsGrp.position.y = 7;
-		ballsGrp.position.z = 7;
+		ballsGrp.position.x = 0;
+		ballsGrp.position.y = 1;
+		ballsGrp.position.z = 0;
 		this.ballsGrp = ballsGrp;
 
-		//Draw lines for ballsGrp
+		//Draw background box for ballsGrp
 		var geometry = new THREE.CubeGeometry(260,260,260);
 		var material = new THREE.MeshPhongMaterial({
 			color: 0xffffff,
 			side:THREE.BackSide,
+			transparent:true,
+			opacity: 0.9,
 		});
 		var cube = new THREE.Mesh(geometry, material);
-		cube.position.x = 130;
-		cube.position.y = 130;
-		cube.position.z = 130;
+		cube.position.x = centerPoint.x;
+		cube.position.y = centerPoint.y;
+		cube.position.z = centerPoint.z;
 		ballsGrp.add(cube);
 	
 		//Internal light for color display
 		var light = new THREE.PointLight(0xFFFFFF, 0.3);
-		light.position.set(128,128,128);
+		light.position.set(130,130,130);
 		ballsGrp.add(light);
 
 		var renderer = new THREE.WebGLRenderer({antialias:true});
@@ -143,13 +168,8 @@ export default{
 		renderer.setSize(container.offsetWidth, container.offsetHeight);
 		container.appendChild(renderer.domElement);
 
-		var clock = new THREE.Clock();
-		var controls = new THREE.FlyControls( camera );
-		controls.movementSpeed = 100;
-		controls.domElement = container;
-		controls.rollSpeed = Math.PI / 6;
-		controls.autoForward = false;
-		controls.dragToLook = true;
+		var camera = new THREE.PerspectiveCamera(45, container.offsetWidth / container.offsetHeight, 1, 4000);
+		this.camera = camera;
 
 		window.addEventListener('resize', function(){
 			var SCREEN_WIDTH = container.offsetWidth;
@@ -158,13 +178,84 @@ export default{
 			camera.aspect = SCREEN_WIDTH / SCREEN_HEIGHT;
 			camera.updateProjectionMatrix();
 		});
+		window.addEventListener('keydown', (e)=>{
+			switch (e.keyCode) {
+				case 38: //Up
+					this.offsetVerAngle = this.speed;
+				break;
+				case 40: //Down
+					this.offsetVerAngle = -this.speed;
+				break;
+				case 37: //Left
+					this.offsetHorAngle = -this.speed;
+				break;
+				case 39: //Right
+					this.offsetHorAngle = this.speed;
+				break;
+				case 109: //Farther
+					this.offsetDistance = this.speedDistance;
+				break;
+				case 107: //Nearer
+					this.offsetDistance = -this.speedDistance;
+				break;
+				default:
+					//console.log(e);
+				break;
+			}
+		});
+		window.addEventListener('keyup', (e)=>{
+			switch (e.keyCode) {
+				case 38: //Up
+				case 40: //Down
+					this.offsetVerAngle = 0;
+				break;
+				case 37: //Left
+				case 39: //Right
+					this.offsetHorAngle = 0;
+				break;
+				case 109: //Farther
+				case 107: //Nearer
+					this.offsetDistance = 0;
+				break;
+			}
+		});
 
-		var animation = function(){
-			var delta = clock.getDelta();
-			renderer.render(scene, camera);
-			controls.update(delta);
+		let animation = ()=>{
+			this.verAngle += this.offsetVerAngle;
+			if (this.verAngle <= -89) {
+				this.verAngle = -89;
+			} else if (this.verAngle >= 89) {
+				this.verAngle = 89;
+			}
+			
+			this.horAngle += this.offsetHorAngle;
+
+			this.distance += this.offsetDistance;
+			if (this.distance >= 1000) {
+				this.distance = 1000;
+			} else if (this.distance <= 1) {
+				this.distance = 1;
+			}
+
+			let x = this.distance * Math.sin(this.horAngle * Math.PI / 180) * Math.cos(this.verAngle * Math.PI / 180) + centerPoint.x;
+			let y = this.distance * Math.sin(this.verAngle * Math.PI / 180) + centerPoint.y;
+			let z = this.distance * Math.cos(this.horAngle * Math.PI / 180) * Math.cos(this.verAngle * Math.PI / 180) + centerPoint.y;
+
+			camera.position.set(x, y, z);
+			camera.lookAt(new THREE.Vector3(
+				centerPoint.x,
+				centerPoint.y,
+				centerPoint.z,
+			));
+			camera.up = new THREE.Vector3(0,1,0);
+			renderer.render(scene, this.camera);
 			requestAnimationFrame(animation);
 		}
 		animation();
+
+		let dragHandler = new DragHandler((e, x0, y0, x1, y1)=>{
+			this.horAngle += -(x1 - x0) / container.offsetWidth * 10;
+			this.verAngle += (y1 - y0) / container.offsetHeight * 10;
+		});
 	},
 }
