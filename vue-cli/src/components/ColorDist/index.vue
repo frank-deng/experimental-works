@@ -3,7 +3,7 @@
 		<div id='webgl_container' ref="webglContainer"></div>
 		<div class='other-container'>
 			<input type='file' ref='upload' @change='fileUploaded'/>
-			<el-button type='primary' @click='doUpload'>上传</el-button>
+			<el-button class='upload-btn' size='small' @click='doUpload'><i class='el-icon-upload2'></i></el-button>
 		</div>
 	</div>
 </template>
@@ -13,6 +13,7 @@
 	width: 100%;
 	height: 100%;
 	overflow: hidden;
+	touch-action: none;
 }
 input[type='file']{
 	display: none;
@@ -20,6 +21,9 @@ input[type='file']{
 .other-container {
 	position: relative;
 	z-index: 1000;
+}
+.upload-btn{
+	opacity: 0.618;
 }
 #webgl_container{
 	position: absolute;

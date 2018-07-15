@@ -105,25 +105,6 @@ export default{
 				throw e;
 			});
 		},
-		moveVer(offset){
-			this.verAngle += offset;
-			if (this.verAngle <= -89) {
-				this.verAngle = -89;
-			} else if (this.verAngle >= 89) {
-				this.verAngle = 89;
-			}
-		},
-		moveHor(offset){
-			this.horAngle += offset;
-		},
-		moveDistance(offset){
-			this.distance += offset;
-			if (this.distance >= 1000) {
-				this.distance = 1000;
-			} else if (this.distance <= 1) {
-				this.distance = 1;
-			}
-		},
 	},
 	mounted(){
 		var container = this.$refs.webglContainer;
@@ -178,6 +159,40 @@ export default{
 			camera.aspect = SCREEN_WIDTH / SCREEN_HEIGHT;
 			camera.updateProjectionMatrix();
 		});
+
+		let animation = ()=>{
+			this.verAngle += this.offsetVerAngle;
+			if (this.verAngle <= -89) {
+				this.verAngle = -89;
+			} else if (this.verAngle >= 89) {
+				this.verAngle = 89;
+			}
+			
+			this.horAngle += this.offsetHorAngle;
+
+			this.distance += this.offsetDistance;
+			if (this.distance >= 1000) {
+				this.distance = 1000;
+			} else if (this.distance <= 1) {
+				this.distance = 1;
+			}
+
+			let x = this.distance * Math.sin(this.horAngle * Math.PI / 180) * Math.cos(this.verAngle * Math.PI / 180) + centerPoint.x;
+			let y = this.distance * Math.sin(this.verAngle * Math.PI / 180) + centerPoint.y;
+			let z = this.distance * Math.cos(this.horAngle * Math.PI / 180) * Math.cos(this.verAngle * Math.PI / 180) + centerPoint.y;
+
+			camera.position.set(x, y, z);
+			camera.lookAt(new THREE.Vector3(
+				centerPoint.x,
+				centerPoint.y,
+				centerPoint.z,
+			));
+			camera.up = new THREE.Vector3(0,1,0);
+			renderer.render(scene, this.camera);
+			requestAnimationFrame(animation);
+		}
+		animation();
+
 		window.addEventListener('keydown', (e)=>{
 			switch (e.keyCode) {
 				case 38: //Up
@@ -219,40 +234,6 @@ export default{
 				break;
 			}
 		});
-
-		let animation = ()=>{
-			this.verAngle += this.offsetVerAngle;
-			if (this.verAngle <= -89) {
-				this.verAngle = -89;
-			} else if (this.verAngle >= 89) {
-				this.verAngle = 89;
-			}
-			
-			this.horAngle += this.offsetHorAngle;
-
-			this.distance += this.offsetDistance;
-			if (this.distance >= 1000) {
-				this.distance = 1000;
-			} else if (this.distance <= 1) {
-				this.distance = 1;
-			}
-
-			let x = this.distance * Math.sin(this.horAngle * Math.PI / 180) * Math.cos(this.verAngle * Math.PI / 180) + centerPoint.x;
-			let y = this.distance * Math.sin(this.verAngle * Math.PI / 180) + centerPoint.y;
-			let z = this.distance * Math.cos(this.horAngle * Math.PI / 180) * Math.cos(this.verAngle * Math.PI / 180) + centerPoint.y;
-
-			camera.position.set(x, y, z);
-			camera.lookAt(new THREE.Vector3(
-				centerPoint.x,
-				centerPoint.y,
-				centerPoint.z,
-			));
-			camera.up = new THREE.Vector3(0,1,0);
-			renderer.render(scene, this.camera);
-			requestAnimationFrame(animation);
-		}
-		animation();
-
 		let dragHandler = new DragHandler((e, x0, y0, x1, y1)=>{
 			this.horAngle += -(x1 - x0) / container.offsetWidth * 10;
 			this.verAngle += (y1 - y0) / container.offsetHeight * 10;
