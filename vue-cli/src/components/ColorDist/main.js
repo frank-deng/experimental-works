@@ -2,6 +2,7 @@ window.THREE = require('three');
 require('imports-loader?THREE=three!@/js/FlyControls.js').default;
 const TWEEN = require('@tweenjs/tween.js');
 import {DragHandler} from './dragHandler.js';
+import MainWorker from './main.worker.js';
 
 function rgb2hex(r,g,b){
 	return ('00'+r.toString(16)).slice(-2)
@@ -64,6 +65,10 @@ export default{
 					image.src = src;
 				});
 			}).then((image)=>{
+				if (this.points){
+					this.ballsGrp.remove(this.points);
+				}
+
 				let canvas = document.createElement('canvas');
 				canvas.width = image.width;
 				canvas.height = image.height;
@@ -73,34 +78,31 @@ export default{
 					0, 0, canvas.width, canvas.height
 				);
 				let imgData = ctx.getImageData(0, 0, canvas.width, canvas.height);
-				let count = imgData.width * imgData.height;
-				let colorDist = {};
-				for (let i = 0; i < count; i++){
-					let hex = rgb2hex(imgData.data[4*i], imgData.data[4*i+1], imgData.data[4*i+2]);
-					if (colorDist[hex]) {
-						colorDist[hex]++;
-					} else {
-						colorDist[hex] = 1;
-					}
-				}
-
-				var material = new THREE.PointsMaterial({
-					vertexColors: true,
+				return new Promise((resolve, reject)=>{
+					let worker = new MainWorker();
+					worker.postMessage({imgData:imgData});
+					worker.addEventListener('message', (event)=>{
+						resolve(event.data.colorDist);
+					});
 				});
-				var geometry = new THREE.Geometry();
+			}).then((colorDist)=>{
+				let geometry = new THREE.Geometry();
 				geometry.colors = [];
-				Object.keys(colorDist).map((hexColor)=>{
-					let color = hex2rgb(hexColor);
-					geometry.vertices.push(new THREE.Vector3(color.r, color.g, color.b));
-					geometry.colors.push(new THREE.Color(parseInt(hexColor, 16)));
-				});
 
-				if (this.points){
-					this.ballsGrp.remove(this.points);
-				}
-				this.points = new THREE.Points(geometry, material);
-				Object.assign(this.points.position, {x:2, y:2, z:2});
-				this.ballsGrp.add(this.points);
+				DelayMapBatch(Object.keys(colorDist), (hexColor)=>{
+					let color = hex2rgb(hexColor);
+					let ox = Math.random()-0.5, oy = Math.random()-0.5, oz = Math.random()-0.5;
+					geometry.vertices.push(new THREE.Vector3(color.r + ox, color.g + oy, color.b + oz));
+					geometry.colors.push(new THREE.Color(parseInt(hexColor, 16)));
+				}, {
+					batchSize: 10000,
+				}).then(()=>{
+					this.points = new THREE.Points(geometry, new THREE.PointsMaterial({
+						vertexColors: true,
+					}));
+					Object.assign(this.points.position, {x:2, y:2, z:2});
+					this.ballsGrp.add(this.points);
+				});
 			}).catch((e)=>{
 				throw e;
 			});
