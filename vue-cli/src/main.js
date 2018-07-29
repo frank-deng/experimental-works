@@ -4,14 +4,27 @@ import Vue from 'vue'
 import App from './App'
 import router from './router'
 import VueResource from 'vue-resource';
-import ElementUI from 'element-ui'
 import 'element-ui/lib/theme-chalk/index.css'
-import DelayMapBatch from 'delay-map-batch'
-global.DelayMapBatch = DelayMapBatch;
 
 Vue.config.productionTip = false
-Vue.use(ElementUI, {zIndex: 3000 });
 Vue.use(VueResource);
+
+import {
+	Button,
+	Slider,
+	Select,
+	Option,
+	InputNumber,
+	Row,
+	Col,
+} from 'element-ui'
+Vue.use(Button);
+Vue.use(Slider);
+Vue.use(Select);
+Vue.use(Option);
+Vue.use(InputNumber);
+Vue.use(Row);
+Vue.use(Col);
 
 /* eslint-disable no-new */
 new Vue({

@@ -10,12 +10,14 @@ export default {
 			volume: 0.5,
 		};
 	},
-	methods: {
-		changeVolume(vol){
+	watch:{
+		'volume'(vol){
 			if (this.running) {
 				this.gainNode.gain.setValueAtTime(vol, this.audioCtx.currentTime);
 			}
 		},
+	},
+	methods: {
 		toggleBeep(){
 			if (this.running){
 				this.oscillator.stop();

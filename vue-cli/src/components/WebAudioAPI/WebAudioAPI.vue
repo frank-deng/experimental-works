@@ -16,7 +16,7 @@
 			</el-col>
 			<el-col :span='24'>
 				<p class='itemTitle'>音量</p>
-				<el-slider v-model="volume" :min='0' :max='1' :step='0.001' :show-tooltip='false' @change='changeVolume'></el-slider>
+				<el-slider v-model="volume" :min='0' :max='1' :step='0.001' :show-tooltip='false'></el-slider>
 			</el-col>
 			<el-col :span='24'><el-button type='primary' @click='toggleBeep'>{{running ? '停止' : '启动'}}</el-button></el-col>
 		</el-row>
