@@ -21,8 +21,6 @@ export default{
 			audioCtx: undefined,
 			freq0: undefined,
 			freq1: undefined,
-			gain0: undefined,
-			gain1: undefined,
 			gainMaster: undefined,
 			soundEffect: {
 				keyPress: undefined,
@@ -32,30 +30,18 @@ export default{
 	},
 	watch: {
 		'dialNum'(dialNum){
-			if (!dialNum) {
-				this.freq0.stop();
-				this.freq1.stop();
-				this.freq0 = undefined;
-				this.freq1 = undefined;
-				return;
-			} else if (!this.freq0 && !this.freq1) {
-				this.freq0 = this.audioCtx.createOscillator();
-				this.freq0.type = 'sine';
-				this.freq0.connect(this.gain0);
-				this.freq1 = this.audioCtx.createOscillator();
-				this.freq1.type = 'sine';
-				this.freq1.connect(this.gain1);
-
+			if (dialNum) {
 				let freq = dtmfTable[dialNum];
 				this.freq0.frequency.setValueAtTime(freq[0], this.audioCtx.currentTime);
 				this.freq1.frequency.setValueAtTime(freq[1], this.audioCtx.currentTime);
-				this.freq0.start();
-				this.freq1.start();
+				this.gainMaster.connect(this.audioCtx.destination);
 
 				let source = this.audioCtx.createBufferSource();
 				source.buffer = this.soundEffect.keyPress;
 				source.connect(this.soundEffect.keyPressGain);
 				source.start();
+			} else {
+				this.gainMaster.disconnect();
 			}
 		},
 		'volume'(volume){
@@ -78,21 +64,28 @@ export default{
 		this.audioCtx = new AudioContext();
 
 		this.gainMaster = this.audioCtx.createGain();
-		this.gainMaster.connect(this.audioCtx.destination);
 		this.gainMaster.gain.setValueAtTime(this.volume, this.audioCtx.currentTime);
 
 		let mixer = this.audioCtx.createChannelMerger(2);
 		mixer.connect(this.gainMaster);
 
 		//Freq 0
-		this.gain0 = this.audioCtx.createGain();
-		this.gain0.connect(mixer);
-		this.gain0.gain.setValueAtTime(0.5, this.audioCtx.currentTime);
+		let gain0 = this.audioCtx.createGain();
+		gain0.connect(mixer);
+		gain0.gain.setValueAtTime(0.5, this.audioCtx.currentTime);
+		this.freq0 = this.audioCtx.createOscillator();
+		this.freq0.type = 'sine';
+		this.freq0.connect(gain0);
+		this.freq0.start();
 
 		//Freq 1
-		this.gain1 = this.audioCtx.createGain();
-		this.gain1.connect(mixer);
-		this.gain1.gain.setValueAtTime(0.5, this.audioCtx.currentTime);
+		let gain1 = this.audioCtx.createGain();
+		gain1.connect(mixer);
+		gain1.gain.setValueAtTime(0.5, this.audioCtx.currentTime);
+		this.freq1 = this.audioCtx.createOscillator();
+		this.freq1.type = 'sine';
+		this.freq1.connect(gain1);
+		this.freq1.start();
 
 		//Keypress effect
 		this.soundEffect.keyPressGain = this.audioCtx.createGain();
