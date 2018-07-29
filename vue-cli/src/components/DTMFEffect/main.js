@@ -16,13 +16,14 @@ export default{
 	data(){
 		return {
 			dialNum: undefined,
-			volume: undefined,
-			volumeKeyPress: undefined,
+			volume: 0.5,
+			volumeKeyPress: 0.5,
 			audioCtx: undefined,
 			freq0: undefined,
 			freq1: undefined,
 			gain0: undefined,
 			gain1: undefined,
+			gainMaster: undefined,
 			soundEffect: {
 				keyPress: undefined,
 				keyPressGain: undefined,
@@ -58,8 +59,7 @@ export default{
 			}
 		},
 		'volume'(volume){
-			this.gain0.gain.setValueAtTime(volume * 0.5, this.audioCtx.currentTime);
-			this.gain1.gain.setValueAtTime(volume * 0.5, this.audioCtx.currentTime);
+			this.gainMaster.gain.setValueAtTime(volume, this.audioCtx.currentTime);
 		},
 		'volumeKeyPress'(volume){
 			this.soundEffect.keyPressGain.gain.setValueAtTime(volume, this.audioCtx.currentTime);
@@ -77,20 +77,27 @@ export default{
 	mounted(){
 		this.audioCtx = new AudioContext();
 
+		this.gainMaster = this.audioCtx.createGain();
+		this.gainMaster.connect(this.audioCtx.destination);
+		this.gainMaster.gain.setValueAtTime(this.volume, this.audioCtx.currentTime);
+
+		let mixer = this.audioCtx.createChannelMerger(2);
+		mixer.connect(this.gainMaster);
+
 		//Freq 0
 		this.gain0 = this.audioCtx.createGain();
-		this.gain0.connect(this.audioCtx.destination);
+		this.gain0.connect(mixer);
+		this.gain0.gain.setValueAtTime(0.5, this.audioCtx.currentTime);
 
 		//Freq 1
 		this.gain1 = this.audioCtx.createGain();
-		this.gain1.connect(this.audioCtx.destination);
+		this.gain1.connect(mixer);
+		this.gain1.gain.setValueAtTime(0.5, this.audioCtx.currentTime);
 
 		//Keypress effect
 		this.soundEffect.keyPressGain = this.audioCtx.createGain();
 		this.soundEffect.keyPressGain.connect(this.audioCtx.destination);
-
-		this.volume = 0.5;
-		this.volumeKeyPress = 0.5;
+		this.soundEffect.keyPressGain.gain.setValueAtTime(this.volumeKeyPress, this.audioCtx.currentTime);
 
 		//Load keyboard sound effect
 		this.$http.get('static/keypress.ogg', {responseType: 'arraybuffer'}).then((resp)=>{
