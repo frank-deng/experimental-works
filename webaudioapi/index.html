@@ -50,10 +50,10 @@ oscillator.connect(gain);
 
 var time = this.audioCtx.currentTime;
 var freq = 4000;
-for (let i = 0 ; i < 4000 && freq > 0; i++) {
+while (freq > 0){
 	oscillator.frequency.setValueAtTime(freq, time);
 	time += 0.001;
-	freq -= 100;
+	freq -= 70;
 }
 oscillator.frequency.setValueAtTime(0, time);
 oscillator.start();
