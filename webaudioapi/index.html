@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width,initial-scale=1.0">
+    <title>Try Web Audio API</title>
+    <script type='text/javascript' src='mobile_logger.js'></script>
+    <script type='text/javascript'>
+window.addEventListener('load', function(){
+	MobileLogger.bind(document.getElementById('logger_element'));
+});
+    </script>
+	<style type='text/css'>
+#logger_element{
+	display:block;
+	position:fixed;
+	left:0;
+	right:0;
+	top:0;
+	bottom:0;
+	font-size:1em;
+	line-height:1.1em;
+	font-family:monospace;
+	font-weight:normal;
+	color:#FFF;
+	background-color:#000;
+	border-top: 1px solid #b3d8ff;
+	margin:0;
+	padding:0;
+	z-index: 100;
+	word-break:break-all;
+}
+	</style>
+  </head>
+  <body>
+    <pre id='logger_element'></pre>
+  </body>
+  <script>
+var audioCtx = new AudioContext();
+var gainMaster = audioCtx.createGain();
+gainMaster.connect(this.audioCtx.destination);
+gainMaster.gain.setValueAtTime(0.3, this.audioCtx.currentTime);
+var mixer = this.audioCtx.createChannelMerger(1);
+mixer.connect(gainMaster);
+var gain = audioCtx.createGain();
+gain.connect(mixer);
+var oscillator = audioCtx.createOscillator();
+oscillator.type = 'square';
+oscillator.connect(gain);
+
+var time = this.audioCtx.currentTime;
+var freq = 4000;
+for (let i = 0 ; i < 4000 && freq > 0; i++) {
+	oscillator.frequency.setValueAtTime(freq, time);
+	time += 0.001;
+	freq -= 100;
+}
+oscillator.frequency.setValueAtTime(0, time);
+oscillator.start();
+
+document.body.addEventListener('click', function(){
+	oscillator.stop();
+});
+window.addEventListener('keydown', function(){
+	oscillator.stop();
+});
+  </script>
+</html>
