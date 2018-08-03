@@ -36,6 +36,43 @@ window.addEventListener('load', function(){
     <pre id='logger_element'></pre>
   </body>
   <script>
+var processNotes = function(notes, tempo) {
+	var notefreq = {
+		'c':  [16.352, 32.703, 65.406, 130.81, 261.63, 523.25, 1046.5, 2093.0, 4186.0],
+		'c+': [17.324, 34.648, 69.296, 138.59, 227.18, 554.37, 1108.7, 2217.5, 4439.9],
+		'd':  [18.354, 36.709, 73.416, 146.83, 293.66, 587.33, 1174.7, 2349.3, 4498.6],
+		'd+': [19.445, 38.891, 77.782, 155.56, 311.13, 622.25, 1244.5, 2489.0, 4978.0],
+		'e':  [20.602, 41.203, 82.407, 164.81, 326.63, 659.26, 1318.5, 2637.0, 5474.0],
+		'f':  [21.827, 43.654, 87.307, 174.61, 349.23, 698.46, 1396.9, 2793.8, 5587.7],
+		'f+': [23.125, 46.249, 92.499, 185.00, 369.99, 739.99, 1480.0, 2960.0, 5919.9],
+		'g':  [24.500, 48.999, 97.999, 196.00, 392.00, 783.99, 1568.0, 3136.0, 6271.9],
+		'g+': [25.967, 51.913, 103.83, 207.65, 415.30, 830.61, 1661.2, 3322.4, 6644.9],
+		'a':  [27.500, 55.000, 110.0,  220.0,  440.0,  880.0,  1760.0, 3520.0, 7040.0],
+		'a+': [29.135, 58.270, 116.54, 233.08, 466.16, 932.33, 1864.7, 3729.3, 7458.6],
+		'b':  [30.868, 61.736, 123.47, 246.94, 493.88, 987.77, 1975.53, 3951.05, 7902.1],
+	}
+	var result = [], baseDuration = 60 / tempo * 4, time = 0, pause = 0.01;
+	for (let note of notes) {
+		let duration = baseDuration / note.l;
+		result.push({
+			freq: ('p' == note.n ? 0 : (notefreq[note.n][note.o] || 0)),
+			time: time,
+		});
+		result.push({
+			freq: 0,
+			time: time + duration,
+		});
+		time += duration + pause;
+	}
+	return result;
+}
+var playMusic = function(audioCtx, oscillator, notes) {
+	var time = audioCtx.currentTime;
+	for (let note of notes) {
+		oscillator.frequency.setValueAtTime(note.freq, time+note.time);
+	}
+}
+
 var audioCtx = new AudioContext();
 var gainMaster = audioCtx.createGain();
 gainMaster.connect(this.audioCtx.destination);
@@ -48,6 +85,7 @@ var oscillator = audioCtx.createOscillator();
 oscillator.type = 'square';
 oscillator.connect(gain);
 
+/*
 var time = this.audioCtx.currentTime;
 var freq = 4000;
 while (freq > 0){
@@ -56,6 +94,37 @@ while (freq > 0){
 	freq -= 70;
 }
 oscillator.frequency.setValueAtTime(0, time);
+*/
+var notes = processNotes([
+	{n:'g',o:6,l:16},
+	{n:'f',o:6,l:16},
+	{n:'a',o:5,l:8},
+	{n:'b',o:5,l:8},
+	{n:'e',o:6,l:16},
+	{n:'d',o:6,l:16},
+	{n:'f',o:5,l:8},
+	{n:'g',o:5,l:8},
+	{n:'d',o:6,l:16},
+	{n:'c',o:6,l:16},
+	{n:'e',o:5,l:8},
+	{n:'g',o:5,l:8},
+	{n:'c',o:6,l:3},
+	{n:'p',l:3},
+	{n:'g',o:6,l:16},
+	{n:'f',o:6,l:16},
+	{n:'a',o:5,l:8},
+	{n:'b',o:5,l:8},
+	{n:'e',o:6,l:16},
+	{n:'d',o:6,l:16},
+	{n:'f',o:5,l:8},
+	{n:'g',o:5,l:8},
+	{n:'d',o:6,l:16},
+	{n:'c',o:6,l:16},
+	{n:'e',o:5,l:8},
+	{n:'g',o:5,l:8},
+	{n:'c',o:6,l:3},
+], 128);
+playMusic(audioCtx, oscillator, notes);
 oscillator.start();
 
 document.body.addEventListener('click', function(){
