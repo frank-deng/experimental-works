@@ -36,6 +36,29 @@ window.addEventListener('load', function(){
     <pre id='logger_element'></pre>
   </body>
   <script>
+var processMML = function(_mml) {
+	var mml = _mml.slice(), match = undefined, pos = 0, commands = [];
+	while (mml.length) {
+		if (match = /^\s+/.exec(mml)) {
+			//Ignore white space chars
+		} else if (match = /^(T|L|O|P|N)(\d+)/i.exec(mml)) {
+			//Set tempo, note length, octave, pause, play note
+			commands.push([match[1], Number(match[2])]);
+		} else if (match = /^(ML|MN|MS|\<|\>)/i.exec(mml)) {
+			//Set music legato, normal, staccato, control octaves
+			commands.push([match[0]]);
+		} else if (match = /^([CDEFGAB][#+-]?)(\d*)(\.*)/i.exec(mml)) {
+			//Play note
+			commands.push([match[1], match[2], match[3]]);
+		} else {
+			throw SyntaxError('Invalid MML character at position ' + pos);
+		}
+		mml = mml.slice(match[0].length);
+		pos += match[0].length;
+	}
+	return commands;
+}
+console.log(processMML("T150 \t\nL16 MSP20 O6 CD#E.F8G16.A..B8..<>"));
 var processNotes = function(notes, tempo) {
 	var notefreq = {
 		'c':  [16.352, 32.703, 65.406, 130.81, 261.63, 523.25, 1046.5, 2093.0, 4186.0],
