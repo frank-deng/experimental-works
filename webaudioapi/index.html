@@ -76,7 +76,7 @@ var playMusic = function(audioCtx, oscillator, notes) {
 var audioCtx = new AudioContext();
 var gainMaster = audioCtx.createGain();
 gainMaster.connect(this.audioCtx.destination);
-gainMaster.gain.setValueAtTime(0.3, this.audioCtx.currentTime);
+gainMaster.gain.setValueAtTime(0.1, this.audioCtx.currentTime);
 var mixer = this.audioCtx.createChannelMerger(1);
 mixer.connect(gainMaster);
 var gain = audioCtx.createGain();
@@ -85,44 +85,34 @@ var oscillator = audioCtx.createOscillator();
 oscillator.type = 'square';
 oscillator.connect(gain);
 
-/*
-var time = this.audioCtx.currentTime;
-var freq = 4000;
-while (freq > 0){
-	oscillator.frequency.setValueAtTime(freq, time);
-	time += 0.001;
-	freq -= 70;
-}
-oscillator.frequency.setValueAtTime(0, time);
-*/
 var notes = processNotes([
-	{n:'g',o:6,l:16},
-	{n:'f',o:6,l:16},
-	{n:'a',o:5,l:8},
-	{n:'b',o:5,l:8},
-	{n:'e',o:6,l:16},
-	{n:'d',o:6,l:16},
-	{n:'f',o:5,l:8},
-	{n:'g',o:5,l:8},
-	{n:'d',o:6,l:16},
-	{n:'c',o:6,l:16},
-	{n:'e',o:5,l:8},
-	{n:'g',o:5,l:8},
-	{n:'c',o:6,l:3},
+	{n:'g',o:5,l:16},
+	{n:'f',o:5,l:16},
+	{n:'a',o:4,l:8},
+	{n:'b',o:4,l:8},
+	{n:'e',o:5,l:16},
+	{n:'d',o:5,l:16},
+	{n:'f',o:4,l:8},
+	{n:'g',o:4,l:8},
+	{n:'d',o:5,l:16},
+	{n:'c',o:5,l:16},
+	{n:'e',o:4,l:8},
+	{n:'g',o:4,l:8},
+	{n:'c',o:5,l:3},
 	{n:'p',l:3},
-	{n:'g',o:6,l:16},
-	{n:'f',o:6,l:16},
-	{n:'a',o:5,l:8},
-	{n:'b',o:5,l:8},
-	{n:'e',o:6,l:16},
-	{n:'d',o:6,l:16},
-	{n:'f',o:5,l:8},
-	{n:'g',o:5,l:8},
-	{n:'d',o:6,l:16},
-	{n:'c',o:6,l:16},
-	{n:'e',o:5,l:8},
-	{n:'g',o:5,l:8},
-	{n:'c',o:6,l:3},
+	{n:'g',o:5,l:16},
+	{n:'f',o:5,l:16},
+	{n:'a',o:4,l:8},
+	{n:'b',o:4,l:8},
+	{n:'e',o:5,l:16},
+	{n:'d',o:5,l:16},
+	{n:'f',o:4,l:8},
+	{n:'g',o:4,l:8},
+	{n:'d',o:5,l:16},
+	{n:'c',o:5,l:16},
+	{n:'e',o:4,l:8},
+	{n:'g',o:4,l:8},
+	{n:'c',o:5,l:3},
 ], 128);
 playMusic(audioCtx, oscillator, notes);
 oscillator.start();
