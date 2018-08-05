@@ -14,6 +14,7 @@ import {
 	Slider,
 	Select,
 	Option,
+	Input,
 	InputNumber,
 	Row,
 	Col,
@@ -22,6 +23,7 @@ Vue.use(Button);
 Vue.use(Slider);
 Vue.use(Select);
 Vue.use(Option);
+Vue.use(Input);
 Vue.use(InputNumber);
 Vue.use(Row);
 Vue.use(Col);
