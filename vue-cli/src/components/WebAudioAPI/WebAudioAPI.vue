@@ -1,5 +1,5 @@
 <template>
-	<div>
+	<div class='WebAudioAPI'>
 		<el-row>
 			<el-col :span='24'>
 				<p class='itemTitle'>类型</p>
@@ -12,7 +12,7 @@
 			</el-col>
 			<el-col :span='24'>
 				<p class='itemTitle'>频率</p>
-				<el-input-number v-model="frequency" :min="1" :max="44100" :disabled='running'></el-input-number>
+				<el-input-number v-model="frequency" :min="0" :max="44100"></el-input-number>
 			</el-col>
 			<el-col :span='24'>
 				<p class='itemTitle'>音量</p>
@@ -34,5 +34,8 @@
 }
 .el-col {
 	margin: 6px 0;
+}
+.WebAudioAPI {
+	padding: 10px;
 }
 </style>

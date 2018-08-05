@@ -20,8 +20,8 @@ export default {
   position: fixed;
   left: 0;
   right: 0;
-  top: 0;
-  bottom: 30%;
+  top: 25%;
+  bottom: 0;
   padding: 0;
   margin: 0;
 }
@@ -34,15 +34,15 @@ ul, li{
 	position:fixed;
 	left:0;
 	right:0;
-	bottom:0;
-	height:30%;
+	top:0;
+	height:25%;
 	font-size:1em;
 	line-height:1.1em;
 	font-family:monospace;
 	font-weight:normal;
 	color:#000;
 	background-color:#ecf5ff;
-	border-top: 1px solid #b3d8ff;
+	border-bottom: 1px solid #b3d8ff;
 	margin:0;
 	padding:0;
 	z-index: 100;

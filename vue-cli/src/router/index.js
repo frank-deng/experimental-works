@@ -4,7 +4,6 @@ import Router from 'vue-router'
 import IndexPage from '@/components/IndexPage/IndexPage.vue'
 import DTMFEffect from '@/components/DTMFEffect/index.vue'
 import WebAudioAPI from '@/components/WebAudioAPI/WebAudioAPI.vue'
-import MathML from '@/components/MathML/index.vue'
 //import WebGLTry from '@/components/WebGLTry/index.vue'
 
 Vue.use(Router);
@@ -24,11 +23,6 @@ let router = new Router({
 			path: '/WebAudioAPI',
 			name: 'WebAudioAPI实验',
 			component: WebAudioAPI,
-		},
-		{
-			path: '/MathML',
-			name: 'MathML测试',
-			component: MathML,
 		},
 		/*
 		{

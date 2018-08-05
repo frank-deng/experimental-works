@@ -16,6 +16,11 @@ export default {
 				this.gainNode.gain.setValueAtTime(vol, this.audioCtx.currentTime);
 			}
 		},
+		'frequency'(frequency){
+			if (this.running) {
+				this.oscillator.frequency.setValueAtTime(frequency, this.audioCtx.currentTime);
+			}
+		},
 	},
 	methods: {
 		toggleBeep(){
@@ -30,6 +35,7 @@ export default {
 				oscillator.start();
 				this.oscillator = oscillator;
 				this.running = true;
+				this.gainNode.gain.setValueAtTime(this.volume, this.audioCtx.currentTime);
 			}
 		},
 	},
