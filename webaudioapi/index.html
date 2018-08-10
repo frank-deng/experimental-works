@@ -45,25 +45,40 @@ mixer.connect(gainMaster);
 var gain = audioCtx.createGain();
 gain.gain.setValueAtTime(0.5, this.audioCtx.currentTime);
 gain.connect(mixer);
+
 var noiseNode = audioCtx.createScriptProcessor(4096, 1, 1);
-noiseNode.connect(gain);
-noiseDiv = 64;
+var value = Math.random()*2-1;
 noiseNode.addEventListener('audioprocess', (e)=>{
+	var len = e.outputBuffer.length;
+	var input = e.inputBuffer.getChannelData(0);
 	var output = e.outputBuffer.getChannelData(0);
-	var value = Math.random() * 2 - 1;
-    for (var i = 0; i < e.outputBuffer.length; i++) {
-    	if (0 == (i % noiseDiv)){
-    		value = Math.random() * 2 - 1;
+    for (var i = 0; i < len; i++) {
+    	if (i > 0 && (input[i]>0) !== (input[i-1]>0)){
+    		value = Math.random()*2-1;
 		}
-        output[i] = value;
+		output[i] = value;
     }
 });
+noiseNode.connect(gain);
+
+var oscillatorNode = audioCtx.createOscillator();
+oscillatorNode.type = 'square';
+oscillatorNode.frequency.setValueAtTime(1000, audioCtx.currentTime);
+oscillatorNode.connect(noiseNode);
+oscillatorNode.start();
+
+oscillatorNode.frequency.setValueAtTime(1000, audioCtx.currentTime+1);
+oscillatorNode.frequency.linearRampToValueAtTime(5000, audioCtx.currentTime+3);
+oscillatorNode.frequency.setValueAtTime(5000, audioCtx.currentTime+5);
+oscillatorNode.frequency.linearRampToValueAtTime(1000, audioCtx.currentTime+7);
+oscillatorNode.frequency.setValueAtTime(0, audioCtx.currentTime+9);
+
+var mute = ()=>{
+	oscillatorNode.stop();
+	noiseNode.disconnect();
+}
     
-document.body.addEventListener('click', function(){
-	noiseNode.disconnect();
-});
-window.addEventListener('keydown', function(){
-	noiseNode.disconnect();
-});
+document.body.addEventListener('click', mute);
+window.addEventListener('keydown', mute);
   </script>
 </html>
