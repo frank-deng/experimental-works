@@ -107,8 +107,13 @@
 				continue;
 			}
 			let duration = baseDuration / (cmd[1] || noteLenDef);
-			if (cmd[2]) {
-				duration *= Math.pow(1.5, cmd[2].length);
+			switch (cmd[2]) {
+				case '.':
+					duration *= 1.5;
+				break;
+				case '..':
+					duration *= 1.75;
+				break;
 			}
 
 			let freq = note2num[note]? noteFreq[note2num[note]-1+octave * 12] : 0;

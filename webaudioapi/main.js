@@ -65,6 +65,12 @@ T150L8ML
 CA4FED4EFG4E4C4. <A>FEFEC4<B>D4C2.
 `;
 var music2 = `
+T150L8MLO3
+p4. c1 g2.. e1 g2.
+c1 g1 e1 g2.
+`;
+/*
+var music2 = `
 L16MNO6
 GF<A8B8> ED<F8G8> DC<E8G8> C4.P8
 GF<A8B8> ED<F8G8> DC<E8G8> C4.
@@ -74,14 +80,12 @@ L16MSO7
 BP P4 BP P4 BP P4 B16P16P8P8P8
 BP P4 BP P4 BP P4 B16
 `;
+*/
 var offset = 0.21;
 mmlUtil.setOscillator(oscilNode[0], mmlUtil.processMML(music), audioCtx.currentTime + offset);
 mmlUtil.setOscillator(oscilNode[1], mmlUtil.processMML(music2), audioCtx.currentTime + offset);
-mmlUtil.setOscillator(noiseNode, mmlUtil.processMML(noise), audioCtx.currentTime);
+//mmlUtil.setOscillator(noiseNode, mmlUtil.processMML(noise), audioCtx.currentTime);
 
-gain[1].gain.value = 0.5;
-gain[3].gain.value = 0.5;
-
-noiseNode.start();
-//oscilNode[0].start();
+//noiseNode.start();
+oscilNode[0].start();
 oscilNode[1].start();
