@@ -46,29 +46,33 @@ noiseProcessor.connect(gain[3]);
 
 var noiseNode = audioCtx.createOscillator();
 noiseNode.type = 'square';
+noiseNode.frequency.value = 0;
 noiseNode.connect(noiseProcessor);
 
 var oscilNode = [];
 for (var i = 0; i < 3; i++) {
 	oscilNode[i] = audioCtx.createOscillator();
 	oscilNode[i].type = 'square';
+	oscilNode[i].frequency.value = 0;
 	oscilNode[i].connect(gain[i]);
 }
 
 var music = `
-L16MLO5
-GF<A8B8> ED<F8G8> DC<E8G8> C4.P8
-GF<A8B8> ED<F8G8> DC<E8G8> C4.
+T150L8ML
+<G>CDE4<G4>FEDC<BB4>G2 C4<E4>DC<BAABG2>
+<F4>C4<B4.AG>D4CC2 FEFEF4E4D2.
+<G>CDE4<G4>FEDC<BB4>G2 C4<E4>DC<BAA>A4G2
+CA4FED4EFG4E4C4. <A>FEFEC4<B>D4C2.
 `;
 var music2 = `
-L16MLO3
+L16MNO6
 GF<A8B8> ED<F8G8> DC<E8G8> C4.P8
 GF<A8B8> ED<F8G8> DC<E8G8> C4.
 `;
 var noise = `
-L16MLO7
-CP P4 CP P4 CP P4 C4.P8
-CP P4 CP P4 CP P4 C4.
+L16MSO7
+BP P4 BP P4 BP P4 B16P16P8P8P8
+BP P4 BP P4 BP P4 B16
 `;
 var offset = 0.21;
 mmlUtil.setOscillator(oscilNode[0], mmlUtil.processMML(music), audioCtx.currentTime + offset);
@@ -79,5 +83,5 @@ gain[1].gain.value = 0.5;
 gain[3].gain.value = 0.5;
 
 noiseNode.start();
-oscilNode[0].start(audioCtx.currentTime + offset);
-oscilNode[1].start(audioCtx.currentTime + offset);
+//oscilNode[0].start();
+oscilNode[1].start();

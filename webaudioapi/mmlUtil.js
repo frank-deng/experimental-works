@@ -75,7 +75,7 @@
 				gap = 0.1;
 			},
 			'MN':()=>{
-				gap = 0.05;
+				gap = 0.01;
 			},
 			'<':()=>{
 				if (octave > 0){
@@ -118,7 +118,7 @@
 					freq: freq,
 					time: time,
 				});
-			} else if (time > gap) {
+			} else if (duration > gap) {
 				result.push({
 					freq: freq,
 					time: time,
