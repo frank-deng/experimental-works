@@ -10,9 +10,14 @@ window.addEventListener('error', function(e){
 });
 		</script>
 		<script type="text/javascript" src="https://cdn.bootcss.com/mathjax/2.7.4/MathJax.js?config=MML_SVG"></script>
+		<style type="text/css">
+mglyph{
+	height:1em;
+}
+		</style>
 	</head>
 	<body>
-		<math>
+		<p><math>
 			<mrow>
 				<msup><mi>a</mi><mn>2</mn></msup>
 				<mo>+</mo>
@@ -20,9 +25,35 @@ window.addEventListener('error', function(e){
 				<mo>=</mo>
 				<msup><mi>c</mi><mn>2</mn></msup>
 			</mrow>
-		</math>
+		</math></p>
+		<p><math>
+			<mrow>
+				<munder>
+					<mo>lim</mo>
+					<mo>
+						<mi><mglyph height='0.7em' valign='-0.15em' src='emoji.jpg' alt='x'/></mi>
+						&#x2192;<mn>0</mn>
+					</mo>
+				</munder>
+				<mfrac>
+					<mo>sin(<mi><mglyph height='0.6em' valign='-0.15em' src='emoji.jpg' alt='x'/></mi>)</mo>
+					<mi><mglyph height='0.6em' valign='-0.15em' src='emoji.jpg' alt='x'/></mi>
+				</mfrac>
+				<mo>=</mo><mn>1</mn>
+			</mrow>
+		</math></p>
 	</body>
 	<script type="text/x-mathjax-config">
+		MathJax.Hub.Config({ 
+        	SVG:{
+        		addMMLclasses: true,
+				styles:{
+					'.mengbi':{
+						scale: 1,
+					}
+				}
+			}, 
+        });
 		MathJax.Hub.Queue(["Typeset",MathJax.Hub]);
 	</script>
 </html>
