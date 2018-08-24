@@ -10,7 +10,6 @@ Nginx Configuation
 
 	map $http_user_agent $browser_type {
 		default pc;
-		"~MSIE (6.0|7.0|8.0)" oldie;
 		~(iPhone|Android.*Mobile) mobile;
 		~(iPad|Android) pad;
 	}
@@ -18,6 +17,7 @@ Nginx Configuation
 		listen 80 default_server;
 		listen [::]:80 default_server;
 		root /path/to/share/;
+		index " ";
 		charset utf-8;
 		error_page 301 @error_page_301;
 		error_page 401 @error_page_401;
@@ -48,17 +48,7 @@ Nginx Configuation
 <xsl:output method="html" doctype-system="" version="5.0" encoding="UTF-8" indent="yes"/>
 
 <xsl:template name='filelist' match="/list">
-	<xsl:choose>
-		<xsl:when test="$template = 'image-viewer'">
-			<xsl:call-template name="image-viewer"/>
-		</xsl:when>
-		<xsl:when test="$template = 'ymplayer'">
-			<xsl:call-template name="ymplayer"/>
-		</xsl:when>
-		<xsl:otherwise>
-			<xsl:call-template name="filelist-main"/>
-		</xsl:otherwise>
-	</xsl:choose>
+	<xsl:call-template name="filelist-main"/>
 </xsl:template>
 
 <xsl:template name='filelist-path-links'>
@@ -106,12 +96,6 @@ svg.icon{display:block;float:left;width:34px;height:34px;}
 .filelist:hover{background-color:#eee;opacity:0.5;}
 #dir_navigator a:hover{opacity:0.5;}
 		</style></xsl:if>
-		<xsl:if test="$browsertype = 'oldie'"><style type='text/css' id='style_pc'>
-.icon-root{margin-top:-3px;}
-.filelist:hover{background-color:#eee;}
-.filelist .filename{margin-left:0;}
-.filelist .filesize{margin-left:0;}
-		</style></xsl:if>
 	</head>
 	<body>
 		<svg display="none" version="1.1" xmlns="http://www.w3.org/2000/svg">
@@ -129,16 +113,9 @@ svg.icon{display:block;float:left;width:34px;height:34px;}
 			<g id="icon-file-code" fill="#fa6344"><path d="M1596 380q28 28 48 76t20 88v1152q0 40-28 68t-68 28h-1344q-40 0-68-28t-28-68v-1600q0-40 28-68t68-28h896q40 0 88 20t76 48zm-444-244v376h376q-10-29-22-41l-313-313q-12-12-41-22zm384 1528v-1024h-416q-40 0-68-28t-28-68v-416h-768v1536h1280zm-928-896q8-11 21-12.5t24 6.5l51 38q11 8 12.5 21t-6.5 24l-182 243 182 243q8 11 6.5 24t-12.5 21l-51 38q-11 8-24 6.5t-21-12.5l-226-301q-14-19 0-38zm802 301q14 19 0 38l-226 301q-8 11-21 12.5t-24-6.5l-51-38q-11-8-12.5-21t6.5-24l182-243-182-243q-8-11-6.5-24t12.5-21l51-38q11-8 24-6.5t21 12.5zm-620 461q-13-2-20.5-13t-5.5-24l138-831q2-13 13-20.5t24-5.5l63 10q13 2 20.5 13t5.5 24l-138 831q-2 13-13 20.5t-24 5.5z"/></g>
 		</svg>
 		<div class='header'><div class='header-inner' id='dir_navigator'>
-			<xsl:choose>
-				<xsl:when test="$browsertype = 'oldie'">
-					<a class='link-root' href='/'><img class='icon-root' src='data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABYAAAAWCAYAAADEtGw7AAAA1UlEQVQ4jd3UvUqCYRgG4CuDwqZEF/FIXDqApiabPIQOwjNwCJ0aXZodbWpo6QCiAxClQelnCeN18BM+ROXr+wHxhpt3ebh4lvfhGHORJ9ZAD1ME/OAFtyilRZv4iMBtfcR5mk33oev2ovkyLpPA/QRowAKD6A0Yob4PniSEt3W4Cy1nQAN+cbaJlnCXEZ7hZBN+yIgGvOEqjrZyQOPtrjd/zhkOaMO8APgVPguAv+GpAHgM1wXA96J0ckTfURXLjdVp/EsJfln9h5odOUXln0104Q47SwJpCVeUDnONAAAAAElFTkSuQmCC'/></a> / 
-				</xsl:when>
-				<xsl:otherwise>
-					<a class='link-root' href='/'>
-						<svg class='icon-root' width="1920" height="1920" viewBox="0 0 1920 1920" xmlns="http://www.w3.org/2000/svg"><path d="m 1920,1280 q 0,159 -112.5,271.5 Q 1695,1664 1536,1664 l -1088,0 Q 263,1664 131.5,1532.5 0,1401 0,1216 0,1084 71,974.5 142,865 258,811 q -2,-28 -2,-43 0,-212 150,-362 150,-150 362,-150 158,0 286.5,88 128.5,88 187.5,230 70,-62 166,-62 106,0 181,75 75,75 75,181 0,75 -41,138 129,30 213,134.5 84,104.5 84,239.5 z" fill="#333"/></svg>
-					</a> / 
-				</xsl:otherwise>
-			</xsl:choose>
+			<a class='link-root' href='/'>
+				<svg class='icon-root' width="1920" height="1920" viewBox="0 0 1920 1920" xmlns="http://www.w3.org/2000/svg"><path d="m 1920,1280 q 0,159 -112.5,271.5 Q 1695,1664 1536,1664 l -1088,0 Q 263,1664 131.5,1532.5 0,1401 0,1216 0,1084 71,974.5 142,865 258,811 q -2,-28 -2,-43 0,-212 150,-362 150,-150 362,-150 158,0 286.5,88 128.5,88 187.5,230 70,-62 166,-62 106,0 181,75 75,75 75,181 0,75 -41,138 129,30 213,134.5 84,104.5 84,239.5 z" fill="#333"/></svg>
+			</a> / 
 			<xsl:call-template name="filelist-path-links"><xsl:with-param name="path" select="substring-after($dir,'/')"/></xsl:call-template>
 		</div></div>
 		<xsl:for-each select='directory'>
@@ -155,7 +132,7 @@ svg.icon{display:block;float:left;width:34px;height:34px;}
 			<xsl:variable name='ext-3' select="substring($lfilename,string-length($lfilename)-3,string-length($lfilename))"/>
 			<xsl:variable name='ext-4' select="substring($lfilename,string-length($lfilename)-4,string-length($lfilename))"/>
 			<div><a class='filelist file' target='_blank' href='{.}' filename='{.}'>
-				<xsl:if test="$browsertype != 'oldie'"><xsl:choose>
+				<xsl:choose>
 					<xsl:when test="$ext-3 = '.jpg' or $ext-4 = '.jpeg' or $ext-3 = '.gif'
 						or $ext-3 = '.png' or $ext-3 = '.bmp' or $ext-3 = '.svg'
 						or $ext-3 = '.tif' or $ext-4 = '.tiff' or $ext-3 = '.dib'
@@ -202,7 +179,7 @@ svg.icon{display:block;float:left;width:34px;height:34px;}
 					<xsl:otherwise>
 						<svg class="icon" viewBox="0 0 1792 1792"><use xlink:href="#icon-file"></use></svg>
 					</xsl:otherwise>
-				</xsl:choose></xsl:if>
+				</xsl:choose>
 				<span class='filename'><xsl:value-of select="."/></span>
 				<div class='filesize'><xsl:choose>
 					<xsl:when test='@size &gt; 1073741824'><xsl:value-of select="format-number(@size div 1073741824, '#.0')"/>G</xsl:when>
@@ -214,408 +191,11 @@ svg.icon{display:block;float:left;width:34px;height:34px;}
 		</xsl:for-each>
 	</body>
 	<script type='text/javascript'><![CDATA[
-function isOldIE(){return (/MSIE (7.0|8.0)/.test(window.navigator.userAgent)?true:false)}
-
-var current_dir = decodeURIComponent(window.location.pathname);
-var dir_navigator = document.getElementById('dir_navigator');
-var table_process_ext = [
-	{match:/\.(jpg|jpeg|gif|png|bmp)$/i, action:function(e,filename,href){
-		e.onclick = function(){
-			window.open(current_dir+'?t=image-viewer&f='+filename);
-			return false;
-		}
-	}},
-	{match:/\.(svg)$/i, action:function(e,filename,href){
-		if (!isOldIE()){
-			e.onclick = function(){
-				window.open(current_dir+'?t=image-viewer&f='+filename);
-				return false;
-			}
-		}
-	}},
-	{match:/\.(wav|mp3|ogg)$/i, action:function(e,filename,href){
-		if (!isOldIE()){
-			e.onclick = function(e){
-				window.open(current_dir+'?t=ymplayer&f='+filename);
-				return false;
-			}
-		}
-	}},
-];
-var files_all = document.querySelectorAll('.filelist.file');
-for (var i = 0; i < files_all.length; i++) {
-	var file_selector = files_all[i];
-	var filename = file_selector.getAttribute('filename');
-	var href = file_selector.getAttribute('href');
-	for (var j = 0; j < table_process_ext.length; j++) {
-		var p = table_process_ext[j];
-		if (p && p.match.test(filename)) {
-			p.action(file_selector, encodeURIComponent(filename), href);
-		}
-	}
-}
-
-//Adjust body's top distance
 function resizeTop(){
 	document.body.style.paddingTop = dir_navigator.offsetHeight + 'px';
 }
 window.onresize = resizeTop;
 resizeTop();
-	]]></script>
-</html>
-</xsl:template>
-
-<!--
-This XSLT template is used to display image files in a folder
-
-Deployment:
-
-Download touch.min.js from https://github.com/Clouda-team/touchjs, then put it into folder $DOCUMENT_ROOT/.res/js/.
--->
-<xsl:template name='image-viewer'>
-<html>
-	<head>
-		<meta name='viewport' id='viewport' content='width=device-width,initial-scale=1.0,minimum-scale=1.0,maximum-scale=1.0,user-scalable=no'/>
-		<meta charset='UTF-8'/>
-		<meta name='wap-font-scale' content='no'/>
-		<title>Image Viewer</title>
-		<script type='text/javascript' src='/.res/js/touch.min.js'></script>
-		<style type='text/css'>
-body{user-select:none;-moz-user-select:none;-webkit-user-select:none;font-family:sans,arial,"微软雅黑";background-color:#FFFFFF;padding:0;margin:0;overflow:hidden;text-align:center;}
-img{image-orientation:from-image;}
-.table-center{display:table;width:100%;height:100%;}
-.table-cell-center{display:table-cell;width:100%;height:100%;text-align:center;vertical-align:middle;}
-#swipe_receiver{position:fixed;left:0;right:0;top:0;bottom:0;overflow:hidden;z-index:100;}
-#image_viewer{position:fixed;left:0;right:0;top:0;bottom:0;overflow:hidden;}
-#image_viewer .text{display:none;color:#000000;}
-#image_show{cursor:pointer;}
-#image_show img{display:inline-block;}
-#image_viewer.loading #image_show, #image_viewer.error #image_show{display:none;}
-#image_viewer.loading .text#loading{display:block;}
-#image_viewer.error .text#error{display:block;}
-#controls{display:none;}
-		</style>
-	</head>
-	<body>
-		<xsl:if test="$browsertype = 'pad' or $browsertype = 'mobile'"><div id='swipe_receiver'></div></xsl:if>
-		<div id='image_viewer' class='loading'>
-			<div class='table-center'><div class='table-cell-center'><img id='image_show' alt=''/><span class='text' id='loading'>Loading...<span id='loading_progress'></span></span><span class='text' id='error'>Failed to load image.</span></div></div>
-		</div>
-		<xsl:for-each select='file'>
-			<xsl:variable name='filename' select='.'/>
-			<xsl:variable name='lfilename' select="translate($filename,'ABCDEFGHIJKLMNOPQRSTUVWXYZ','abcdefghijklmnopqrstuvwxyz')"/>
-			<xsl:variable name='ext-3' select="substring($lfilename,string-length($lfilename)-3,string-length($lfilename))"/>
-			<xsl:variable name='ext-4' select="substring($lfilename,string-length($lfilename)-4,string-length($lfilename))"/>
-			<xsl:if test="$ext-3 = '.png' or $ext-3 = '.jpg' or $ext-3 = '.gif' or $ext-3 = '.bmp' or $ext-4 = '.jpeg'">
-				<input type='hidden' class='image-file' href='{.}' filename='{.}'/>
-			</xsl:if>
-			<xsl:if test="$ext-3 = '.svg' and $browsertype != 'oldie'">
-				<input type='hidden' class='image-file' href='{.}' filename='{.}'/>
-			</xsl:if>
-		</xsl:for-each>
-		<input type='hidden' id='file_selected' value="{$file_open}"/>
-	</body>
-	<script type='text/javascript'><![CDATA[
-var image_viewer = document.getElementById('image_viewer');
-var loading_progress = document.getElementById('loading_progress');
-var img_show = document.getElementById('image_show');
-var img_selected = undefined;
-var img_files = document.querySelectorAll('.image-file');
-var current_file = document.getElementById('file_selected').value;
-
-function centerImage(e){
-	e.style.marginLeft = -e.offsetWidth / 2 + 'px';
-	e.style.marginRight = -e.offsetWidth / 2 + 'px';
-}
-img_show.onload = function(){
-	image_viewer.removeAttribute('class');
-	loading_progress.innerHTML = '';
-	centerImage(this);
-}
-img_show.onprogress = function(e){
-	loading_progress.innerHTML = ' '+Math.round(e.loaded/e.total*100)+'%'
-}
-img_show.onerror = function(){
-	image_viewer.setAttribute('class', 'error');
-	loading_progress.innerHTML = '';
-}
-function select_image(elem){
-	image_viewer.setAttribute('class', 'loading');
-	img_show.setAttribute('src', elem.getAttribute('href'));
-	var img_num = elem.getAttribute('number');
-	document.title = '[' + img_num + '/' + img_files.length + '] ' + elem.getAttribute('filename') + ' - Image Viewer';
-	img_selected = elem;
-}
-function prev_image(){
-	var idx = Number(img_selected.getAttribute('number')) - 1;
-	select_image(img_files[idx <= 0 ? img_files.length - 1 : idx - 1]);
-}
-function next_image(){
-	var idx = Number(img_selected.getAttribute('number')) - 1;
-	select_image(img_files[idx >= img_files.length - 1 ? 0 : idx + 1]);
-}
-
-for (var i = 0; i < img_files.length; i++) {
-	img_files[i].setAttribute('number', i+1);
-	if (decodeURIComponent(current_file) == img_files[i].getAttribute('filename')) {
-		select_image(img_files[i]);
-	}
-}
-if (!img_selected) {
-	select_image(img_files[0]);
-}
-
-//Handle the large image's size
-function onResize(){
-	img_show.style.maxWidth = image_viewer.offsetWidth + 'px';
-	img_show.style.maxHeight = image_viewer.offsetHeight + 'px';
-	centerImage(img_show);
-}
-window.onresize = onResize;
-onResize();
-	]]></script>
-	<xsl:choose>
-		<xsl:when test="$browsertype = 'pad' or $browsertype = 'mobile'"><script type='text/javascript'><![CDATA[
-touch.on('#swipe_receiver', 'swiperight', function(e){
-	prev_image();
-});
-touch.on('#swipe_receiver', 'swipeleft', function(e){
-	next_image();
-});
-touch.on('#swipe_receiver', 'tap', function(e){
-	window.open(img_show.getAttribute('src'));
-});
-		]]></script></xsl:when>
-		<xsl:otherwise><script type='text/javascript'><![CDATA[
-//Handle Keyboard
-var kbdHandler = function(e){
-	var e = e || event;
-	switch (e.keyCode || e.which) {
-		case 37:	//Left
-			prev_image();
-		break;
-		case 32:	//Space
-		case 39:	//Right
-			next_image();
-		break;
-	}
-}
-if (window.onkeydown) {
-	window.onkeydown = kbdHandler;
-} else {
-	document.onkeydown = kbdHandler;
-}
-
-//Handle wheel operation of filelist
-var wheel_speed = 100;
-var wheel_brake = false;
-if (image_viewer.addEventListener) {
-	image_viewer.addEventListener('mousewheel', function(e) {
-		if (wheel_brake){return;}
-		var e = e||event;
-		wheel_brake = true;
-		setTimeout(function(){wheel_brake = false;},wheel_speed);
-		if (e.wheelData) {
-			(e.wheelData > 0 ? next_image() : prev_image());
-		} else if (e.wheelDelta) {
-			(e.wheelDelta < 0 ? next_image() : prev_image());
-		}
-	});
-	image_viewer.addEventListener('wheel', function(e) {
-		if (wheel_brake){return;}
-		wheel_brake = true;
-		setTimeout(function(){wheel_brake = false;},wheel_speed);
-		(e.deltaY > 0 ? next_image() : prev_image());
-	});
-} else {
-	image_viewer.attachEvent('onmousewheel', function(e) {
-		if (wheel_brake){return;}
-		var e = e||event;
-		wheel_brake = true;
-		setTimeout(function(){wheel_brake = false;},wheel_speed);
-		if (e.wheelData) {
-			(e.wheelData > 0 ? next_image() : prev_image());
-		} else if (e.wheelDelta) {
-			(e.wheelDelta < 0 ? next_image() : prev_image());
-		}
-	});
-}
-
-img_show.onclick = function(){
-	window.open(img_show.getAttribute('src'));
-}
-		]]></script></xsl:otherwise>
-	</xsl:choose>
-</html>
-</xsl:template>
-
-<!--
-This XSLT template is used to play music files in a folder using Ymplayer (https://github.com/kirainmoe/ymplayer).
-
-Deployment:
-
-1. Download ymplayer.css and ymplayer.js from https://github.com/kirainmoe/ymplayer.
-2. Put ymplayer.css into folder $DOCUMENT_ROOT/.res/css/.
-3. Put ymplayer.js into folder $DOCUMENT_ROOT/.res/js/.
-
-To automatically play a music file when loading the page, please use the following URL:
-
-	http://host:port/musicdir/?f=music_file.mp3
--->
-<xsl:template name='ymplayer'>
-<html>
-	<head>
-		<meta http-equiv='X-UA-Compatible' content='IE=9'/>
-		<meta name='viewport' id='viewport' content='width=device-width,initial-scale=1.0,minimum-scale=1.0,maximum-scale=1.0,user-scalable=no'/>
-		<meta charset='UTF-8'/>
-		<meta name='wap-font-scale' content='no'/>
-		<title>YmPlayer</title>
-		<link id='style_ymplayer' rel="stylesheet" type="text/css" href="/.res/css/ymplayer.css"/>
-		<script type='text/javascript' src='/.res/js/ymplayer.js'></script>
-		<style type='text/css'>
-body{position:fixed;left:0;right:0;top:0;bottom:0;width:100%;height:100%;margin:0;padding:0;font-family:sans,arial,"微软雅黑";}
-#background{width:100%;height:100%;background-size:cover;background-position:center center;background-repeat:no-repeat;}
-ymplayer{margin:0;position:fixed;bottom:0;left:0;right:0;}
-		</style>
-		<script type='text/javascript'><![CDATA[
-function htmlspecialchars(s){
-	var M={'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'};
-	return s.replace(/[&<>"']/g,function(m){return M[m]});
-}
-function each(array,func){if(!func){return;}for(var i=0;i<array.length;i++){func(array[i],i,array)}}
-function hasClass(e,c){return e.className.match(new RegExp('(\\s|^)'+c+'(\\s|$)'))?true:false;}
-function addClass(e,c){if(!c||hasClass(e,c)){return}if(e.className){e.className+=' '+c}else{e.className=c}}
-		]]></script>
-	</head>
-	<body>
-		<ymplayer loop="no"><xsl:for-each select='file'>
-			<xsl:variable name='filename' select="."/>
-			<xsl:variable name='lfilename' select="translate($filename,'ABCDEFGHIJKLMNOPQRSTUVWXYZ','abcdefghijklmnopqrstuvwxyz')"/>
-			<xsl:variable name='base-3' select="substring($filename,0,string-length($filename)-3)"/>
-			<xsl:variable name='base-4' select="substring($filename,0,string-length($filename)-4)"/>
-			<xsl:variable name='lbase-3' select="substring($lfilename,0,string-length($lfilename)-3)"/>
-			<xsl:variable name='lbase-4' select="substring($lfilename,0,string-length($lfilename)-4)"/>
-			<xsl:variable name='ext-3' select="substring($lfilename,string-length($lfilename)-3,string-length($lfilename))"/>
-			<xsl:variable name='ext-4' select="substring($lfilename,string-length($lfilename)-4,string-length($lfilename))"/>
-			<xsl:if test="$ext-3 = '.mp3' or $ext-3 = '.wav' or $ext-3 = '.ogg'"><song>
-				<xsl:attribute name='src'><xsl:value-of select="."/></xsl:attribute>
-				<xsl:attribute name='song'><xsl:value-of select="$base-3"/></xsl:attribute>
-				<xsl:for-each select='//list/file'>
-					<xsl:variable name='filename-lrc' select="."/>
-					<xsl:variable name='base-lrc' select="substring(translate($filename-lrc,'ABCDEFGHIJKLMNOPQRSTUVWXYZ','abcdefghijklmnopqrstuvwxyz'),0,string-length($filename-lrc)-3)"/>
-					<xsl:variable name='ext-lrc' select="substring(translate($filename-lrc,'CLR','clr'),string-length($filename-lrc)-3,string-length($filename-lrc))"/>
-					<xsl:if test="$base-lrc = $lbase-3 and $ext-lrc = '.lrc'"><xsl:attribute name='lyrics'><xsl:value-of select="."/></xsl:attribute></xsl:if>
-				</xsl:for-each>
-				<xsl:for-each select='//list/file'>
-					<xsl:variable name='filename-cover' select="."/>
-					<xsl:variable name='base-cover' select="substring(translate($filename-cover,'ABCDEFGHIJKLMNOPQRSTUVWXYZ','abcdefghijklmnopqrstuvwxyz'),0,string-length($filename-cover)-3)"/>
-					<xsl:variable name='ext-cover' select="substring(translate($filename-cover,'ABCDEFGHIJKLMNOPQRSTUVWXYZ','abcdefghijklmnopqrstuvwxyz'),string-length($filename-cover)-3,string-length($filename-cover))"/>
-					<xsl:if test="$base-cover = $lbase-3 and ($ext-cover = '.jpg' or $ext-cover = '.png' or $ext-cover = '.gif' or $ext-cover = '.bmp')">
-						<xsl:attribute name='cover'><xsl:value-of select="."/></xsl:attribute>
-					</xsl:if>
-				</xsl:for-each>
-			</song></xsl:if>
-		</xsl:for-each></ymplayer>
-		<xsl:for-each select='file'>
-			<xsl:variable name='filename' select="."/>
-			<xsl:variable name='lfilename' select="translate($filename,'ABCDEFGHIJKLMNOPQRSTUVWXYZ','abcdefghijklmnopqrstuvwxyz')"/>
-			<xsl:variable name='lbase-3' select="substring($lfilename,0,string-length($lfilename)-3)"/>
-			<xsl:variable name='lbase-4' select="substring($lfilename,0,string-length($lfilename)-4)"/>
-			<xsl:variable name='ext-3' select="substring($lfilename,string-length($lfilename)-3,string-length($lfilename))"/>
-			<xsl:variable name='ext-4' select="substring($lfilename,string-length($lfilename)-4,string-length($lfilename))"/>
-			<xsl:choose>
-				<xsl:when test="$lbase-3 = 'cover' and ($ext-3 = '.jpg' or $ext-3 = '.gif' or $ext-3 = '.bmp' or $ext-3 = '.png')">
-					<input type='hidden' id='default_cover' value='{$filename}'/>
-				</xsl:when>
-				<xsl:when test="$lbase-4 = 'cover' and $ext-4 = '.jpeg'">
-					<input type='hidden' id='default_cover' value='{$filename}'/>
-				</xsl:when>
-				<xsl:when test="$lbase-3 = 'background' and ($ext-3 = '.jpg' or $ext-3 = '.gif' or $ext-3 = '.bmp' or $ext-3 = '.png')">
-					<div id='background' style="background-image:url('{$filename}');"></div>
-				</xsl:when>
-				<xsl:when test="$lbase-4 = 'background' and $ext-4 = '.jpeg'">
-					<div id='background' style="background-image:url('{$filename}');"></div>
-				</xsl:when>
-			</xsl:choose>
-		</xsl:for-each>
-		<input type='hidden' id='file_selected' value="{$file_open}"/>
-	</body>
-	<script type='text/javascript'><![CDATA[
-var ymplayer = document.getElementsByTagName('ymplayer')[0];
-var theme_all = ['', 'honoka', 'kotori', 'umi', 'nico'];
-var theme_idx = parseInt(Math.random() * theme_all.length);
-addClass(ymplayer, theme_all[theme_idx]);
-
-var default_cover = document.getElementById('default_cover');
-each(ymplayer.querySelectorAll('song'), function(song){
-	var artist = '';
-	try{
-		artist = htmlspecialchars(decodeURIComponent(/\/([^\/]+)\//.exec(window.location.pathname)[1]));
-	}catch(e){}
-	song.setAttribute('artist', artist);
-	var cover = song.getAttribute('cover');
-	song.setAttribute('cover', cover ? encodeURIComponent(cover) : (default_cover ? encodeURIComponent(default_cover.value) : ''));
-});
-
-/* Init Ymplayer after all the lyrics loaded */
-var ymplayer_inited = false;
-function tryInitYmplayer(){
-	if (ymplayer.querySelectorAll('song[lyrics]').length == 0 && !ymplayer_inited) {
-		ymplayer_inited = true;
-		Ymplayer.Init();
-		addClass(ymplayer.querySelector(".ym-playlist"), 'ym-show');
-		window.addEventListener('keydown', function(e){
-			var e = e || event;
-			switch (e.keyCode) {
-				case 32:	//Space
-					Ymplayer.TogglePlay(ymplayer);
-				break;
-			}
-		});
-
-		//Automatically play file specified after hash
-		var current_file = document.getElementById('file_selected').value;
-		each(ymplayer.getElementsByTagName('single'), function(single){
-			if (decodeURIComponent(single.getAttribute('src')) == decodeURIComponent(current_file)) {
-				Ymplayer.ChangeAudio(ymplayer, single, true);
-				ymplayer.getElementsByTagName('audio')[0].play();
-			}
-		});
-	}
-}
-each(ymplayer.querySelectorAll('song[lyrics]'), function(song){
-	var xhr = new XMLHttpRequest();
-	xhr.addEventListener('readystatechange', function(){
-		if (this.readyState == 4 && this.status == 200) {
-			song.innerHTML = htmlspecialchars(this.responseText);
-			song.removeAttribute('lyrics');
-			tryInitYmplayer();
-		}
-	});
-	xhr.open("GET", song.getAttribute('lyrics'), true);
-	xhr.send(null);
-});
-tryInitYmplayer();
-
-/* Change playlist's height based on window height */
-var style_ymplayer = document.getElementById('style_ymplayer');
-function setYmplayer(){
-	var rules_all = style_ymplayer.sheet.cssRules;
-	for (var i = 0; i < rules_all.length; i++) {
-		var rule = rules_all[i];
-		switch(rule.selectorText) {
-			case '.ym-playlist.ym-show':
-				rule.style.height = (document.body.offsetHeight - 120) + 'px';
-			break;
-			case '.ym-lrcbox.ym-show':
-				rule.style.height = (document.body.offsetHeight - 120) + 'px';
-			break;
-		}
-	}
-}
-window.addEventListener('resize', setYmplayer);
-window.addEventListener('load', setYmplayer);
-setYmplayer();
 	]]></script>
 </html>
 </xsl:template>
