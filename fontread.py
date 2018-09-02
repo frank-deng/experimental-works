@@ -11,11 +11,11 @@ def writeAsciiToImage(src, dest, text, line):
         idx += 1;
 
 if '__main__' == __name__:
-    im = Image.open('../font.png');
+    im = Image.open('/home/frank/devel/font.png');
     newIm = Image.new('RGB', (40, 17*16), '#800000');
     writeAsciiToImage(im, newIm, '    .', 0);
     for n in range(16):
         writeAsciiToImage(im, newIm, '%5u'%(1<<(n+1)), n+1);
     newIm = ImageOps.invert(newIm);
-    newIm.save('../output.png');
+    newIm.save('/home/frank/devel/output.png');
 
