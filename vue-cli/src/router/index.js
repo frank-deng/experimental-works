@@ -5,6 +5,7 @@ import IndexPage from '@/components/IndexPage/IndexPage.vue'
 import DTMFEffect from '@/components/DTMFEffect/index.vue'
 import WebAudioAPI from '@/components/WebAudioAPI/WebAudioAPI.vue'
 import MusicBox from '@/components/MusicBox/index.vue'
+import TetrisAI from '@/components/TetrisAI/index.vue'
 //import WebGLTry from '@/components/WebGLTry/index.vue'
 
 Vue.use(Router);
@@ -29,6 +30,11 @@ let router = new Router({
 			path: '/MusicBox',
 			name: '音乐盒',
 			component: MusicBox,
+		},
+		{
+			path: '/TetrisAI',
+			name: '俄罗斯方块AI',
+			component: TetrisAI,
 		},
 		/*
 		{
