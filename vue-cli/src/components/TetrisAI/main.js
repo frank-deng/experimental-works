@@ -1,18 +1,31 @@
-import {newBoard, dropBlock, dropBlockPreview} from './tetris.js';
+import {blockMap, newBoard, dropBlock, dropBlockPreview} from './tetris.js';
 export default{
 	data(){
 		return{
 			board:[],
 		};
 	},
-	methods:{
-	},
 	mounted(){
 		this.board=newBoard();
-		dropBlock(this.board,'J',0,0);
-		dropBlock(this.board,'J',0,2);
-		dropBlock(this.board,'L',0,3);
-		dropBlock(this.board,'S',0,5);
-		console.log(dropBlockPreview(this.board,'J',0,0));
+		for (let x=0;x<this.board[0].length-1;x++){
+			dropBlock(this.board,'I',1,x);
+		}
+		setTimeout(()=>{
+			dropBlock(this.board,'I',1,this.board[0].length-1);
+			setTimeout(()=>{
+				dropBlock(this.board,'S',0,4);
+				dropBlock(this.board,'S',0,4);
+				dropBlock(this.board,'S',0,4);
+				dropBlock(this.board,'S',0,4);
+			},1000);
+		},1000);
+		setInterval(()=>{
+			let blockType=Object.keys(blockMap)[parseInt(Math.random()*7)];
+			//console.log(blockType);
+			/*
+			let bestMove=findBestMove(this.board,blockType);
+			dropBlock(this.board,blockType,bestMove.idx,bestMove.x);
+			*/
+		},500);
 	},
 }

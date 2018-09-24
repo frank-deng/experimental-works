@@ -1,7 +1,7 @@
 <template>
 	<div class="tetris-ai">
 		<div class="gameBoard">
-			<div v-for='row of board' class='boardRow'><span v-for='cell of row' class='boardCell' :class="'color'+cell"></span></div>
+			<div v-for='row of board' class='boardRow'><span v-for='cell of row' class='boardCell' :class="'color'+cell.value"></span></div>
 		</div>
 	</div>
 </template>

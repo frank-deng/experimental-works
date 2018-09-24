@@ -1,4 +1,4 @@
-const blockMap={
+export const blockMap={
 	'O':[
 		{w:2,h:2,x:0,y:0,m:0x0f},
 	],
@@ -33,7 +33,7 @@ const blockMap={
 		{w:3,h:2,x:1,y:0,m:0x39},
 	],
 }
-const blockPalette={
+export const blockPalette={
 	'O':1,
 	'I':2,
 	'S':3,
@@ -49,7 +49,7 @@ export function newBoard(){
 	for(let y=0;y<BOARD_HEIGHT;y++){
 		let row=[];
 		for(let x=0;x<BOARD_WIDTH;x++){
-			row.push(0);
+			row.push({value:0});
 		}
 		result.push(row);
 	}
@@ -71,7 +71,7 @@ function hitTest(board,type,idx,x0,y0){
 	let mask=1;
 	for(let y=0;y<block.h;y++){
 		for(let x=0;x<block.w;x++){
-			if(block.m&mask && board[y+y0][x+x0]){
+			if(block.m&mask && board[y+y0][x+x0].value){
 				return true;
 			}
 			mask<<=1;
@@ -92,14 +92,14 @@ function drawBlock(board,type,idx,x0,y0){
 	for(let y=0;y<block.h;y++){
 		for(let x=0;x<block.w;x++){
 			if(block.m&mask){
-				board[y0+y][x0+x]=blockPalette[type];
+				board[y0+y][x0+x].value=blockPalette[type];
 			}
 			mask<<=1;
 		}
 	}
 	return true;
 }
-export function dropBlock(board,type,idx,x0){
+export function dropBlock(board,type,idx,x0,noelimate=false){
 	//Board is full
 	if(hitTest(board,type,idx,x0,0)){
 		return false;
@@ -112,15 +112,131 @@ export function dropBlock(board,type,idx,x0){
 		y++;
 	}
 	drawBlock(board,type,idx,x0,y);
+
+	//Elimate full lines
+	if(noelimate){
+		return true;
+	}
+	let elimateLines=(board)=>{
+		let count=0,y=board.length-1,times=1000;
+		while(y>=0&&times){
+			let row=board[y],elimate=true;
+			for(let x=0;x<row.length;x++){
+				if(!row[x].value){
+					elimate=false;
+					break;
+				}
+			}
+			if(!elimate){
+				y--;
+				continue;
+			}
+			count++;
+			for(let x=0;x<row.length;x++){
+				for(let y1=y;y1>=1;y1--){
+					board[y1][x].value=board[y1-1][x].value;
+				}
+				board[0][x].value=0;
+			}
+			times--;
+		}
+		if(!times){
+			console.error('Deadlock');
+		}
+		return count;
+	}
+	let cnt=elimateLines(board);
 	return true;
 }
 export function dropBlockPreview(boardOrig,type,idx,x0){
 	let board=newBoard();
 	for(let y=0;y<BOARD_HEIGHT;y++){
 		for(let x=0;x<BOARD_WIDTH;x++){
-			board[y][x]=boardOrig[y][x];
+			board[y][x].value=boardOrig[y][x].value;
 		}
 	}
-	dropBlock(board,type,idx,x0);
+	dropBlock(board,type,idx,x0,false);
 	return board;
 }
+
+export function scoreBoard(board){
+	//消行数
+	let getElimateLines=(board)=>{
+		let result=0;
+		for(let y=0;y<board.length;y++){
+			let row=board[y],elimated=true;
+			for(let x=0;x<row.length;x++){
+				if(!row[x].value){
+					elimated=false;
+					break;
+				}
+			}
+			if(elimated){
+				result++;
+			}
+		}
+		return result;
+	};
+	//行变换
+	let _getTransition=(array)=>{
+		let transition=0;
+		if(!array[0].value){
+			transition++;
+		}
+		for(let i=1;i<array.length;i++){
+			if(array[i-1].value!=array[i].value){
+				transition++;
+			}
+		}
+		if(!array[array.length-1].value){
+			transition++;
+		}
+		return transition;
+	}
+	let getRowTransitions=(board)=>{
+		let result=0;
+		for(let y=0;y<board.length;y++){
+			result+=_getTransition(board[y]);
+		}
+		return result;
+	};
+	//列变换
+	let getColumnTransitions=(board)=>{
+		let result=0;
+		for(let x=0;x<board[0].length;x++){
+			let array=[];
+			for(let y=0;y<board.length;y++){
+				array.push(board[y][x]);
+			}
+			result+=_getTransition(array);
+		}
+		return result;
+	};
+	//空洞数
+	let getHoles=(board)=>{
+		return 0;
+	};
+	//井数
+	let getWellSums=(board)=>{
+		return 0;
+	};
+	return 1;
+}
+export function findBestMove(board,type){
+	let bestScore=undefined,bestIdx=undefined,bestPos=undefined;
+	blockMap[type].map((block,idx)=>{
+		for (let x=0;x<BOARD_WIDTH-block.w;x++){
+			let score=scoreBoard(dropBlockPreview(board,type,idx,x));
+			if(undefined===bestScore || score>bestScore){
+				bestScore=score;
+				bestIdx=idx;
+				bestPos=x;
+			}
+		}
+	});
+	return {
+		idx:bestIdx,
+		x:bestPos,
+	};
+}
+
