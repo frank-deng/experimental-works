@@ -1,5 +1,27 @@
 //消行数
 var exports={};
+var _getColumnHeight=function(column){
+	let result=column.length;
+	for(let cell of column){
+		if(cell.value){
+			break;
+		}
+		result--;
+	}
+	return result;
+}
+exports._getColumnHeight = _getColumnHeight;
+exports.getLandingHeight=function(board){
+	let result=0;
+	for(let x=0;x<board[0].length;x++){
+		let column=[];
+		for(let y=0;y<board.length;y++){
+			column.push(board[y][x]);
+		}
+		result+=_getColumnHeight(column);
+	}
+	return result/board[0].length;
+}
 exports.getElimateLines=function(board){
 	let result=0;
 	for(let y=0;y<board.length;y++){
@@ -17,7 +39,7 @@ exports.getElimateLines=function(board){
 	return result;
 };
 //行变换
-exports._getTransition=function(array){
+var _getTransition=function(array){
 	let transition=0;
 	if(!array[0].value){
 		transition++;
@@ -32,6 +54,7 @@ exports._getTransition=function(array){
 	}
 	return transition;
 }
+exports._getTransition=_getTransition;
 exports.getRowTransitions=function(board){
 	let result=0;
 	for(let y=0;y<board.length;y++){
@@ -52,6 +75,17 @@ exports.getColumnTransitions=function(board){
 	return result;
 };
 //空洞数
+var _getColumnHoles=function(column){
+	let result=0,active=false;
+	for(let cell of column){
+		active=active?true:(!!cell.value);
+		if(active && !cell.value){
+			result++;
+		}
+	}
+	return result;
+}
+exports._getColumnHoles=_getColumnHoles;
 exports.getHoles=function(board){
 	return 0;
 };
