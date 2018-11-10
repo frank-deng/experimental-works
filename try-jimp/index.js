@@ -1,5 +1,4 @@
 const Jimp = require('jimp');
-const fitRect = require('./fit-rect');
 
 const srcFile = process.argv[2];
 const destFile = process.argv[3] || '1.png';
@@ -9,8 +8,17 @@ if (undefined === srcFile){
 }
 
 Jimp.read(srcFile).then((image)=>{
-	let size = fitRect(640,400,image.bitmap.width,image.bitmap.height);
-	image.resize(size.width,size.height).grayscale().write(destFile);
+	return image.scaleToFit(1024,1024).clone();
+}).then((image)=>{
+	return image.grayscale().convolute([
+		[2,0,0],
+		[0,-1,0],
+		[0,0,-1],
+	]).color([
+		{apply:'lighten', params:[50]},
+	]);
+}).then((image)=>{
+	image.write(destFile);
 }).catch((e)=>{
 	if(e){throw e}
 });
