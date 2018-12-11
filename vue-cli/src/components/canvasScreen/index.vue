@@ -60,6 +60,11 @@ export default{
 			this.adjustScreen();
 		});
 		document.getElementById('logger_element').style.display = 'none';
+		
+		//Test the screen
+		let videoRAM = this.$refs.screen.videoRAM;
+		videoRAM[1] = 0xaaaa;
+		videoRAM[20*60+1] = 0xffff;
 	},
 }
 </script>
