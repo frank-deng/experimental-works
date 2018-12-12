@@ -1,5 +1,5 @@
 <template>
-	<canvas ref='canvas' width='320' height='200'></canvas>
+	<canvas ref='canvas' width='640' height='400'></canvas>
 </template>
 <script src='./screen.js'></script>
 <style scoped>
