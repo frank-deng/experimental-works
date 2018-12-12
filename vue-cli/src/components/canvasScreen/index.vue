@@ -69,6 +69,9 @@ export default{
 		});
 		videoRAM[1] = 0xaaaa;
 		videoRAM[20*60+1] = 0xffff;
+		
+		this.$refs.screen.hline(1,14,10,1);
+		this.$refs.screen.hline(16,310,11,1);
 	},
 }
 </script>

@@ -20,9 +20,52 @@ export default{
 		};
 	},
 	methods:{
-		drawPattern(x,y,w,data,mode=0){
-			let h=Math.floor(data.length/w);
-			let buffer = new Uint16Array(x&0xf ? w+1 : w);
+		dot(x,y,color){
+			if(color){
+				this.videoRAM[20*y+(x>>4)] |= (0x8000>>(x&0xf));
+			}else{
+				this.videoRAM[20*y+(x>>4)] &= ~(0x8000>>(x&0xf));
+			}
+		},
+		hline(x0,x1,y,color){
+			let seg0=(x0>>4), seg1=(x1>>4);
+			let head = (0xffff>>(x0&0xf));
+			let tail = (~((0x8000>>(x1&0xf))-1));
+			if (seg0==seg1){
+				if(color){
+					this.videoRAM[20*y+seg0] |= (head&tail);
+				}else{
+					this.videoRAM[20*y+seg0] &= ~(head&tail);
+				}
+				return;
+			}
+			if(color){
+				this.videoRAM[20*y+seg0] |= head;
+				this.videoRAM[20*y+seg1] |= tail;
+				for(let i=seg0+1;i<=seg1-1;i++){
+					this.videoRAM[20*y+i] = 0xffff;
+				}
+			}else{
+				this.videoRAM[20*y+seg0] &= ~head;
+				this.videoRAM[20*y+seg1] &= ~tail;
+				for(let i=seg0+1;i<=seg1-1;i++){
+					this.videoRAM[20*y+i] = 0x0000;
+				}
+			}
+		},
+		vline(x,y0,y1,col){
+			let seg=(x>>4);
+			if(color){
+				let val=(0x8000>>(x&0xf));
+				for(let y=y0;y<=y1;y++){
+					this.videoRAM[20*y+seg] |= val;
+				}
+			}else{
+				let val=~(0x8000>>(x&0xf));
+				for(let y=y0;y<=y1;y++){
+					this.videoRAM[20*y+seg] &= val;
+				}
+			}
 		},
 	},
 	mounted(){
