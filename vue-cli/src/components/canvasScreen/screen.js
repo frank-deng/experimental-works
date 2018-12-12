@@ -20,6 +20,10 @@ export default{
 		};
 	},
 	methods:{
+		drawPattern(x,y,w,data,mode=0){
+			let h=Math.floor(data.length/w);
+			let buffer = new Uint16Array(x&0xf ? w+1 : w);
+		},
 	},
 	mounted(){
 		let canvas = this.$refs.canvas.getContext("2d");
