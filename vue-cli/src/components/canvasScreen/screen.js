@@ -1,3 +1,6 @@
+var fgcol = 0xffff00ff, width = 320, height = 200, rowCnt = width/16;
+var tick = 0, imageTemplate = [];
+
 var setPixel=function(image,x,y,fg){
 	let r=(fg>>24)&0xff, g=(fg>>16)&0xff, b=(fg>>8)&0xff, a=fg&0xff;
 	let offset = (y*image.width+x)*4;
@@ -22,8 +25,88 @@ var createImageTemplate=function(ctx, data, fg){
 	}
 	return result;
 }
-var fgcol = 0xffff00ff, width = 320, height = 200, rowCnt = width/16;
-var tick = 0, imageTemplate = [];
+var pat8=function(target,data,h,x,y,op=0){
+	let offset=rowCnt*y+(x>>4);
+	if((x&0xf)<9){
+		let shift=8-(x&0xf),mask=~(0xff<<shift);
+		switch(op){
+			case 0:
+				for(let i=0;i<h;i++){
+					target[offset]&=mask;
+					target[offset]|=((data[i]&0xff)<<shift);
+					offset+=rowCnt;
+				}
+			break;
+			case 1:
+				for(let i=0;i<h;i++){
+					target[offset]|=((data[i]&0xff)<<shift);
+					offset+=rowCnt;
+				}
+			break;
+		}
+		return;
+	}
+	//Inter-segment operation
+	let shift=x&0xf, mask=~(0xff00>>shift), mask2=~(0xff<<(16-shift));
+	switch(op){
+		case 0:
+			for(let i=0;i<h;i++){
+				target[offset]&=mask;
+				target[offset]|=(data[i]&0xff)>>(shift-8);
+				target[offset+1]&=mask2;
+				target[offset+1]|=(data[i]<<(24-shift))&0xffff;
+				offset+=rowCnt;
+			}
+		break;
+		case 1:
+			for(let i=0;i<h;i++){
+				target[offset]|=(data[i]&0xff)>>(shift-8);
+				target[offset+1]|=(data[i]<<(24-shift))&0xffff;
+				offset+=rowCnt;
+			}
+		break;
+	}
+}
+var pat16=function(target,data,h,x,y,op=0){
+	let offset=rowCnt*y+(x>>4);
+	if(!(x&0xf)){
+		switch(op){
+			case 0:
+				for(let i=0;i<h;i++){
+					target[offset]=data[i];
+					offset+=rowCnt;
+				}
+			break;
+			case 1:
+				for(let i=0;i<h;i++){
+					target[offset]|=data[i];
+					offset+=rowCnt;
+				}
+			break;
+		}
+		return;
+	}
+	//Inter-segment operation
+	let shift=x&0xf, mask=~(0xffff>>shift);
+	switch(op){
+		case 0:
+			for(let i=0;i<h;i++){
+				target[offset]&=mask;
+				target[offset]|=data[i]>>shift;
+				target[offset+1]&=(~mask);
+				target[offset+1]|=(data[i]<<(16-shift))&0xffff;
+				offset+=rowCnt;
+			}
+		break;
+		case 1:
+			for(let i=0;i<h;i++){
+				target[offset]|=data[i]>>shift;
+				target[offset+1]|=(data[i]<<(16-shift))&0xffff;
+				offset+=rowCnt;
+			}
+		break;
+	}
+}
 export default{
 	data(){
 		return {
@@ -64,71 +147,34 @@ export default{
 				}
 			}
 		},
-		vline(x,y0,y1,col){
-			let seg=(x>>4);
+		vline(x,y0,y1,color){
+			let offset=rowCnt*y0+(x>>4);
 			if(color){
 				let val=(0x8000>>(x&0xf));
 				for(let y=y0;y<=y1;y++){
-					this.videoRAM[rowCnt*y+seg] |= val;
+					this.videoRAM[offset] |= val;
+					offset+=rowCnt;
 				}
 			}else{
 				let val=~(0x8000>>(x&0xf));
 				for(let y=y0;y<=y1;y++){
-					this.videoRAM[rowCnt*y+seg] &= val;
-				}
-			}
-		},
-		pat8x8(data,x,y,transparent=0){
-			if((x&0xf)<8){
-				let offset=rowCnt*y+(x>>4);
-				for(let i=0;i<4;i++){
-					let value = this.videoRAM[offset];
-					this.videoRAM[offset] = value;
+					this.videoRAM[offset] &= val;
 					offset+=rowCnt;
 				}
-				return;
 			}
 		},
-		pat16x16(data,x,y,op=0){
-			let offset=rowCnt*y+(x>>4);
-			if(!(x&0xf)){
-				switch(op){
-					case 0:
-						for(let i=0;i<16;i++){
-							this.videoRAM[offset]=data[i];
-							offset+=rowCnt;
-						}
-					break;
-					case 1:
-						for(let i=0;i<16;i++){
-							this.videoRAM[offset]|=data[i];
-							offset+=rowCnt;
-						}
-					break;
-				}
-				return;
-			}
-			//Inter-segment operation
-			let shift=x&0xf, mask=~(0xffff>>shift);
-			switch(op){
-				case 0:
-					for(let i=0;i<16;i++){
-						this.videoRAM[offset]&=mask;
-						this.videoRAM[offset]|=data[i]>>shift;
-						this.videoRAM[offset+1]&=(~mask);
-						this.videoRAM[offset+1]|=(data[i]<<(16-shift))&0xffff;
-						offset+=rowCnt;
-					}
-				break;
-				case 1:
-					for(let i=0;i<16;i++){
-						this.videoRAM[offset]|=data[i]>>shift;
-						this.videoRAM[offset+1]|=(data[i]<<(16-shift))&0xffff;
-						offset+=rowCnt;
-					}
-				break;
-			}
-		}
+		pat8x8(data,x,y,op=0){
+			pat8(this.videoRAM,data,8,x,y,op);
+		},
+		pat8x16(data,x,y,op=0){
+			pat8(this.videoRAM,data,16,x,y,op);
+		},
+		pat16x8(data,x,y,op){
+			pat16(this.videoRAM,data,8,x,y,op);
+		},
+		pat16x16(data,x,y,op){
+			pat16(this.videoRAM,data,16,x,y,op);
+		},
 	},
 	mounted(){
 		let canvas = this.$refs.canvas.getContext("2d");
