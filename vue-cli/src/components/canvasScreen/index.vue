@@ -64,11 +64,17 @@ export default{
 		//Test the screen
 		let videoRAM = this.$refs.screen.videoRAM;
 		
-		[0x0480,0x0ea0,0x7890,0x0890,0x0884,0xfffe,0x0880,0x0890,0x0a90,0x0c60,0x1840,0x68a0,0x0920,0x0a14,0x2814,0x100c].map((data,i)=>{
+		let charMap = [0x0480,0x0ea0,0x7890,0x0890,0x0884,0xfffe,0x0880,0x0890,0x0a90,0x0c60,0x1840,0x68a0,0x0920,0x0a14,0x2814,0x100c];
+		charMap.map((data,i)=>{
 			videoRAM[20*(i+1)+3] = data;
 		});
 		videoRAM[1] = 0xaaaa;
 		videoRAM[20*60+1] = 0xffff;
+		
+		this.$refs.screen.pat16x16(charMap,32,64,0);
+		this.$refs.screen.pat16x16(charMap,33,64,1);
+		this.$refs.screen.pat16x16(charMap,35,80,0);
+		this.$refs.screen.pat16x16(charMap,35+16,80,0);
 		
 		this.$refs.screen.hline(1,14,10,1);
 		this.$refs.screen.hline(16,310,11,1);
