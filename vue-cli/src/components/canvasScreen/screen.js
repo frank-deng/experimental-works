@@ -1,4 +1,4 @@
-var fgcol = 0xffff00ff, width = 320, height = 200, rowCnt = width/16;
+var fgcol = 0x000000ee, width = 320, height = 200, rowCnt = width/16;
 var tick = 0, imageTemplate = [];
 
 var setPixel=function(image,x,y,fg){

@@ -5,6 +5,6 @@
 <style scoped>
 canvas{
 	border:1px solid #000000;
-	background-color:#000000;
+	background-color:rgb(187,199,3);
 }
 </style>
