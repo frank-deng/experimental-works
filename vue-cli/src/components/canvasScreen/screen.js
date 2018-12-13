@@ -1,4 +1,4 @@
-var fgcol = 0x000000ee, width = 320, height = 200, rowCnt = width/16;
+var fgcol = 0x000000ff, width = 240, height = 320, rowCnt = width/16, scale = 4;
 var tick = 0, imageTemplate = [];
 
 var setPixel=function(image,x,y,fg){
@@ -10,14 +10,14 @@ var setPixel=function(image,x,y,fg){
 	image.data[offset+3] = a;
 }
 var drawPixel=function(image, x0, fg){
-	for(let y=0;y<4;y++){
-		for(let x=0;x<4;x++){
-			setPixel(image,x+x0*5,y,fg);
+	for(let y=0;y<scale-1;y++){
+		for(let x=0;x<scale-1;x++){
+			setPixel(image,x+x0*scale,y,fg);
 		}
 	}
 }
 var createImageTemplate=function(ctx, data, fg){
-	let result = ctx.createImageData(16*5, 5);
+	let result = ctx.createImageData(16*scale, scale);
 	for(let i=0; i<16; i++){
 		if (data & (1<<(15-i))){
 			drawPixel(result,i,fg);
@@ -184,14 +184,14 @@ export default{
 		let doFrameUpdate=()=>{
 			requestAnimationFrame(doFrameUpdate);
 			tick++;
-			if (tick<5){
+			if (tick&0x7){
 				return;
 			}
 			tick=0;
 			for(let y=0;y<height;y++){
 				for(let x=0;x<rowCnt;x++){
 					let idx = this.videoRAM[y*rowCnt+x];
-					canvas.putImageData(imageTemplate[idx], x*80, y*5);
+					canvas.putImageData(imageTemplate[idx], x*scale*16+4, y*scale+4);
 				}
 			}
 		}

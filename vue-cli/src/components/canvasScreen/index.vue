@@ -1,24 +1,33 @@
 <template>
 	<div>
-		<screen class='screen' :class='rotate ? "rotate" : ""' ref='screen'></screen>
+		<div class='bgmask'></div>
+		<screen class='screen' ref='screen'></screen>
 		<el-button class='toggleDebug' type='primary' size='large' icon='el-icon-info' @click='toggleDebug'></el-button>
 	</div>
 </template>
 <style scoped>
+.bgmask{
+	background-color:#2c3e50;
+	position:fixed;
+	left:0;
+	top:0;
+	right:0;
+	bottom:0;
+	z-index:0;
+}
 .toggleDebug{
 	position:fixed;
 	opacity:0.4;
 	right:0;
 	bottom:0;
+	z-index:20;
 }
 .screen{
 	position:fixed;
 	left:50%;
-	top:50%;
-	transform:translate(-50%,-50%);
-}
-.screen.rotate{
-	transform:translate(-50%,-50%) rotate(90deg);
+	top:5px;
+	transform:translate(-50%,0);
+	z-index:10;
 }
 </style>
 <script>
@@ -30,7 +39,6 @@ export default{
 	},
 	data(){
 		return {
-			rotate:false,
 		};
 	},
 	methods:{
@@ -43,11 +51,8 @@ export default{
 			elementDebug.style.display = ('none' == disp ? 'block' : 'none');
 		},
 		adjustScreen(){
-			this.rotate = (window.innerWidth < window.innerHeight);
 			let canvas = this.$refs.screen.$el;
-			let {width, height} = this.rotate
-				? fitRect(window.innerHeight-10, window.innerWidth-10, canvas.width, canvas.height)
-				: fitRect(window.innerWidth-10, window.innerHeight-10, canvas.width, canvas.height);
+			let {width, height} = fitRect(window.innerWidth-10, window.innerHeight-10, canvas.width, canvas.height);
 			Object.assign(this.$refs.screen.$el.style, {
 				width: `${width}px`,
 				height: `${height}px`,
@@ -67,7 +72,6 @@ export default{
 		let charMap = [0x0480,0x0ea0,0x7890,0x0890,0x0884,0xfffe,0x0880,0x0890,0x0a90,0x0c60,0x1840,0x68a0,0x0920,0x0a14,0x2814,0x100c];
 		let charLeft=[], charRight=[];
 		charMap.map((data,i)=>{
-			videoRAM[20*(i+1)+3] = data;
 			charLeft.push(data>>8);
 			charRight.push(data&0xff);
 		});
@@ -83,7 +87,7 @@ export default{
 		scr.pat16x16(charMap,35+16,80,0);
 		
 		scr.hline(1,14,10,1);
-		scr.hline(16,310,11,1);
+		scr.hline(16,155,11,1);
 		scr.vline(0,1,198,1);
 		scr.vline(1,1,198,1);
 	},
