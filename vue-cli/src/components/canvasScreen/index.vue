@@ -3,6 +3,7 @@
 		<div class='bgmask'></div>
 		<screen class='screen' ref='screen'></screen>
 		<el-button class='toggleDebug' type='primary' size='large' icon='el-icon-info' @click='toggleDebug'></el-button>
+        <el-input class='hiddenInput' v-model='text'></el-input>
 	</div>
 </template>
 <style scoped>
@@ -29,6 +30,12 @@
 	transform:translate(-50%,0);
 	z-index:10;
 }
+.hiddenInput{
+   position:fixed;
+   bottom:0;left:0;right:50%;
+  z-index:666;
+  opacity:0;
+}
 </style>
 <script>
 import {fitRect} from '@/js/common.js';
@@ -39,8 +46,14 @@ export default{
 	},
 	data(){
 		return {
+          text:'',
 		};
 	},
+    watch:{
+      text(text){
+        console.log(text);
+      },
+    },
 	methods:{
 		toggleDebug(){
 			let elementDebug = document.getElementById('logger_element');
@@ -64,7 +77,7 @@ export default{
 		window.addEventListener('resize', ()=>{
 			this.adjustScreen();
 		});
-		document.getElementById('logger_element').style.display = 'none';
+		//document.getElementById('logger_element').style.display = 'none';
 		
 		//Test the screen
 		let videoRAM = this.$refs.screen.videoRAM;
