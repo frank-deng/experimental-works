@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<meta name='viewport' id='viewport' content='width=device-width,initial-scale=1.0,minimum-scale=1.0,maximum-scale=1.0,user-scalable=no'/>
+		<meta charset='UTF-8'/>
+		<title>Font Editor</title>
+		<link rel='stylesheet' type='text/css' href='index.css'/>
+		<!--
+		<script type='text/javascript' src='js/mobile_logger.js'></script>
+		<script type='text/javascript'>
+window.addEventListener('load', function(){
+	MobileLogger.bind(document.getElementById('logger_element'));
+	document.getElementById('logger_element').style.display = 'block';
+});
+		</script>
+		-->
+		<script type='text/javascript' src='js/fontpc98.js'></script>
+		<script type='text/javascript' src='js/vue.min.js'></script>
+		<script type='text/javascript' src='js/charmap.js'></script>
+	</head>
+	<body>
+		<div id='app'>
+			<div class='main-menu'>
+				<div id='btn_file_upload'><input type='file' id='fileUpload' ref='fileUpload' @change='onUploadFile'/><label for='fileUpload'>Load</label></div><!--
+				--><span v-if='font !== undefined'><!--
+					--><button @click='onSaveFont'>Save</button><!--
+					--><button @click='onCloseFont'>Close</button><!--
+					--> <input type='text' v-model='search.charCode' size='4' maxlength='4' @change='onShowChar'><!--
+					--><button @click='onShowPrevChar'>Prev</button><!--
+					--><button @click='onShowNextChar'>Next</button><!--
+				--></span>
+			</div>
+			<div v-if='font !== undefined'>
+				<char-editor :char-code='charCode' :font='font'></char-editor>
+			</div>
+		</div>
+		<pre id='logger_element'></pre>
+	</body>
+	<script type="text/x-template" id='template_char_editor'>
+		<div class='char-editor'>
+			<div class='editor-menu'>
+				<button @click='onClear'>Clear</button>
+				<button @click='onShiftLeft'>&#x21e6;</button><!--
+				--><button @click='onShiftUp'>&#x21e7;</button><!--
+				--><button @click='onShiftDown'>&#x21e9;</button><!--
+				--><button @click='onShiftRight'>&#x21e8;</button>
+				<span id='show_char'>{{charCode | codeToChar}}</span>
+			</div>
+			<canvas width='128' height='256' v-show='isKanji === false' id='canvasANK' ref='canvasANK' @click='onEditChar'></canvas>
+			<canvas width='256' height='256' v-show='isKanji === true' id='canvasKanji' ref='canvasKanji' @click='onEditChar'></canvas>
+		</div>
+	</script>
+	<script type='text/javascript' src='js/main.js'></script>
+</html>
