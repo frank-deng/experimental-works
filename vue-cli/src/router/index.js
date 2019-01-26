@@ -1,13 +1,7 @@
 import Vue from 'vue'
 import Router from 'vue-router'
 
-import IndexPage from '@/components/IndexPage/IndexPage.vue'
-import DTMFEffect from '@/components/DTMFEffect/index.vue'
-import WebAudioAPI from '@/components/WebAudioAPI/WebAudioAPI.vue'
-import MusicBox from '@/components/MusicBox/index.vue'
-import canvasScreen from '@/components/canvasScreen/index.vue'
 //import TetrisAI from '@/components/TetrisAI/index.vue'
-//import WebGLTry from '@/components/WebGLTry/index.vue'
 
 Vue.use(Router);
 let router = new Router({
@@ -15,35 +9,28 @@ let router = new Router({
 		{
 			path: '/',
 			name: '首页',
-			component: IndexPage,
+			component: require('@/components/IndexPage/IndexPage.vue').default,
 		},
 		{
 			path: '/dtmf',
 			name: 'DTMF音效',
-			component: DTMFEffect,
+			component: (r)=>require.ensure([], ()=>r(require('@/components/DTMFEffect/index.vue')), 'dtmf'),
 		},
 		{
 			path: '/WebAudioAPI',
 			name: 'WebAudioAPI实验',
-			component: WebAudioAPI,
+			component: (r)=>require.ensure([], ()=>r(require('@/components/WebAudioAPI/WebAudioAPI.vue')), 'WebAudioAPI'),
 		},
 		{
 			path: '/MusicBox',
 			name: '音乐盒',
-			component: MusicBox,
+			component: (r)=>require.ensure([], ()=>r(require('@/components/MusicBox/index.vue')), 'MusicBox'),
 		},
 		{
-			path: '/canvasScreen',
-			name: '屏幕',
-			component: canvasScreen,
+			path: '/WebGLTry',
+			name: 'WebGL实验',
+			component: (r)=>require.ensure([], ()=>r(require('@/components/WebGLTry/index.vue')), 'WebGLTry'),
 		},
-		/*
-		{
-			path: '/WebGL',
-			name: 'WebGL/three.js测试',
-			component: WebGLTry,
-		},
-		*/
 	],
 });
 router.beforeEach((to, from, next)=>{
