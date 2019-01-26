@@ -20,7 +20,7 @@ export default {
   position: fixed;
   left: 0;
   right: 0;
-  top: 25%;
+  top: 0;
   bottom: 0;
   padding: 0;
   margin: 0;

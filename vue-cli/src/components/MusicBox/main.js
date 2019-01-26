@@ -1,4 +1,4 @@
-import {processMML} from '@/js/mmlUtil.js';
+import {processMML,setOscillator} from '@/../lib/mmlUtil.js';
 export default {
 	data(){
 		return {
@@ -33,9 +33,7 @@ export default {
 				oscillator.type = this.soundType;
 
 				let cmdAll = processMML(this.song);
-				for (let cmd of cmdAll) {
-					oscillator.frequency.setValueAtTime(cmd.freq, this.audioCtx.currentTime + cmd.time);
-				}
+        setOscillator(oscillator, cmdAll, this.audioCtx.currentTime);
 				oscillator.connect(this.gainNode);
 				oscillator.start();
 				oscillator.stop(this.audioCtx.currentTime + cmdAll[cmdAll.length-1].time + 0.1);
