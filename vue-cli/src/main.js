@@ -1,5 +1,7 @@
 import VConsole from 'vconsole'
-let vConsole = new VConsole();
+const vConsole = new VConsole();
+vConsole.show();
+self.vConsole = vConsole;
 
 // The Vue build version to load with the `import` command
 // (runtime-only or standalone) has been set in webpack.base.conf with an alias.

@@ -1,12 +1,24 @@
 <template>
   <div id="app">
-    <router-view/>
+    <div class='toolBox'>
+      <el-button type='text' icon='el-icon-menu' @click='backToMenu'></el-button>
+      <el-button type='text' icon='el-icon-setting' @click='showVConsole'></el-button>
+    </div>
+    <router-view class='routerView'/>
   </div>
 </template>
 
 <script>
 export default {
-  name: 'App'
+  name: 'App',
+  methods:{
+    backToMenu(){
+      this.$router.push('/');
+    },
+    showVConsole(){
+      self.vConsole.show();
+    },
+  },
 }
 </script>
 
@@ -20,7 +32,7 @@ export default {
   position: fixed;
   left: 0;
   right: 0;
-  top: 34px;
+  top: 0;
   bottom: 0;
   padding: 0;
   margin: 0;
@@ -30,9 +42,31 @@ ul, li{
 	padding: 0;
 }
 #__vconsole .vc-switch{
-  right:0;
-  top:0;
-  bottom:auto;
+  display:none;
+}
+.routerView{
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 32px;
+  bottom: 0;
+}
+.toolBox{
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 0;
+  height: 32px;
+  overflow:auto;
+}
+.toolBox .el-button{
+  display:block;
+  float:left;
+  line-height:32px;
+  width:32px;
+  border:none;
+  margin:0;
+  padding:0;
 }
 </style>
 
