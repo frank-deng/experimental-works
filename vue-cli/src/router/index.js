@@ -31,6 +31,11 @@ let router = new Router({
 			name: 'WebGL实验',
 			component: (r)=>require.ensure([], ()=>r(require('@/components/WebGLTry/index.vue')), 'WebGLTry'),
 		},
+		{
+			path: '/DrawPad',
+			name: '画画板',
+			component: (r)=>require.ensure([], ()=>r(require('@/components/DrawPad/main.vue')), 'DrawPad'),
+		},
 	],
 });
 router.beforeEach((to, from, next)=>{

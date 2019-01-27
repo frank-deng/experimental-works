@@ -1,6 +1,6 @@
 <template>
   <div id="app">
-    <div class='toolBox'>
+    <div class='masterMenuBar'>
       <el-button type='text' icon='el-icon-menu' @click='backToMenu'></el-button>
       <el-button type='text' icon='el-icon-setting' @click='showVConsole'></el-button>
     </div>
@@ -23,6 +23,9 @@ export default {
 </script>
 
 <style>
+body{
+  overscroll-behavior: contain;
+}
 #app {
   font-family: 'Avenir', Helvetica, Arial, sans-serif;
   -webkit-font-smoothing: antialiased;
@@ -51,7 +54,7 @@ ul, li{
   top: 32px;
   bottom: 0;
 }
-.toolBox{
+.masterMenuBar{
   position: absolute;
   left: 0;
   right: 0;
@@ -59,7 +62,7 @@ ul, li{
   height: 32px;
   overflow:auto;
 }
-.toolBox .el-button{
+.masterMenuBar .el-button{
   display:block;
   float:left;
   line-height:32px;
