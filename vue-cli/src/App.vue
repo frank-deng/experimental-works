@@ -4,7 +4,9 @@
       <el-button type='text' icon='el-icon-menu' @click='backToMenu'></el-button>
       <el-button type='text' icon='el-icon-setting' @click='showVConsole'></el-button>
     </div>
-    <router-view class='routerView'/>
+	<div class='routerView'>
+		<router-view/>
+	</div>
   </div>
 </template>
 
@@ -45,7 +47,7 @@ ul, li{
 	padding: 0;
 }
 #__vconsole .vc-switch{
-  display:none;
+  display:none !important;
 }
 .routerView{
   position: absolute;

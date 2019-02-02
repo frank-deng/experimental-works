@@ -83,9 +83,9 @@ export default{
 		this.soundEffect.keyPressGain.gain.setValueAtTime(this.volumeKeyPress, this.audioCtx.currentTime);
 
 		//Load keyboard sound effect
-		this.$http.get('static/keypress.ogg', {responseType: 'arraybuffer'}).then((resp)=>{
+		this.axios.get('static/keypress.ogg', {responseType: 'arraybuffer'}).then((resp)=>{
 			return new Promise((resolve)=>{
-				this.audioCtx.decodeAudioData(resp.body, (res)=>{
+				this.audioCtx.decodeAudioData(resp.data, (res)=>{
 					resolve(res);
 				});
 			});
