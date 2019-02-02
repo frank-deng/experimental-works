@@ -1,7 +1,7 @@
 <template>
   <canvas class='drawPad' ref='drawPad' :width='width' :height='height'></canvas>
 </template>
-<style>
+<style scoped>
 .drawPad{
 	cursor:crosshair;
 }

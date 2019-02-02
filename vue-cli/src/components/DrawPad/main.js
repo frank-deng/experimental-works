@@ -1,10 +1,19 @@
 export default{
   components:{
     drawPad:require('./DrawPad.vue').default,
+    car:require('./car.vue').default,
   },
   methods:{
     clearDrawPad(){
       this.$refs.drawPad.clear();
     },
+  },
+  mounted(){
+    this.$refs.car.place(100,100,0);
+    this.$refs.car.setSpeed(1);
+    this.$refs.car.setSteer(-1);
+    setInterval(()=>{
+      this.$refs.car.nextMove();
+    },10)
   },
 }
