@@ -6,7 +6,6 @@
 <style scoped>
 .car{
 	position:absolute;
-  margin:-16px;
 }
 .car img{
 	width:32px;
