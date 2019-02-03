@@ -10,8 +10,8 @@
     <div class='miscBox'>
       <p>地面相机：
         <canvas class='groundCamera' ref='groundCamera' width='64' height='64'></canvas>
-        <canvas ref='groundCameraCrop' width='32' height='32'></canvas>
       </p>
+      <p>分析结果：{{analyzerResult}}</p>
     </div>
   </div>
 </template>
@@ -36,9 +36,6 @@
   border:1px solid #409EFF;
   border-radius:2px;
   vertical-align:middle;
-}
-.groundCamera{
-  display:none;
 }
 </style>
 <script src='./main.js'></script>
