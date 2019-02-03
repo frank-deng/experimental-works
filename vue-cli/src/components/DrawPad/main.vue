@@ -1,11 +1,21 @@
 <template>
   <div>
     <div class='drawPadContainer'>
-      <drawPad ref='drawPad' :width='320' :height='320'></drawPad>
+      <drawPad ref='drawPad' :width='320' :height='320' @click='doPlaceCar'></drawPad>
       <car ref='car'></car>
     </div>
     <div class='toolBox'>
-      <el-button size='tiny' @click='clearDrawPad'>Clear</el-button>
+      <span>速度：</span><!--
+      --><el-select v-model='delay' class='speedSel'>
+        <el-option label='慢' :value='300'></el-option>
+        <el-option label='中' :value='100'></el-option>
+        <el-option label='快' :value='50'></el-option>
+        <el-option label='很快' :value='10'></el-option>
+      </el-select>
+      <el-button-group>
+        <el-button size='tiny' @click='clearDrawPad'>清空画板</el-button>
+        <el-button size='tiny' :disabled='placeCar' @click='enterPlaceCarMode'>放置小车</el-button>
+      </el-button-group>
     </div>
     <div class='miscBox'>
       <p>地面相机：
@@ -28,6 +38,9 @@
 .toolBox{
   text-align:center;
   margin-top:10px;
+}
+.speedSel{
+  width:80px;
 }
 .miscBox{
   display:none;

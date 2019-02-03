@@ -15,7 +15,10 @@ Vue.prototype.axios = axios;
 Vue.config.productionTip = false
 
 import {
+  Message,
+  MessageBox,
 	Button,
+	ButtonGroup,
 	Slider,
 	Select,
 	Option,
@@ -25,6 +28,7 @@ import {
 	Col,
 } from 'element-ui'
 Vue.use(Button);
+Vue.use(ButtonGroup);
 Vue.use(Slider);
 Vue.use(Select);
 Vue.use(Option);
@@ -32,6 +36,7 @@ Vue.use(Input);
 Vue.use(InputNumber);
 Vue.use(Row);
 Vue.use(Col);
+Vue.prototype.$message = Message;
 
 /* eslint-disable no-new */
 new Vue({

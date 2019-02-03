@@ -51,6 +51,7 @@ export default{
 
     drawPad.addEventListener('mousedown',(e)=>{
       this.drawing=true;
+      this.$emit('click', e.offsetX, e.offsetY);
     });
     drawPad.addEventListener('mouseup',(e)=>{
       this.drawing=false;

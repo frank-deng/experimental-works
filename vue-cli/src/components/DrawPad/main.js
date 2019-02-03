@@ -7,26 +7,54 @@ export default{
   data(){
     return{
       analyzerResult:'',
+      navigation:false,
+      delay:100,
+      placeCar:false,
     };
+  },
+  watch:{
+    navigation(navigation){
+      if(!navigation){
+        this.$message({
+          message: '小车导航丢失',
+          type: 'warning'
+        });
+      }
+    },
   },
   methods:{
     clearDrawPad(){
       this.$refs.drawPad.clear();
     },
+    enterPlaceCarMode(){
+      this.placeCar = true;
+    },
+    doPlaceCar(x,y){
+      if(!this.placeCar){
+        return;
+      }
+      this.$refs.car.place(x,y,0);
+      this.placeCar = false;
+    },
   },
   mounted(){
-    this.$refs.car.place(200,100,0);
-    setInterval(()=>{
+    let drawPadCanvas = this.$refs.drawPad.getCanvas();
+    this.$refs.car.place(drawPadCanvas.width/2, drawPadCanvas.height/2, 0);
+    let processCar=()=>{
+      setTimeout(processCar, this.delay);
       this.$refs.car.nextMove();
-      this.$refs.car.lookGround(this.$refs.drawPad.getCanvas(), this.$refs.groundCamera);
+      this.$refs.car.lookGround(drawPadCanvas, this.$refs.groundCamera);
       let result = this.analyzerResult = analyzeGround(this.$refs.groundCamera);
       if (null === result[0] || null === result[1]){
         this.$refs.car.setSteer(0);
         this.$refs.car.setSpeed(0);
+        this.navigation = false;
       } else {
         this.$refs.car.setSteer(getSteer(result[0], result[1]));
         this.$refs.car.setSpeed(1);
+        this.navigation = true;
       }
-    },100);
+    };
+    processCar();
   },
 }
