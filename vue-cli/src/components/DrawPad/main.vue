@@ -8,8 +8,10 @@
       <el-button size='tiny' @click='clearDrawPad'>Clear</el-button>
     </div>
     <div class='miscBox'>
-      <p>地面相机：<canvas ref='groundCamera' width='64' height='64'></canvas></p>
-      <p>地面相机（截取过的）：<canvas ref='groundCameraCrop' width='32' height='32'></canvas></p>
+      <p>地面相机：
+        <canvas class='groundCamera' ref='groundCamera' width='64' height='64'></canvas>
+        <canvas ref='groundCameraCrop' width='32' height='32'></canvas>
+      </p>
     </div>
   </div>
 </template>
@@ -34,6 +36,9 @@
   border:1px solid #409EFF;
   border-radius:2px;
   vertical-align:middle;
+}
+.groundCamera{
+  display:none;
 }
 </style>
 <script src='./main.js'></script>

@@ -6,6 +6,7 @@
 <style scoped>
 .car{
 	position:absolute;
+  pointer-events:none;
 }
 .car img{
 	width:32px;
