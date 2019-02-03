@@ -2,7 +2,7 @@ var scanVertical = function(image,x){
   for(let y=0;y<image.width;y++){
     try{
       let alpha = image.data[(y*image.width+x)*4+3];
-      if(alpha>0x7f){
+      if(alpha>16){
         return true;
       }
     }catch(e){
@@ -45,5 +45,5 @@ export function analyzeGround(camera){
 }
 export function getSteer(left, right){
   let delta = (left+right)/2;
-  return delta*2;
+  return delta*8;
 }

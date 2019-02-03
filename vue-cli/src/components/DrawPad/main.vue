@@ -30,6 +30,7 @@
   margin-top:10px;
 }
 .miscBox{
+  display:none;
   text-align:center;
 }
 .miscBox canvas{
