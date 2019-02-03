@@ -9,11 +9,16 @@ export default{
     },
   },
   mounted(){
-    this.$refs.car.place(100,100,0);
+    this.$refs.car.place(200,100,0);
     this.$refs.car.setSpeed(1);
     this.$refs.car.setSteer(-1);
+
+    let ctxGroundCameraCrop = this.$refs.groundCameraCrop.getContext('2d');
     setInterval(()=>{
       this.$refs.car.nextMove();
-    },10)
+      this.$refs.car.lookGround(this.$refs.drawPad.getCanvas(), this.$refs.groundCamera);
+      ctxGroundCameraCrop.clearRect(0,0,100,100);
+      ctxGroundCameraCrop.drawImage(this.$refs.groundCamera, -16, -16);
+    },100)
   },
 }

@@ -25,6 +25,9 @@ export default{
       ctx.clearRect(0,0,drawPad.width,drawPad.height);
       this.drawing=false;
     },
+    getCanvas(){
+      return this.$refs.drawPad;
+    },
   },
   mounted(){
     let drawPad = this.$refs.drawPad;
