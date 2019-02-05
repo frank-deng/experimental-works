@@ -2,7 +2,7 @@
   <div id="app">
     <div class='masterMenuBar'>
       <el-button type='text' icon='el-icon-menu' @click='backToMenu'></el-button>
-      <el-button type='text' icon='el-icon-setting' @click='showVConsole'></el-button>
+      <el-button class='showVConsole' type='text' icon='el-icon-setting' @click='showVConsole'></el-button>
     </div>
 	<div class='routerView'>
 		<router-view/>
@@ -72,6 +72,9 @@ ul, li{
   border:none;
   margin:0;
   padding:0;
+}
+.masterMenuBar .showVConsole{
+  float:right;
 }
 </style>
 

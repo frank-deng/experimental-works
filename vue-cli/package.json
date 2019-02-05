@@ -17,6 +17,7 @@
     "@tweenjs/tween.js": "^17.2.0",
     "axios": "^0.18.0",
     "element-ui": "^2.3.9",
+    "fecha": "^3.0.2",
     "three": "^0.100.0",
     "vconsole": "^3.2.2",
     "vue": "^2.5.2",

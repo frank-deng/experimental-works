@@ -26,6 +26,7 @@ import {
 	InputNumber,
 	Row,
 	Col,
+	Upload,
 } from 'element-ui'
 Vue.use(Button);
 Vue.use(ButtonGroup);
@@ -36,6 +37,7 @@ Vue.use(Input);
 Vue.use(InputNumber);
 Vue.use(Row);
 Vue.use(Col);
+Vue.use(Upload);
 Vue.prototype.$message = Message;
 
 /* eslint-disable no-new */

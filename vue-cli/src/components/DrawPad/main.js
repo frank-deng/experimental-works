@@ -6,6 +6,7 @@ export default{
   },
   data(){
     return{
+      active:true,
       analyzerResult:'',
       navigation:false,
       delay:100,
@@ -41,6 +42,9 @@ export default{
     let drawPadCanvas = this.$refs.drawPad.getCanvas();
     this.$refs.car.place(drawPadCanvas.width/2, drawPadCanvas.height/2, 0);
     let processCar=()=>{
+      if(!this.active){
+        return;
+      }
       setTimeout(processCar, this.delay);
       this.$refs.car.nextMove();
       this.$refs.car.lookGround(drawPadCanvas, this.$refs.groundCamera);
@@ -57,4 +61,12 @@ export default{
     };
     processCar();
   },
+  beforeRouteLeave(to,from,next){
+    this.active = false;
+    next();
+  },
+  beforeDestroy(){
+    this.active = false;
+  },
 }
+

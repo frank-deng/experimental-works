@@ -36,6 +36,11 @@ let router = new Router({
 			name: '画画板',
 			component: (r)=>require.ensure([], ()=>r(require('@/components/DrawPad/main.vue')), 'DrawPad'),
 		},
+		{
+			path: '/KMeansPosterization',
+			name: 'K-Means图像处理',
+			component: (r)=>require.ensure([], ()=>r(require('@/components/KMeans/index.vue')), 'KMeansPosterization'),
+		},
 	],
 });
 router.beforeEach((to, from, next)=>{
