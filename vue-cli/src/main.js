@@ -27,6 +27,10 @@ import {
 	Row,
 	Col,
 	Upload,
+  Loading,
+  Form,
+  FormItem,
+  Switch,
 } from 'element-ui'
 Vue.use(Button);
 Vue.use(ButtonGroup);
@@ -38,7 +42,12 @@ Vue.use(InputNumber);
 Vue.use(Row);
 Vue.use(Col);
 Vue.use(Upload);
+Vue.use(Form);
+Vue.use(FormItem);
+Vue.use(Switch);
 Vue.prototype.$message = Message;
+Vue.prototype.$loading = Loading;
+Vue.prototype.$alert = MessageBox.alert;
 
 /* eslint-disable no-new */
 new Vue({

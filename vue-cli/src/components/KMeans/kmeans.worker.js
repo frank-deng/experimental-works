@@ -136,8 +136,12 @@ KMeans.prototype = {
     }
     return result;
   },
-  process: function(w, h, delta0, times0){
-    return this.getMap(this.getOptimizedPalette(delta0,times0), this.src, w, h);
+  process: function(param){
+    if (param.dither){
+      return this.getMapDither(this.getOptimizedPalette(param.delta,param.times), this.src, param.w, param.h);
+    } else {
+      return this.getMap(this.getOptimizedPalette(param.delta,param.times), this.src, param.w, param.h);
+    }
   },
 };
 
@@ -171,7 +175,11 @@ self.addEventListener('message', function(msg){
 	var imageData = msg.data.imageData;
 	var vectorList = imageData2vectorList(msg.data.imageData);
 	var kMeans = new KMeans(initPoints, vectorList);
-	var result = kMeans.process(imageData.width, imageData.height);
+	var result = kMeans.process({
+    w:imageData.width,
+    h:imageData.height,
+    dither:msg.data.dither,
+  });
 	writeVectorList(msg.data.imageData, result);
 	self.postMessage({imageData: msg.data.imageData});
 });
