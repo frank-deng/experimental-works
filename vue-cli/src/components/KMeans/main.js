@@ -24,6 +24,9 @@ String.prototype.lpad = function(padstr, length) {
 	return str;
 }
 export default {
+  components:{
+    colorManager:require('./colormgr.vue').default,
+  },
 	data(){
     return{
       formPreparation:{
@@ -31,6 +34,7 @@ export default {
         maxHeight:640,
         dither:false,
         fileList:[],
+        colors:[],
         _validation:{
           fileList:{
             required:true,
@@ -50,12 +54,30 @@ export default {
             {required:true, message:'请填写图片最大宽度'},
             {type:'number', message:'请输入数字类型的值'},
           ],
+          colors:{
+            required:true,
+            validator:(rule,value,callback)=>{
+              if(0==value.length){
+                callback(new Error('Please add color'));
+                return;
+              }
+              callback();
+            },
+          },
         },
       },
       loading:undefined,
       reader:undefined,
 		  displayResult:false,
 	  };
+  },
+  watch:{
+    'formPreparation.fileList'(){
+      this.$refs.formPreparation.clearValidate('fileList');
+    },
+    'formPreparation.colors'(){
+      this.$refs.formPreparation.clearValidate('colors');
+    },
   },
 	methods:{
     doProcessFile(){

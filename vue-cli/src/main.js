@@ -31,6 +31,7 @@ import {
   Form,
   FormItem,
   Switch,
+  ColorPicker,
 } from 'element-ui'
 Vue.use(Button);
 Vue.use(ButtonGroup);
@@ -45,6 +46,7 @@ Vue.use(Upload);
 Vue.use(Form);
 Vue.use(FormItem);
 Vue.use(Switch);
+Vue.use(ColorPicker);
 Vue.prototype.$message = Message;
 Vue.prototype.$loading = Loading;
 Vue.prototype.$alert = MessageBox.alert;

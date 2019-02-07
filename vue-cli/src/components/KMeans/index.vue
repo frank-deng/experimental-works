@@ -29,6 +29,9 @@
       <el-form-item label="图像抖动" prop='dither'>
         <el-switch v-model='formPreparation.dither'></el-switch>
       </el-form-item>
+      <el-form-item label="初始颜色" prop='colors'>
+        <colorManager v-model='formPreparation.colors'></colorManager>
+      </el-form-item>
       </el-form-item>
         <el-button type='primary' @click='doProcessFile'>开始处理图片</el-button>
       </el-form-item>
