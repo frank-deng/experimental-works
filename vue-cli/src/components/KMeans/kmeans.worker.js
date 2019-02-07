@@ -146,42 +146,33 @@ KMeans.prototype = {
 };
 
 function imageData2vectorList(imageData) {
-	var result = new Array();
-	var count = imageData.width * imageData.height;
-	var pixelData = imageData.data;
-	for (var i = 0; i < count; i++) {
-		result.push([pixelData[4*i], pixelData[4*i+1], pixelData[4*i+2]]);
-	}
-	return result;
+  var result = new Array();
+  var count = imageData.width * imageData.height;
+  var pixelData = imageData.data;
+  for (var i = 0; i < count; i++) {
+    result.push([pixelData[4*i], pixelData[4*i+1], pixelData[4*i+2]]);
+  }
+  return result;
 }
 function writeVectorList(imageData, vectorList) {
-	var count = imageData.width * imageData.height;
-	for (var i = 0; i < count; i++) {
-		imageData.data[i*4] = vectorList[i][0];
-		imageData.data[i*4+1] = vectorList[i][1];
-		imageData.data[i*4+2] = vectorList[i][2];
-	}
-}
-var initPoints=[];
-for(var i=0;i<27;i++){
-	let values=[0x00,0x7f,0xff];
-	initPoints.push([
-		values[Math.floor(i/9)%3],
-		values[Math.floor(i/3)%3],
-		values[i%3],
-	]);
+  var count = imageData.width * imageData.height;
+  for (var i = 0; i < count; i++) {
+    imageData.data[i*4] = vectorList[i][0];
+    imageData.data[i*4+1] = vectorList[i][1];
+    imageData.data[i*4+2] = vectorList[i][2];
+  }
 }
 self.addEventListener('message', function(msg){
-	var imageData = msg.data.imageData;
-	var vectorList = imageData2vectorList(msg.data.imageData);
-	var kMeans = new KMeans(initPoints, vectorList);
-	var result = kMeans.process({
+  var imageData = msg.data.imageData;
+  var vectorList = imageData2vectorList(msg.data.imageData);
+  var kMeans = new KMeans(msg.data.initPoints, vectorList);
+  var result = kMeans.process({
     w:imageData.width,
     h:imageData.height,
     dither:msg.data.dither,
   });
-	writeVectorList(msg.data.imageData, result);
-	self.postMessage({imageData: msg.data.imageData});
+  writeVectorList(msg.data.imageData, result);
+  self.postMessage({imageData: msg.data.imageData});
 });
 
 

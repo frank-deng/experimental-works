@@ -2,32 +2,32 @@ import fecha from 'fecha';
 import KMeansWorker from './kmeans.worker.js';
 
 function fitRect(wdest, hdest, wsrc, hsrc) {
-	if (wsrc <= wdest && hsrc <= hdest) {
-		return {
-			width: wsrc,
-			height: hsrc,
-		};
-	}
+  if (wsrc <= wdest && hsrc <= hdest) {
+    return {
+      width: wsrc,
+      height: hsrc,
+    };
+  }
 
-	var ratioSrc = wsrc / hsrc, ratioDest = wdest / hdest;
-	var scale = (ratioSrc > ratioDest) ? (wsrc / wdest) : (hsrc / hdest);
-	return {
-		width: wsrc / scale,
-		height: hsrc / scale,
-	};
+  var ratioSrc = wsrc / hsrc, ratioDest = wdest / hdest;
+  var scale = (ratioSrc > ratioDest) ? (wsrc / wdest) : (hsrc / hdest);
+  return {
+    width: wsrc / scale,
+    height: hsrc / scale,
+  };
 }
 String.prototype.lpad = function(padstr, length) {
-	var str = this;
-	while (str.length < length) {
-		str = padstr + str;
-	}
-	return str;
+  var str = this;
+  while (str.length < length) {
+    str = padstr + str;
+  }
+  return str;
 }
 export default {
   components:{
     colorManager:require('./colormgr.vue').default,
   },
-	data(){
+  data(){
     return{
       formPreparation:{
         maxWidth:640,
@@ -58,7 +58,7 @@ export default {
             required:true,
             validator:(rule,value,callback)=>{
               if(0==value.length){
-                callback(new Error('Please add color'));
+                callback(new Error('请添加初始颜色'));
                 return;
               }
               callback();
@@ -68,8 +68,8 @@ export default {
       },
       loading:undefined,
       reader:undefined,
-		  displayResult:false,
-	  };
+      displayResult:false,
+    };
   },
   watch:{
     'formPreparation.fileList'(){
@@ -79,7 +79,7 @@ export default {
       this.$refs.formPreparation.clearValidate('colors');
     },
   },
-	methods:{
+  methods:{
     doProcessFile(){
       this.$refs.formPreparation.validate((valid)=>{
         if(!valid){
@@ -91,33 +91,33 @@ export default {
     updateFileList(file, fileList){
       this.formPreparation.fileList = fileList;
     },
-		onUploadFile(file){
+    onUploadFile(file){
       if(!this.reader){
         return;
       }
       this.loading = this.$loading.service({
         fullscreen:true,
         text:'正在处理中……',
-        background:'#333333',
+        background:'#FFFFFF',
       });
-			this.reader.readAsDataURL(file);
+      this.reader.readAsDataURL(file);
       this.formPreparation.filelist = [];
       return false;
-		},
-		onSaveFile(e){
-			var dataURL = this.$refs.canvasImage.toDataURL('image/png', 'image/png');
-			var link = document.createElement("a");
-			link.href = dataURL;
-			link.download = 'IMG_'+fecha.format(new Date(), 'YYYYMMDD_HHMMSS.png');
-			document.body.appendChild(link);
-			link.click();
-			document.body.removeChild(link);
-			window.URL.revokeObjectURL(dataURL);
-		},
+    },
+    onSaveFile(e){
+      var dataURL = this.$refs.canvasImage.toDataURL('image/png', 'image/png');
+      var link = document.createElement("a");
+      link.href = dataURL;
+      link.download = 'IMG_'+fecha.format(new Date(), 'YYYYMMDD_HHMMSS.png');
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      window.URL.revokeObjectURL(dataURL);
+    },
     goBack(){
       this.displayResult = false;
     },
-	},
+  },
   mounted(){
     var resizeCanvas = ()=>{
       if (!this.displayResult){
@@ -157,6 +157,7 @@ export default {
       kmeansWorker.postMessage({
         imageData:imageData,
         dither:vm.formPreparation.dither,
+        initPoints:vm.formPreparation.colors,
       });
     });
     image.addEventListener('error', ()=>{
@@ -185,6 +186,9 @@ export default {
           this.loading.close();
         }
       })
+    });
+    kmeansWorker.addEventListener('error',(e)=>{
+      console.error('Error from worker.', e);
     });
     window.addEventListener('resize', resizeCanvas);
   },
