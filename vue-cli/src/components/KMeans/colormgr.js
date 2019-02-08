@@ -15,6 +15,7 @@ export default{
   },
   data(){
     return{
+      editing:false,
       colors:[],
     };
   },
@@ -33,6 +34,9 @@ export default{
     },
   },
   methods:{
+    startEditing(){
+      this.editing = true;
+    },
     deleteColor(idx){
       this.colors.splice(idx,1);
       this.update();

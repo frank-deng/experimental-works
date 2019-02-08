@@ -1,6 +1,6 @@
 <template>
   <div class='KMeansMainFrame'>
-    <el-form v-show="!displayResult"
+    <el-form v-if="!displayResult"
       class='formPreparation'
       ref='formPreparation'
       :model='formPreparation'
