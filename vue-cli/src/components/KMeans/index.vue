@@ -20,10 +20,10 @@
           <el-button>打开图片文件</el-button>
         </el-upload>
       </el-form-item>
-      <el-form-item label="图片最大宽度" prop='maxWidth'>
+      <el-form-item label="图片最大宽度" prop='maxWidth' class='imageSizeInput'>
         <el-input v-model.number='formPreparation.maxWidth'></el-input>
       </el-form-item>
-      <el-form-item label="图片最大高度" prop='maxHeight'>
+      <el-form-item label="图片最大高度" prop='maxHeight' class='imageSizeInput'>
         <el-input v-model.number='formPreparation.maxHeight'></el-input>
       </el-form-item>
       <el-form-item label="图像抖动" prop='dither'>
@@ -50,7 +50,7 @@
   margin:10px;
 }
 .formPreparation{
-  max-width:400px;
+  max-width:800px;
 }
 .imageArea{
   display:block;
@@ -59,6 +59,9 @@
   right:10px;
   bottom:10px;
   top:60px;
+}
+.imageSizeInput{
+  max-width:200px;
 }
 </style>
 <style>

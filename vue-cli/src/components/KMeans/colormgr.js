@@ -1,3 +1,5 @@
+import {downloadAsFile} from '@/js/common.js';
+
 //Generate default colors
 var color2hex=function(r,g,b){
   let vr = (r<=0xF ? '0'+r.toString(16) : r.toString(16));
@@ -47,6 +49,29 @@ export default{
       });
       this.update();
     },
+    checkColor(idx, value){
+      if (!value){
+        this.deleteColor(idx);
+      } else {
+        this.update();
+      }
+    },
+    resetColors(){
+      this.colors = [];
+      for(var i=0;i<27;i++){
+        let values=[0x00,0x7f,0xff];
+        let r = values[Math.floor(i/9)%3], g = values[Math.floor(i/3)%3], b = values[i%3];
+        this.colors.push({
+          value:color2hex(r,g,b),
+        });
+      }
+      this.update();
+    },
+    downloadPalette(){
+      downloadAsFile(this.colors.map((item)=>{
+        return item.value;
+      }).join('\n'), 'palette.pal');
+    },
     update(){
       this.$emit('input', this.colors.map((item)=>{
         return [
@@ -57,16 +82,7 @@ export default{
       }));
     },
   },
-  created(){
-    for(var i=0;i<27;i++){
-      let values=[0x00,0x7f,0xff];
-      let r = values[Math.floor(i/9)%3], g = values[Math.floor(i/3)%3], b = values[i%3];
-      this.colors.push({
-        value:color2hex(r,g,b),
-      });
-    }
-  },
   mounted(){
-    this.update();
+    this.resetColors();
   },
 }

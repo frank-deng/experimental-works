@@ -1,4 +1,5 @@
 import fecha from 'fecha';
+import {downloadDataURL} from '@/js/common.js';
 import KMeansWorker from './kmeans.worker.js';
 
 function fitRect(wdest, hdest, wsrc, hsrc) {
@@ -105,14 +106,8 @@ export default {
       return false;
     },
     onSaveFile(e){
-      var dataURL = this.$refs.canvasImage.toDataURL('image/png', 'image/png');
-      var link = document.createElement("a");
-      link.href = dataURL;
-      link.download = 'IMG_'+fecha.format(new Date(), 'YYYYMMDD_HHMMSS.png');
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-      window.URL.revokeObjectURL(dataURL);
+      let filename = 'IMG_'+fecha.format(new Date(), 'YYYYMMDD_HHMMSS.png');
+      downloadDataURL(this.$refs.canvasImage.toDataURL('image/png', 'image.png'), filename);
     },
     goBack(){
       this.displayResult = false;
