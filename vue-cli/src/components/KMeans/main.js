@@ -107,7 +107,7 @@ export default {
     },
     onSaveFile(e){
       let filename = 'IMG_'+fecha.format(new Date(), 'YYYYMMDD_HHMMSS.png');
-      downloadDataURL(this.$refs.canvasImage.toDataURL('image/png', 'image.png'), filename);
+      downloadDataURL(this.$refs.canvasImage.toDataURL('image/png'), filename);
     },
     goBack(){
       this.displayResult = false;

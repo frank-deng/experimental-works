@@ -26,7 +26,7 @@ export function downloadDataURL(dataURL, filename){
     parts = parts[0].split(';');
     let dataFormat = parts[1];
     let mediaType = parts[0].split(':')[1];
-    let blob = new Blob(Buffer.from(data, dataFormat), {type:mediaType});
+    let blob = new Blob([Buffer.from(data, dataFormat)], {type:mediaType});
     window.navigator.msSaveOrOpenBlob(blob, filename);
   }else{
     let link = document.createElement("a");
