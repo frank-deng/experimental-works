@@ -72,6 +72,23 @@ export default{
         return item.value;
       }).join('\n'), 'palette.pal');
     },
+    handlePaletteUpload(file){
+      var reader = new FileReader();
+      reader.addEventListener('load', (event)=>{
+        let colorsFromFile = String.fromCharCode.apply(null, Buffer.from(event.target.result.split(',')[1], 'base64'));
+        this.colors = [];
+        for(let value of colorsFromFile.split('\n')){
+          if(!(/^\#[0-9A-Fa-f]{6}$/.test(value))){
+            return;
+          }
+          this.colors.push({
+            value:value,
+          });
+        }
+      });
+      reader.readAsDataURL(file);
+      return false;
+    },
     update(){
       this.$emit('input', this.colors.map((item)=>{
         return [
