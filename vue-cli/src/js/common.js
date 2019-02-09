@@ -21,8 +21,11 @@ export function downloadAsFile(source, filename, type){
 }
 export function downloadDataURL(dataURL, filename){
   if(window.navigator.msSaveOrOpenBlob){
-    let {meta, data} = dataURL.split(',');
-    let {dummy, mediaType, dataFormat} = /data:([A-Za-z0-9\/]+);([A-Za-z0-9]+)/.exec(meta);
+    let parts = dataURL.split(',');
+    let data = parts[1];
+    parts = parts[0].split(';');
+    let dataFormat = parts[1];
+    let mediaType = parts[0].split(':')[1];
     let blob = new Blob(Buffer.from(data, dataFormat), {type:mediaType});
     window.navigator.msSaveOrOpenBlob(blob, filename);
   }else{
