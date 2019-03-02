@@ -22,14 +22,13 @@ export default{
   },
   methods:{
     processImage(){
-      var vm = this;
       return new Promise((resolve,reject)=>{
         let reader = new FileReader();
         let image = new Image();
         reader.addEventListener('load', (event)=>{
           image.src = event.target.result;
         });
-        image.addEventListener('load', function(e){
+        image.addEventListener('load', (){
           resolve(image);
         });
         image.addEventListener('error', ()=>{
