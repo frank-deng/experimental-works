@@ -28,7 +28,7 @@ export default{
         reader.addEventListener('load', (event)=>{
           image.src = event.target.result;
         });
-        image.addEventListener('load', (){
+        image.addEventListener('load', ()=>{
           resolve(image);
         });
         image.addEventListener('error', ()=>{
