@@ -81,25 +81,22 @@ export default {
     },
   },
   methods:{
+    updateFileList(file, fileList){
+      this.formPreparation.fileList = fileList;
+    },
     doProcessFile(){
       this.$refs.formPreparation.validate((valid)=>{
         if(!valid){
           return;
         }
-        this.$refs.fileUpload.submit();
+        this.loading = true;
+        this.reader.readAsDataURL(this.formPreparation.fileList[0].raw);
       });
     },
-    updateFileList(file, fileList){
-      this.formPreparation.fileList = fileList;
-    },
-    onUploadFile(file){
-      if(!this.reader){
-        return;
-      }
-      this.loading = true;
-      this.reader.readAsDataURL(file);
-      this.formPreparation.filelist = [];
-      return false;
+    noMoreFiles(){
+      this.$alert('一次只能打开一个文件。', {
+        type:'error',
+      });
     },
     onSaveFile(e){
       let filename = 'IMG_'+fecha.format(new Date(), 'YYYYMMDD_HHMMSS.png');
@@ -107,6 +104,10 @@ export default {
     },
     goBack(){
       this.displayResult = false;
+      this.resetForm();
+    },
+    resetForm(){
+      this.formPreparation.filelist = [];
     },
   },
   mounted(){
@@ -153,6 +154,7 @@ export default {
     });
     image.addEventListener('error', ()=>{
       vm.loading = false;
+      vm.resetForm();
       vm.$alert('图片加载失败', '错误', {
         type:'error',
         center:true,

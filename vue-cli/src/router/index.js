@@ -1,8 +1,6 @@
 import Vue from 'vue'
 import Router from 'vue-router'
 
-//import TetrisAI from '@/components/TetrisAI/index.vue'
-
 Vue.use(Router);
 let router = new Router({
 	routes: [
@@ -40,6 +38,11 @@ let router = new Router({
 			path: '/KMeansPosterization',
 			name: 'K-Means图像处理',
 			component: (r)=>require.ensure([], ()=>r(require('@/components/KMeans/index.vue')), 'KMeansPosterization'),
+		},
+		{
+			path: '/retro-ppt',
+			name: 'Retro PPT',
+			component: (r)=>require.ensure([], ()=>r(require('@/components/retro-ppt/retro-ppt.vue')), 'retro-ppt'),
 		},
 	],
 });
