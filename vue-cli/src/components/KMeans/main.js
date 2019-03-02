@@ -67,7 +67,7 @@ export default {
           },
         },
       },
-      loading:undefined,
+      loading:false,
       reader:undefined,
       displayResult:false,
     };
@@ -96,11 +96,7 @@ export default {
       if(!this.reader){
         return;
       }
-      this.loading = this.$loading.service({
-        fullscreen:true,
-        text:'正在处理中……',
-        background:'#FFFFFF',
-      });
+      this.loading = true;
       this.reader.readAsDataURL(file);
       this.formPreparation.filelist = [];
       return false;
@@ -156,9 +152,7 @@ export default {
       });
     });
     image.addEventListener('error', ()=>{
-      if(vm.loading){
-        vm.loading.close();
-      }
+      vm.loading = false;
       vm.$alert('图片加载失败', '错误', {
         type:'error',
         center:true,
@@ -177,9 +171,7 @@ export default {
       this.displayResult = true;
       this.$nextTick(()=>{
         resizeCanvas();
-        if(this.loading){
-          this.loading.close();
-        }
+        this.loading = false;
       })
     });
     kmeansWorker.addEventListener('error',(e)=>{

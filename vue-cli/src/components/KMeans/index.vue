@@ -5,6 +5,7 @@
       ref='formPreparation'
       :model='formPreparation'
       :rules='formPreparation._validation'
+      :disabled='loading'
       label-width="110px">
       <el-form-item label="选择文件" prop='fileList'>
         <el-upload action='' class='fileUpload'
@@ -33,7 +34,9 @@
         <colorManager v-model='formPreparation.colors'></colorManager>
       </el-form-item>
       </el-form-item>
-        <el-button type='primary' @click='doProcessFile'>开始处理图片</el-button>
+        <el-button type='primary' @click='doProcessFile' :disabled='loading' :icon='loading ? "el-icon-loading" : null'>
+          {{loading ? "图片处理中" : "开始处理图片"}}
+        </el-button>
       </el-form-item>
     </el-form>
     <div v-show='displayResult'>
