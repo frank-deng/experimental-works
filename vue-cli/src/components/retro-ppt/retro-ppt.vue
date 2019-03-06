@@ -1,25 +1,22 @@
 <template>
   <div class='retro-ppt'>
-    <el-form label-width='80px' size='small'>
-      <el-form-item label='图片文件'>
-        <el-upload action='' class='fileUpload'
-          ref='fileUpload'
-          list-type='picture'
-          :multiple='true'
-          :show-file-list='true'
-          :auto-upload='false'
-          :on-change='updateFileList'
-          :on-remove='updateFileList'>
-          <el-button>打开</el-button>
-        </el-upload>
-      </el-form-item>
-    </el-form>
-    <ul class='resultList'>
-      <li v-for='file of fileList'>
-        {{file.name}}
-        <processImage :image='file.raw'></processImage>
-      </li>
-    </ul>
+    <addImage @upload='newImage'></addImage>
+    <el-table :data='imageList'>
+      <el-table-column prop='fileName' label='文件名'></el-table-column>
+      <el-table-column prop='dither' label='抖动方式'></el-table-column>
+      <el-table-column prop='fitting' label='画布适配方式'></el-table-column>
+      <el-table-column fixed='right' width='160' align='right'>
+        <template slot-scope='scope'>
+          <el-button-group>
+            <el-button size='small' icon='el-icon-arrow-up' @click='moveUpImage(scope.$index)'
+              :disabled="scope.$index<=0"></el-button>
+            <el-button size='small' icon='el-icon-arrow-down' @click='moveDownImage(scope.$index)'
+              :disabled="scope.$index>=(imageList.length-1)"></el-button>
+            <el-button size='small' icon='el-icon-delete' @click='deleteImage(scope.$index)'></el-button>
+          </el-button-group>
+        </template>
+      </el-table-column>
+    </el-table>
   </div>
 </template>
 <style scoped>
