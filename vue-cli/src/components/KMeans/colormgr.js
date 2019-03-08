@@ -1,4 +1,4 @@
-import {downloadAsFile} from '@/js/common.js';
+import {saveAs} from 'file-saver';
 
 //Generate default colors
 var color2hex=function(r,g,b){
@@ -23,7 +23,6 @@ export default{
   },
   watch:{
     value(value){
-      console.log('Incoming value changed.',value);
       if (!Array.isArray(value) || !value.length){
         return;
       }
@@ -68,9 +67,10 @@ export default{
       this.update();
     },
     downloadPalette(){
-      downloadAsFile(this.colors.map((item)=>{
+      let data = this.colors.map((item)=>{
         return item.value;
-      }).join('\n'), 'palette.pal');
+      }).join('\n');
+      saveAs(new Blob([data], {type:'text/plain;charset=utf-8'}), 'palette.pal');
     },
     handlePaletteUpload(file){
       var reader = new FileReader();
