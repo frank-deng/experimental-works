@@ -5,6 +5,19 @@ export default{
   data(){
     return{
       imageList:[],
+      layoutSelection:[
+        {label:'适应', value:'fit'},
+        {label:'居中', value:'center'},
+        {label:'拉伸', value:'stretch'},
+        {label:'填充', value:'fill'},
+        {label:'平铺', value:'tile'},
+      ],
+      ditherSelection:[
+        {label:'无', value:'none'},
+        {label:'Positioned', value:'positioned'},
+        {label:'Floyd-Steinberg', value:'floyd-steinberg'},
+        {label:'Floyd-Steinberg 2', value:'floyd-steinberg2'},
+      ],
     };
   },
   methods:{
@@ -16,8 +29,8 @@ export default{
         this.imageList.push({
           file:file,
           fileName:file.name,
+          layout:'fit',
           dither:'floyd-steinberg',
-          fitting:'adapt-screen',
         });
       }
     },
