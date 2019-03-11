@@ -1,6 +1,7 @@
 export default{
   components:{
     addImage:require('./addImage.vue').default,
+    processImage:require('./processImage.vue').default,
   },
   data(){
     return{
@@ -14,7 +15,7 @@ export default{
       ],
       ditherSelection:[
         {label:'无', value:'none'},
-        {label:'Positioned', value:'positioned'},
+        {label:'Ordered', value:'ordered'},
         {label:'Floyd-Steinberg', value:'floyd-steinberg'},
         {label:'Floyd-Steinberg 2', value:'floyd-steinberg2'},
       ],

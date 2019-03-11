@@ -17,6 +17,11 @@
           </el-select>
         </template>
       </el-table-column>
+      <el-table-column label='预览' :width='200'>
+        <template slot-scope='scope'>
+          <processImage :image='scope.row.file' :layout='scope.row.layout' :dither='scope.row.dither'></processImage>
+        </template>
+      </el-table-column>
       <el-table-column fixed='right' width='160' align='right'>
         <template slot-scope='scope'>
           <el-button-group>

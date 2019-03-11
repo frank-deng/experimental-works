@@ -1,6 +1,72 @@
+var fitRect = function(wRect,hRect,wImage,hImage){
+	var ratioSrc = wImage / hImage, ratioDest = wRect / hRect;
+	var scale = (ratioSrc > ratioDest) ? (wImage / wRect) : (hImage / hRect);
+	return [wImage / scale, hImage / scale];
+}
+var fillRect = function(wRect,hRect,wImage,hImage){
+	var ratioSrc = wImage / hImage, ratioDest = wRect / hRect;
+	var scale = (ratioSrc > ratioDest) ? (hImage / hRect) : (wImage / wRect);
+	return [wImage / scale, hImage / scale];
+}
+var color2monochrome = function(image, dither){
+  let result = {
+    width:image.width,
+    height:image.height,
+    data:new Array(image.width * image.height),
+  };
+  for(let y = 0; y < image.height; y++){
+    for(let x = 0; x < image.width; x++){
+      let offset = (y*image.width+x)*4;
+      let r = image.data[offset], g = image.data[offset+1], b = image.data[offset+2];
+      let value = Math.floor((0.2125 * r) + (0.7154 * g) + (0.0721 * b));
+      result.data[y*image.width+x] = value;
+    }
+  }
+  if('none' == dither){
+    for(let y = 0; y < image.height; y++){
+      for(let x = 0; x < image.width; x++){
+        let value = result.data[y*image.width+x];
+        result.data[y*image.width+x] = (value<128 ? 0 : 0xFF);
+      }
+    }
+  }else if('ordered' == dither){
+    let ditherMatrix = [
+      [0, 48,12,60,3, 51,15,63],
+      [32,16,44,28,35,19,47,31],
+      [8, 56,4, 52,11,59,7, 55],
+      [40,24,36,20,43,27,39,23],
+      [2, 50,14,62,1, 49,13,61],
+      [34,18,46,30,33,17,45,29],
+      [10,58,6, 54,9, 57,5, 53],
+      [42,26,38,22,41,25,37,21],
+    ];
+    for(let y = 0; y < image.height; y++){
+      for(let x = 0; x < image.width; x++){
+        let value = Math.floor(result.data[y*image.width+x]*64/0xFF);
+        let dx = x & 0x07, dy = y & 0x07;
+        result.data[y*image.width+x] = (value<=ditherMatrix[dy][dx] ? 0 : 0xFF);
+      }
+    }
+  }
+  return result;
+}
+var drawMonochrome = function(dest, src){
+  for(let y = 0; y < src.height; y++){
+    for(let x = 0; x < src.width; x++){
+      let offset = (y*src.width+x)*4;
+      dest.data[offset] = dest.data[offset+1] = dest.data[offset+2] = src.data[y*src.width+x];
+    }
+  }
+}
 export default{
   props:{
     image:null,
+    layout:{
+      default:'fit',
+    },
+    dither:{
+      default:'floyd-steinberg',
+    },
   },
   data(){
     return{
@@ -19,6 +85,16 @@ export default{
         });
       },
     },
+    layout(){
+      this.$nextTick(()=>{
+        this.processImage();
+      });
+    },
+    dither(){
+      this.$nextTick(()=>{
+        this.processImage();
+      });
+    },
   },
   methods:{
     processImage(){
@@ -36,13 +112,54 @@ export default{
         });
         reader.readAsDataURL(this.image);
       }).then((imageObject)=>{
-        let targetWidth = this.$refs.targetImage.width;
-        let targetHeight = this.$refs.targetImage.height;
+        let canvasWidth = this.$refs.targetImage.width, canvasHeight = this.$refs.targetImage.height;
+        let targetWidth = undefined, targetHeight = undefined;
+        //计算图片大小
+        switch(this.layout){
+          case 'fit':
+            [targetWidth, targetHeight] = fitRect(canvasWidth, canvasHeight, imageObject.width * 2, imageObject.height);
+          break;
+          case 'fill':
+            [targetWidth, targetHeight] = fillRect(canvasWidth, canvasHeight, imageObject.width * 2, imageObject.height);
+          break;
+          case 'stretch':
+            targetWidth = canvasWidth;
+            targetHeight = canvasHeight;
+          break;
+          case 'center':
+          case 'tile':
+            targetWidth = imageObject.width;
+            targetHeight = imageObject.height;
+          break;
+        }
+        let offsetX = (this.$refs.targetImage.width - targetWidth) / 2;
+        let offsetY = (this.$refs.targetImage.height - targetHeight) / 2;
         let ctx = this.$refs.targetImage.getContext('2d');
-        ctx.drawImage(imageObject,
-          0, 0, imageObject.width, imageObject.height,
-          0, 0, targetWidth, targetHeight
-        );
+        ctx.fillStyle = '#000000';
+        ctx.fillRect(0,0,canvasWidth,canvasHeight);
+        //平铺图像
+        if('tile'==this.layout){
+          let ctx = this.$refs.targetImage.getContext('2d');
+          for(let y=0;y<=canvasHeight;y+=targetHeight){
+            for(let x=0;x<=canvasWidth;x+=targetWidth){
+              ctx.drawImage(imageObject,
+                0, 0, imageObject.width, imageObject.height,
+                x, y, targetWidth, targetHeight
+              );
+            }
+          }
+        }else{
+          ctx.drawImage(imageObject,
+            0, 0, imageObject.width, imageObject.height,
+            offsetX, offsetY, targetWidth, targetHeight
+          );
+        }
+
+        //将图像转成灰度的
+        let imageData = ctx.getImageData(0,0,canvasWidth,canvasHeight);
+        let monoImage = color2monochrome(imageData, this.dither);
+        drawMonochrome(imageData, monoImage);
+        ctx.putImageData(imageData,0,0);
       });
     },
   },

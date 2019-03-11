@@ -5,8 +5,8 @@
 </template>
 <style scoped>
 .targetImage{
-  width:640px;
-  height:400px;
+  width:160px;
+  height:100px;
 }
 </style>
 <script src='./processImage.js'></script>
