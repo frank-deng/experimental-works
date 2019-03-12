@@ -8,6 +8,15 @@ var fillRect = function(wRect,hRect,wImage,hImage){
 	var scale = (ratioSrc > ratioDest) ? (hImage / hRect) : (wImage / wRect);
 	return [wImage / scale, hImage / scale];
 }
+var saturationAdd = function(image,x,y,offset){
+	if(x<0 || y<0 || x>=image.width || y>=image.height){
+		return false;
+	}
+	let value = image.data[y*image.width+x];
+	value += offset;
+	image.data[y*image.width+x] = value;
+	return true;
+}
 var color2monochrome = function(image, dither){
   let result = {
     width:image.width,
@@ -47,6 +56,20 @@ var color2monochrome = function(image, dither){
         result.data[y*image.width+x] = (value<=ditherMatrix[dy][dx] ? 0 : 0xFF);
       }
     }
+  }else{
+    //Floyd-Steinberg
+    for(let y = 0; y < image.height; y++){
+      for(let x = 0; x < image.width; x++){
+        let value = result.data[y*image.width+x];
+        let newValue = value<128 ? 0 : 0xFF;
+        result.data[y*image.width+x] = newValue;
+        let error = value - newValue;
+        saturationAdd(result, x+1, y, error*7/16);
+		saturationAdd(result, x-1, y+1, error*3/16);
+		saturationAdd(result, x, y+1, error*5/16);
+		saturationAdd(result, x+1, y+1, error*1/16);
+      }
+    }
   }
   return result;
 }
@@ -70,6 +93,7 @@ export default{
   },
   data(){
     return{
+      result:null,
     };
   },
   watch:{
@@ -158,6 +182,7 @@ export default{
         //将图像转成灰度的
         let imageData = ctx.getImageData(0,0,canvasWidth,canvasHeight);
         let monoImage = color2monochrome(imageData, this.dither);
+        this.result = monoImage;
         drawMonochrome(imageData, monoImage);
         ctx.putImageData(imageData,0,0);
       });
