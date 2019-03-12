@@ -1,21 +1,21 @@
 var fitRect = function(wRect,hRect,wImage,hImage){
-	var ratioSrc = wImage / hImage, ratioDest = wRect / hRect;
-	var scale = (ratioSrc > ratioDest) ? (wImage / wRect) : (hImage / hRect);
-	return [wImage / scale, hImage / scale];
+  var ratioSrc = wImage / hImage, ratioDest = wRect / hRect;
+  var scale = (ratioSrc > ratioDest) ? (wImage / wRect) : (hImage / hRect);
+  return [wImage / scale, hImage / scale];
 }
 var fillRect = function(wRect,hRect,wImage,hImage){
-	var ratioSrc = wImage / hImage, ratioDest = wRect / hRect;
-	var scale = (ratioSrc > ratioDest) ? (hImage / hRect) : (wImage / wRect);
-	return [wImage / scale, hImage / scale];
+  var ratioSrc = wImage / hImage, ratioDest = wRect / hRect;
+  var scale = (ratioSrc > ratioDest) ? (hImage / hRect) : (wImage / wRect);
+  return [wImage / scale, hImage / scale];
 }
 var saturationAdd = function(image,x,y,offset){
-	if(x<0 || y<0 || x>=image.width || y>=image.height){
-		return false;
-	}
-	let value = image.data[y*image.width+x];
-	value += offset;
-	image.data[y*image.width+x] = value;
-	return true;
+  if(x<0 || y<0 || x>=image.width || y>=image.height){
+    return false;
+  }
+  let value = image.data[y*image.width+x];
+  value += offset;
+  image.data[y*image.width+x] = value;
+  return true;
 }
 var color2monochrome = function(image, dither){
   let result = {
@@ -67,15 +67,15 @@ var color2monochrome = function(image, dither){
         saturationAdd(result, x+2, y, error*5/48);
 
         saturationAdd(result, x-2, y+1, error*3/48);
-		saturationAdd(result, x-1, y+1, error*5/48);
-		saturationAdd(result, x, y+1, error*7/48);
-		saturationAdd(result, x+1, y+1, error*5/48);
+        saturationAdd(result, x-1, y+1, error*5/48);
+        saturationAdd(result, x, y+1, error*7/48);
+        saturationAdd(result, x+1, y+1, error*5/48);
         saturationAdd(result, x+2, y+1, error*3/48);
 
         saturationAdd(result, x-2, y+2, error*1/48);
-		saturationAdd(result, x-1, y+2, error*3/48);
-		saturationAdd(result, x, y+2, error*5/48);
-		saturationAdd(result, x+1, y+2, error*3/48);
+        saturationAdd(result, x-1, y+2, error*3/48);
+        saturationAdd(result, x, y+2, error*5/48);
+        saturationAdd(result, x+1, y+2, error*3/48);
         saturationAdd(result, x+2, y+2, error*1/48);
       }
     }
@@ -88,9 +88,9 @@ var color2monochrome = function(image, dither){
         result.data[y*image.width+x] = newValue;
         let error = value - newValue;
         saturationAdd(result, x+1, y, error*7/16);
-		saturationAdd(result, x-1, y+1, error*3/16);
-		saturationAdd(result, x, y+1, error*5/16);
-		saturationAdd(result, x+1, y+1, error*1/16);
+        saturationAdd(result, x-1, y+1, error*3/16);
+        saturationAdd(result, x, y+1, error*5/16);
+        saturationAdd(result, x+1, y+1, error*1/16);
       }
     }
   }
@@ -100,6 +100,16 @@ var drawMonochrome = function(dest, src){
   for(let y = 0; y < src.height; y++){
     for(let x = 0; x < src.width; x++){
       let offset = (y*src.width+x)*4;
+      dest.data[offset] = dest.data[offset+1] = dest.data[offset+2] = src.data[y*src.width+x];
+    }
+  }
+}
+var drawMonochrome2x = function(dest, src){
+  for(let y = 0; y < src.height; y++){
+    for(let x = 0; x < src.width; x++){
+      let offset = (y*2*src.width+x)*4;
+      dest.data[offset] = dest.data[offset+1] = dest.data[offset+2] = src.data[y*src.width+x];
+      offset = ((y*2+1)*src.width+x)*4;
       dest.data[offset] = dest.data[offset+1] = dest.data[offset+2] = src.data[y*src.width+x];
     }
   }
@@ -117,6 +127,7 @@ export default{
   data(){
     return{
       result:null,
+      preview:false,
     };
   },
   watch:{
@@ -209,6 +220,21 @@ export default{
         drawMonochrome(imageData, monoImage);
         ctx.putImageData(imageData,0,0);
       });
+    },
+    doPreview(){
+      if(!this.result){
+        return;
+      }
+      this.preview = true;
+      this.$nextTick(()=>{
+        let canvasWidth = this.$refs.targetImagePreview.width, canvasHeight = this.$refs.targetImagePreview.height;
+        let ctx = this.$refs.targetImagePreview.getContext('2d');
+        ctx.fillStyle = '#000000';
+        ctx.fillRect(0,0,canvasWidth,canvasHeight);
+        let imageData = ctx.getImageData(0,0,canvasWidth,canvasHeight);
+        drawMonochrome2x(imageData, this.result);
+        ctx.putImageData(imageData,0,0);
+      })
     },
   },
 }

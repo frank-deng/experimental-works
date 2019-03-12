@@ -34,6 +34,7 @@ import {
   ColorPicker,
   Table,
   TableColumn,
+  Dialog,
 } from 'element-ui'
 Vue.use(Button);
 Vue.use(ButtonGroup);
@@ -51,6 +52,7 @@ Vue.use(Switch);
 Vue.use(ColorPicker);
 Vue.use(Table);
 Vue.use(TableColumn);
+Vue.use(Dialog);
 Vue.prototype.$message = Message;
 Vue.prototype.$loading = Loading;
 Vue.prototype.$alert = MessageBox.alert;
