@@ -56,6 +56,29 @@ var color2monochrome = function(image, dither){
         result.data[y*image.width+x] = (value<=ditherMatrix[dy][dx] ? 0 : 0xFF);
       }
     }
+  }else if('min-avg-error'==dither){
+    for(let y = 0; y < image.height; y++){
+      for(let x = 0; x < image.width; x++){
+        let value = result.data[y*image.width+x];
+        let newValue = value<128 ? 0 : 0xFF;
+        result.data[y*image.width+x] = newValue;
+        let error = value - newValue;
+        saturationAdd(result, x+1, y, error*7/48);
+        saturationAdd(result, x+2, y, error*5/48);
+
+        saturationAdd(result, x-2, y+1, error*3/48);
+		saturationAdd(result, x-1, y+1, error*5/48);
+		saturationAdd(result, x, y+1, error*7/48);
+		saturationAdd(result, x+1, y+1, error*5/48);
+        saturationAdd(result, x+2, y+1, error*3/48);
+
+        saturationAdd(result, x-2, y+2, error*1/48);
+		saturationAdd(result, x-1, y+2, error*3/48);
+		saturationAdd(result, x, y+2, error*5/48);
+		saturationAdd(result, x+1, y+2, error*3/48);
+        saturationAdd(result, x+2, y+2, error*1/48);
+      }
+    }
   }else{
     //Floyd-Steinberg
     for(let y = 0; y < image.height; y++){

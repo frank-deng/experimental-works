@@ -17,7 +17,7 @@ export default{
         {label:'无', value:'none'},
         {label:'Ordered', value:'ordered'},
         {label:'Floyd-Steinberg', value:'floyd-steinberg'},
-        {label:'Burkes', value:'burkes'},
+        {label:'Minimized Average Error', value:'min-avg-error'},
       ],
     };
   },
