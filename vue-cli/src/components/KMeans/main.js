@@ -1,5 +1,6 @@
 import fecha from 'fecha';
 import KMeansWorker from './kmeans.worker.js';
+import {fitRect as _fitRect} from '@/js/common.js';
 
 function fitRect(wdest, hdest, wsrc, hsrc) {
   if (wsrc <= wdest && hsrc <= hdest) {
@@ -8,12 +9,11 @@ function fitRect(wdest, hdest, wsrc, hsrc) {
       height: hsrc,
     };
   }
-
-  var ratioSrc = wsrc / hsrc, ratioDest = wdest / hdest;
-  var scale = (ratioSrc > ratioDest) ? (wsrc / wdest) : (hsrc / hdest);
+  let width = 0, height = 0;
+  [width, height] = _fitRect(wdest,hdest,wsrc,hsrc);
   return {
-    width: wsrc / scale,
-    height: hsrc / scale,
+    width: width,
+    height: height,
   };
 }
 String.prototype.lpad = function(padstr, length) {

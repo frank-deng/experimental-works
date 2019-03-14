@@ -1,13 +1,4 @@
-var fitRect = function(wRect,hRect,wImage,hImage){
-  var ratioSrc = wImage / hImage, ratioDest = wRect / hRect;
-  var scale = (ratioSrc > ratioDest) ? (wImage / wRect) : (hImage / hRect);
-  return [wImage / scale, hImage / scale];
-}
-var fillRect = function(wRect,hRect,wImage,hImage){
-  var ratioSrc = wImage / hImage, ratioDest = wRect / hRect;
-  var scale = (ratioSrc > ratioDest) ? (hImage / hRect) : (wImage / wRect);
-  return [wImage / scale, hImage / scale];
-}
+import {fitRect, fillRect} from '@/js/common.js'
 var saturationAdd = function(image,x,y,offset){
   if(x<0 || y<0 || x>=image.width || y>=image.height){
     return false;
