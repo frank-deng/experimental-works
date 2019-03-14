@@ -1,109 +1,10 @@
 import {fitRect, fillRect} from '@/js/common.js'
-var saturationAdd = function(image,x,y,offset){
-  if(x<0 || y<0 || x>=image.width || y>=image.height){
-    return false;
-  }
-  let value = image.data[y*image.width+x];
-  value += offset;
-  image.data[y*image.width+x] = value;
-  return true;
-}
-var color2monochrome = function(image, dither){
-  let result = {
-    width:image.width,
-    height:image.height,
-    data:new Array(image.width * image.height),
-  };
-  for(let y = 0; y < image.height; y++){
-    for(let x = 0; x < image.width; x++){
-      let offset = (y*image.width+x)*4;
-      let r = image.data[offset], g = image.data[offset+1], b = image.data[offset+2];
-      let value = Math.floor((0.2125 * r) + (0.7154 * g) + (0.0721 * b));
-      result.data[y*image.width+x] = value;
-    }
-  }
-  if('none' == dither){
-    for(let y = 0; y < image.height; y++){
-      for(let x = 0; x < image.width; x++){
-        let value = result.data[y*image.width+x];
-        result.data[y*image.width+x] = (value<128 ? 0 : 0xFF);
-      }
-    }
-  }else if('ordered' == dither){
-    let ditherMatrix = [
-      [0, 48,12,60,3, 51,15,63],
-      [32,16,44,28,35,19,47,31],
-      [8, 56,4, 52,11,59,7, 55],
-      [40,24,36,20,43,27,39,23],
-      [2, 50,14,62,1, 49,13,61],
-      [34,18,46,30,33,17,45,29],
-      [10,58,6, 54,9, 57,5, 53],
-      [42,26,38,22,41,25,37,21],
-    ];
-    for(let y = 0; y < image.height; y++){
-      for(let x = 0; x < image.width; x++){
-        let value = Math.floor(result.data[y*image.width+x]*64/0xFF);
-        let dx = x & 0x07, dy = y & 0x07;
-        result.data[y*image.width+x] = (value<=ditherMatrix[dy][dx] ? 0 : 0xFF);
-      }
-    }
-  }else if('min-avg-error'==dither){
-    for(let y = 0; y < image.height; y++){
-      for(let x = 0; x < image.width; x++){
-        let value = result.data[y*image.width+x];
-        let newValue = value<128 ? 0 : 0xFF;
-        result.data[y*image.width+x] = newValue;
-        let error = value - newValue;
-        saturationAdd(result, x+1, y, error*7/48);
-        saturationAdd(result, x+2, y, error*5/48);
-
-        saturationAdd(result, x-2, y+1, error*3/48);
-        saturationAdd(result, x-1, y+1, error*5/48);
-        saturationAdd(result, x, y+1, error*7/48);
-        saturationAdd(result, x+1, y+1, error*5/48);
-        saturationAdd(result, x+2, y+1, error*3/48);
-
-        saturationAdd(result, x-2, y+2, error*1/48);
-        saturationAdd(result, x-1, y+2, error*3/48);
-        saturationAdd(result, x, y+2, error*5/48);
-        saturationAdd(result, x+1, y+2, error*3/48);
-        saturationAdd(result, x+2, y+2, error*1/48);
-      }
-    }
-  }else{
-    //Floyd-Steinberg
-    for(let y = 0; y < image.height; y++){
-      for(let x = 0; x < image.width; x++){
-        let value = result.data[y*image.width+x];
-        let newValue = value<128 ? 0 : 0xFF;
-        result.data[y*image.width+x] = newValue;
-        let error = value - newValue;
-        saturationAdd(result, x+1, y, error*7/16);
-        saturationAdd(result, x-1, y+1, error*3/16);
-        saturationAdd(result, x, y+1, error*5/16);
-        saturationAdd(result, x+1, y+1, error*1/16);
-      }
-    }
-  }
-
-  //Convert grayscale image to monochrome
-  let lineLength = image.width / 8;
-  let finalBuffer = new Uint8Array(lineLength * image.height);
-  for(let y = 0; y < image.height; y++){
-    for(let x = 0; x < image.width; x++){
-      let value = result.data[y*image.width+x];
-      if(value){
-        finalBuffer[y*lineLength + (x>>3)] |= (1<<(7-(x&7)));
-      }
-    }
-  }
-  result.data = finalBuffer;
-  return result;
-}
+import {getMonochromeImage} from '@/js/monochromeImage.js'
 var drawMonochrome = function(dest, src){
+  let srcLineLength = src.width / 8;
   for(let y = 0; y < src.height; y++){
     for(let x = 0; x < src.width; x++){
-      let offsetSrc = (y*src.width/8+(x>>3));
+      let offsetSrc = (y*srcLineLength+(x>>3));
       let value = src.data[offsetSrc] & (1<<(7-(x&7)));
       let offset = (y*src.width+x)*4;
       dest.data[offset] = dest.data[offset+1] = dest.data[offset+2] = (value ? 0xff : 0);
@@ -111,9 +12,10 @@ var drawMonochrome = function(dest, src){
   }
 }
 var drawMonochrome2x = function(dest, src){
+  let srcLineLength = src.width / 8;
   for(let y = 0; y < src.height; y++){
     for(let x = 0; x < src.width; x++){
-      let offsetSrc = (y*src.width/8+(x>>3));
+      let offsetSrc = (y*srcLineLength+(x>>3));
       let value = src.data[offsetSrc] & (1<<(7-(x&7)));
       let offset = (y*2*src.width+x)*4;
       dest.data[offset] = dest.data[offset+1] = dest.data[offset+2] = (value ? 0xff : 0);
@@ -223,10 +125,12 @@ export default{
 
         //将图像转成灰度的
         let imageData = ctx.getImageData(0,0,canvasWidth,canvasHeight);
-        let monoImage = color2monochrome(imageData, this.dither);
-        this.result = monoImage;
-        drawMonochrome(imageData, monoImage);
+        this.result = getMonochromeImage(imageData, this.dither);
+        drawMonochrome(imageData, this.result);
         ctx.putImageData(imageData,0,0);
+
+        //将最终结果传出去
+        this.$emit('change', this.result);
       });
     },
     doPreview(){

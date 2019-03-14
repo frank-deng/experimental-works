@@ -1,3 +1,5 @@
+import {image2dataURL, image2CGA} from './util.js'
+import {saveAs} from 'file-saver'
 export default{
   components:{
     addImage:require('./addImage.vue').default,
@@ -32,6 +34,7 @@ export default{
           fileName:file.name,
           layout:'fit',
           dither:'floyd-steinberg',
+          image:null,
         });
       }
     },
@@ -53,6 +56,23 @@ export default{
       let temp = this.imageList[idx];
       this.$set(this.imageList, idx, this.imageList[idx+1]);
       this.$set(this.imageList, idx+1, temp);
+    },
+    writeResult(row, image){
+      row.image = image;
+    },
+    saveImage(index){
+      let image = this.imageList[index].image;
+      if(!image){
+        return;
+      }
+      saveAs(image2dataURL(image, 'image/png'));
+    },
+    saveImageCGA(index){
+      let image = this.imageList[index].image;
+      if(!image){
+        return;
+      }
+      saveAs(image2CGA(image), 'image.pic');
     },
   },
   mounted(){
