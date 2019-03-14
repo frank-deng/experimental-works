@@ -94,23 +94,40 @@ var color2monochrome = function(image, dither){
       }
     }
   }
+
+  //Convert grayscale image to monochrome
+  let lineLength = image.width / 8;
+  let finalBuffer = new Uint8Array(lineLength * image.height);
+  for(let y = 0; y < image.height; y++){
+    for(let x = 0; x < image.width; x++){
+      let value = result.data[y*image.width+x];
+      if(value){
+        finalBuffer[y*lineLength + (x>>3)] |= (1<<(7-(x&7)));
+      }
+    }
+  }
+  result.data = finalBuffer;
   return result;
 }
 var drawMonochrome = function(dest, src){
   for(let y = 0; y < src.height; y++){
     for(let x = 0; x < src.width; x++){
+      let offsetSrc = (y*src.width/8+(x>>3));
+      let value = src.data[offsetSrc] & (1<<(7-(x&7)));
       let offset = (y*src.width+x)*4;
-      dest.data[offset] = dest.data[offset+1] = dest.data[offset+2] = src.data[y*src.width+x];
+      dest.data[offset] = dest.data[offset+1] = dest.data[offset+2] = (value ? 0xff : 0);
     }
   }
 }
 var drawMonochrome2x = function(dest, src){
   for(let y = 0; y < src.height; y++){
     for(let x = 0; x < src.width; x++){
+      let offsetSrc = (y*src.width/8+(x>>3));
+      let value = src.data[offsetSrc] & (1<<(7-(x&7)));
       let offset = (y*2*src.width+x)*4;
-      dest.data[offset] = dest.data[offset+1] = dest.data[offset+2] = src.data[y*src.width+x];
+      dest.data[offset] = dest.data[offset+1] = dest.data[offset+2] = (value ? 0xff : 0);
       offset = ((y*2+1)*src.width+x)*4;
-      dest.data[offset] = dest.data[offset+1] = dest.data[offset+2] = src.data[y*src.width+x];
+      dest.data[offset] = dest.data[offset+1] = dest.data[offset+2] = (value ? 0xff : 0);
     }
   }
 }
