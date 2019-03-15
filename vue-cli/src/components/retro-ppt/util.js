@@ -44,3 +44,21 @@ export function image2CGA(image){
   result[7+8192*2] = 0x1A;
   return new Blob([result]);
 }
+export function generateBASIC(fileList){
+  let code = [
+    '10 KEY OFF:CLS:SCREEN 2:LOCATE ,,0',
+    '20 READ C:FOR I=1 TO C:READ F$',
+    '30 DEF SEG=&HB800:BLOAD F$:DEF SEG',
+    '40 WHILE INPUT$(1)="":WEND',
+    '50 NEXT I',
+    '60 SCREEN 0:LOCATE ,,1:CLS',
+    '70 END',
+    `80 DATA ${fileList.length}`,
+  ];
+  let fileListConcat = fileList.map((item)=>{
+    return `"${item}"`;
+  }).join(',');
+  code.push(`90 DATA ${fileListConcat}`);
+  return code.join('\r\n');
+}
+

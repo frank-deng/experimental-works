@@ -1,5 +1,6 @@
-import {image2dataURL, image2CGA} from './util.js'
+import {image2dataURL, image2CGA, generateBASIC} from './util.js'
 import {saveAs} from 'file-saver'
+import JSZip from 'jszip';
 export default{
   components:{
     addImage:require('./addImage.vue').default,
@@ -73,6 +74,29 @@ export default{
         return;
       }
       saveAs(image2CGA(image), 'image.pic');
+    },
+    exportAllAsZip(){
+      if (0==this.imageList.length){
+        this.$alert('请添加图片');
+        return;
+      }
+      for(let item of this.imageList){
+        if(!item.image){
+          this.$alert('有图片未处理完',{type:'warning'});
+          return;
+        }
+      }
+      let zip = new JSZip(), fileList = [];
+      for(let i = 0; i < this.imageList.length; i++){
+        let item = this.imageList[i];
+        let filename = `IMG${('00000'+String(i)).slice(-5)}.PIC`;
+        fileList.push(filename);
+        zip.file(filename, image2CGA(item.image));
+      }
+      zip.file('PHOTO.BAS', generateBASIC(fileList));
+      zip.generateAsync({type:'blob'}).then((file)=>{
+        saveAs(file, 'export.zip');
+      });
     },
   },
   mounted(){
