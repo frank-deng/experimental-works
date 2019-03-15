@@ -1,4 +1,9 @@
-import {image2dataURL, image2CGA, generateBASIC} from './util.js'
+import {
+  image2dataURL,
+  image2CGA,
+  generateBASIC,
+  generateDeployScript,
+} from './util.js'
 import {saveAs} from 'file-saver'
 import JSZip from 'jszip';
 export default{
@@ -87,13 +92,17 @@ export default{
         }
       }
       let zip = new JSZip(), fileList = [];
+      let target = zip.folder('photo');
       for(let i = 0; i < this.imageList.length; i++){
         let item = this.imageList[i];
         let filename = `IMG${('00000'+String(i)).slice(-5)}.PIC`;
         fileList.push(filename);
-        zip.file(filename, image2CGA(item.image));
+        target.file(filename, image2CGA(item.image));
       }
-      zip.file('PHOTO.BAS', generateBASIC(fileList));
+      target.file('PHOTO.BAS', generateBASIC(fileList));
+      target.file('deploy.sh', generateDeployScript(), {
+        unixPermissions:'755',
+      });
       zip.generateAsync({type:'blob'}).then((file)=>{
         saveAs(file, 'export.zip');
       });

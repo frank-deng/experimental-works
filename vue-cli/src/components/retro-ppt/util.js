@@ -61,4 +61,12 @@ export function generateBASIC(fileList){
   code.push(`90 DATA ${fileListConcat}`);
   return code.join('\r\n');
 }
+export function generateDeployScript(){
+  return [
+    '#!/bin/bash',
+    'IMGFILE="${1}"',
+    'mdel -i "${IMGFILE}" ::/PHOTO.BAS ::/IMG00*.PIC',
+    'mcopy -i "${IMGFILE}" -o ./*.BAS ./*.PIC ::/',
+  ].join('\n');
+}
 
