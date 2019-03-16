@@ -28,7 +28,7 @@
       <el-table-column label='预览' width='140'>
         <template slot-scope='scope'>
           <processImage
-            :src='scope.row.dataURL'
+            :file='scope.row.file'
             :layout='scope.row.layout'
             :backgroundColor='scope.row.backgroundColor'
             :dither='scope.row.dither'

@@ -20,6 +20,7 @@
     "fecha": "^3.0.2",
     "file-saver": "^2.0.1",
     "jszip": "^3.2.0",
+    "promisify-file-reader": "^2.0.5",
     "three": "^0.100.0",
     "vconsole": "^3.2.2",
     "vue": "^2.5.2",

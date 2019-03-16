@@ -1,5 +1,4 @@
 import uuid from 'uuid/v4'
-import {saveAs} from 'file-saver'
 import JSZip from 'jszip';
 import {
   image2CGA,
@@ -38,18 +37,17 @@ export default{
       this.fileList = fileList;
     },
     newImage(files){
-      console.log(files);
       for(let file of files){
         this.imageList.push({
           id:uuid(),
-          dataURL:file.dataURL,
-          fileName:file.file.name,
+          file:file,
           layout:'fit',
           backgroundColor:'#000000',
           dither:'floyd-steinberg',
           image:null,
         });
       }
+      console.log(files, this.imageList);
     },
     deleteImage(idx){
       this.imageList.splice(idx,1);
@@ -74,22 +72,26 @@ export default{
       row.image = image;
     },
     saveDraft(){
+      if (0==this.imageList.length){
+        this.$alert('请添加图片');
+        return;
+      }
       let jsonToSave = [];
       for(let item of this.imageList){
         jsonToSave.push({
-          image:item.dataURL,
           layout:'fit',
           backgroundColor:'#000000',
           dither:'floyd-steinberg',
         });
       }
-      this.$prompt('请输入文件名：', '保存草稿', {
-        showCancelButton:false,
-        closeOnClickModal:false,
-        center:true,
-        roundButton:true,
-      }).then((fileName)=>{
-        saveAs(jsonToSave, `${fileName}.zip`);
+      let zip = new JSZip();
+      zip.file('index.json', JSON.stringify(jsonToSave, null, 2));
+      let imageFolder = zip.folder('image');
+      for(let item of this.imageList){
+        imageFolder.file(item.file.name, item.file);
+      }
+      zip.generateAsync({type:'blob'}).then((file)=>{
+        this.$saveAs(file, null, '.zip', '保存草稿');
       });
     },
     exportAllAsZip(){
@@ -116,7 +118,7 @@ export default{
         unixPermissions:'755',
       });
       zip.generateAsync({type:'blob'}).then((file)=>{
-        saveAs(file, 'export.zip');
+        this.$saveAs(file, null, '.zip', '导出zip');
       });
     },
   },

@@ -1,3 +1,4 @@
+import FileReader from "promisify-file-reader"
 import {fitRect, fillRect} from '@/js/common.js'
 import {
   image2dataURL,
@@ -30,7 +31,7 @@ var drawMonochrome2x = function(dest, src){
 }
 export default{
   props:{
-    src:String,
+    file:null,
     backgroundColor:String,
     layout:{
       default:'fit',
@@ -46,7 +47,7 @@ export default{
     };
   },
   watch:{
-    src:{
+    file:{
       immediate:true,
       handler(image){
         this.$nextTick(()=>{
@@ -72,6 +73,7 @@ export default{
   },
   methods:{
     processImage(){
+      this.result = null;
       return new Promise((resolve,reject)=>{
         let image = new Image();
         image.addEventListener('load', ()=>{
@@ -80,7 +82,11 @@ export default{
         image.addEventListener('error', ()=>{
           reject('图片加载失败');
         });
-        image.src = this.src;
+        new FileReader().readAsDataURL(this.file).then((src)=>{
+          image.src = src;
+        }).catch((e)=>{
+          reject(e);
+        });
       }).then((imageObject)=>{
         let canvasWidth = this.$refs.targetImage.width, canvasHeight = this.$refs.targetImage.height;
         let targetWidth = undefined, targetHeight = undefined;
@@ -154,13 +160,13 @@ export default{
       if(!this.result){
         return;
       }
-      saveAs(image2dataURL(this.result, 'image/png'), 'image.png');
+      this.$saveAs(image2dataURL(this.result, 'image/png'), null, '.png', '保存PNG');
     },
     saveImageCGA(index){
       if(!this.result){
         return;
       }
-      saveAs(image2CGA(this.result), 'image.pic');
+      this.$saveAs(image2CGA(this.result), null, '.pic', '保存PIC');
     },
   },
 }

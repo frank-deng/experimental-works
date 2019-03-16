@@ -1,3 +1,4 @@
+import {saveAs} from 'file-saver'
 export function fitRect(wRect,hRect,wImage,hImage){
   var ratioSrc = wImage / hImage, ratioDest = wRect / hRect;
   var scale = (ratioSrc > ratioDest) ? (wImage / wRect) : (hImage / hRect);
@@ -8,18 +9,28 @@ export function fillRect(wRect,hRect,wImage,hImage){
   var scale = (ratioSrc > ratioDest) ? (hImage / hRect) : (wImage / wRect);
   return [wImage / scale, hImage / scale];
 }
-export function readFile(file){
-  let reader = new FileReader();
-  return new Promise((resolve,reject)=>{
-    reader.addEventListener('abort',(e)=>{
-      reject(e);
-    })
-    reader.addEventListener('error',(e)=>{
-      reject(e);
-    })
-    reader.addEventListener('load',(e)=>{
-      resolve(e.target.result);
-    })
-    reader.readAsDataURL(file);
-  })
+
+export default{
+  install(Vue){
+    Vue.prototype.$saveAs = function(target, fileName=null, extension='', title=''){
+      return new Promise((resolve,reject)=>{
+        //已输入过文件名
+        if(fileName){
+          resolve(fileName);
+          saveAs(target, fileName);
+          return;
+        }
+
+        //未输入过文件名
+        this.$prompt('请输入文件名：', title, {
+          closeOnClickModal:false,
+          center:true,
+          roundButton:true,
+        }).then(({value})=>{
+          saveAs(target, `${value}${extension}`);
+          resolve(value);
+        });
+      });
+    }
+  }
 }
