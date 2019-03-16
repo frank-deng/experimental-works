@@ -8,8 +8,8 @@
 </template>
 <style scoped>
 .targetImage{
-  width:160px;
-  height:100px;
+  width:100px;
+  height:62px;
   cursor:pointer;
 }
 .targetImagePreview{

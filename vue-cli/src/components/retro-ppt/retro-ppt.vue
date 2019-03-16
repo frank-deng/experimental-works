@@ -3,22 +3,22 @@
     <addImage @upload='newImage'></addImage>
     <el-button type='primary' icon='el-icon-download' size='small' @click='exportAllAsZip'>导出为zip</el-button>
     <el-table :data='imageList' row-key='id'>
-      <el-table-column prop='fileName' label='文件名' fixed='left'></el-table-column>
-      <el-table-column prop='layout' label='布局方式' :width='100'>
+      <el-table-column prop='fileName' label='文件名'></el-table-column>
+      <el-table-column prop='layout' label='布局方式' width='100'>
         <template slot-scope='scope'>
           <el-select v-model='scope.row.layout'>
             <el-option v-for='item of layoutSelection' :key='item.value' :value='item.value' :label='item.label'></el-option>
           </el-select>
         </template>
       </el-table-column>
-      <el-table-column prop='dither' label='抖动方式' width='100'>
+      <el-table-column prop='dither' label='抖动方式' width='250'>
         <template slot-scope='scope'>
           <el-select v-model='scope.row.dither'>
             <el-option v-for='item of ditherSelection' :key='item.value' :value='item.value' :label='item.label'></el-option>
           </el-select>
         </template>
       </el-table-column>
-      <el-table-column label='预览' width='200'>
+      <el-table-column label='预览' width='140'>
         <template slot-scope='scope'>
           <processImage :image='scope.row.file' :layout='scope.row.layout' :dither='scope.row.dither' @change='writeResult(scope.row, $event)'></processImage>
         </template>
