@@ -56,6 +56,8 @@ Vue.use(Dialog);
 Vue.prototype.$message = Message;
 Vue.prototype.$loading = Loading;
 Vue.prototype.$alert = MessageBox.alert;
+Vue.prototype.$prompt = MessageBox.prompt;
+Vue.prototype.$confirm = MessageBox.confirm;
 
 /* eslint-disable no-new */
 new Vue({

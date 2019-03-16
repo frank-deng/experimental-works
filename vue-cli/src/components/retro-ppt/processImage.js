@@ -1,4 +1,8 @@
 import {fitRect, fillRect} from '@/js/common.js'
+import {
+  image2dataURL,
+  image2CGA,
+} from './util.js'
 import {getMonochromeImage} from '@/js/monochromeImage.js'
 var drawMonochrome = function(dest, src){
   let srcLineLength = src.width / 8;
@@ -26,7 +30,8 @@ var drawMonochrome2x = function(dest, src){
 }
 export default{
   props:{
-    image:null,
+    src:String,
+    backgroundColor:String,
     layout:{
       default:'fit',
     },
@@ -41,19 +46,20 @@ export default{
     };
   },
   watch:{
-    image:{
+    src:{
       immediate:true,
       handler(image){
-        if(!(image instanceof File)){
-          console.error('Invalid type of image object.');
-          return;
-        }
         this.$nextTick(()=>{
           this.processImage();
         });
       },
     },
     layout(){
+      this.$nextTick(()=>{
+        this.processImage();
+      });
+    },
+    backgroundColor(){
       this.$nextTick(()=>{
         this.processImage();
       });
@@ -67,18 +73,14 @@ export default{
   methods:{
     processImage(){
       return new Promise((resolve,reject)=>{
-        let reader = new FileReader();
         let image = new Image();
-        reader.addEventListener('load', (event)=>{
-          image.src = event.target.result;
-        });
         image.addEventListener('load', ()=>{
           resolve(image);
         });
         image.addEventListener('error', ()=>{
           reject('图片加载失败');
         });
-        reader.readAsDataURL(this.image);
+        image.src = this.src;
       }).then((imageObject)=>{
         let canvasWidth = this.$refs.targetImage.width, canvasHeight = this.$refs.targetImage.height;
         let targetWidth = undefined, targetHeight = undefined;
@@ -103,7 +105,7 @@ export default{
         let offsetX = (this.$refs.targetImage.width - targetWidth) / 2;
         let offsetY = (this.$refs.targetImage.height - targetHeight) / 2;
         let ctx = this.$refs.targetImage.getContext('2d');
-        ctx.fillStyle = '#000000';
+        ctx.fillStyle = this.backgroundColor;
         ctx.fillRect(0,0,canvasWidth,canvasHeight);
         //平铺图像
         if('tile'==this.layout){
@@ -141,12 +143,24 @@ export default{
       this.$nextTick(()=>{
         let canvasWidth = this.$refs.targetImagePreview.width, canvasHeight = this.$refs.targetImagePreview.height;
         let ctx = this.$refs.targetImagePreview.getContext('2d');
-        ctx.fillStyle = '#000000';
+        ctx.fillStyle = this.backgroundColor;
         ctx.fillRect(0,0,canvasWidth,canvasHeight);
         let imageData = ctx.getImageData(0,0,canvasWidth,canvasHeight);
         drawMonochrome2x(imageData, this.result);
         ctx.putImageData(imageData,0,0);
       })
+    },
+    saveImage(index){
+      if(!this.result){
+        return;
+      }
+      saveAs(image2dataURL(this.result, 'image/png'), 'image.png');
+    },
+    saveImageCGA(index){
+      if(!this.result){
+        return;
+      }
+      saveAs(image2CGA(this.result), 'image.pic');
     },
   },
 }

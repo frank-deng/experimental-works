@@ -2,7 +2,6 @@ import uuid from 'uuid/v4'
 import {saveAs} from 'file-saver'
 import JSZip from 'jszip';
 import {
-  image2dataURL,
   image2CGA,
   generateBASIC,
   generateDeployScript,
@@ -22,6 +21,10 @@ export default{
         {label:'填充', value:'fill'},
         {label:'平铺', value:'tile'},
       ],
+      colorSelection:[
+        {label:'黑色', value:'#000000'},
+        {label:'白色', value:'#FFFFFF'},
+      ],
       ditherSelection:[
         {label:'无', value:'none'},
         {label:'Ordered', value:'ordered'},
@@ -35,12 +38,14 @@ export default{
       this.fileList = fileList;
     },
     newImage(files){
+      console.log(files);
       for(let file of files){
         this.imageList.push({
           id:uuid(),
-          file:file,
-          fileName:file.name,
+          dataURL:file.dataURL,
+          fileName:file.file.name,
           layout:'fit',
+          backgroundColor:'#000000',
           dither:'floyd-steinberg',
           image:null,
         });
@@ -68,19 +73,24 @@ export default{
     writeResult(row, image){
       row.image = image;
     },
-    saveImage(index){
-      let image = this.imageList[index].image;
-      if(!image){
-        return;
+    saveDraft(){
+      let jsonToSave = [];
+      for(let item of this.imageList){
+        jsonToSave.push({
+          image:item.dataURL,
+          layout:'fit',
+          backgroundColor:'#000000',
+          dither:'floyd-steinberg',
+        });
       }
-      saveAs(image2dataURL(image, 'image/png'));
-    },
-    saveImageCGA(index){
-      let image = this.imageList[index].image;
-      if(!image){
-        return;
-      }
-      saveAs(image2CGA(image), 'image.pic');
+      this.$prompt('请输入文件名：', '保存草稿', {
+        showCancelButton:false,
+        closeOnClickModal:false,
+        center:true,
+        roundButton:true,
+      }).then((fileName)=>{
+        saveAs(jsonToSave, `${fileName}.zip`);
+      });
     },
     exportAllAsZip(){
       if (0==this.imageList.length){
