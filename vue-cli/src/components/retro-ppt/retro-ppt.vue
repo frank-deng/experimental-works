@@ -2,7 +2,7 @@
   <div class='retro-ppt'>
     <addImage @upload='newImage'></addImage>
     <el-button type='primary' icon='el-icon-download' size='small' @click='exportAllAsZip'>导出为zip</el-button>
-    <el-table :data='imageList'>
+    <el-table :data='imageList' row-key='id'>
       <el-table-column prop='fileName' label='文件名' fixed='left'></el-table-column>
       <el-table-column prop='layout' label='布局方式' :width='100'>
         <template slot-scope='scope'>

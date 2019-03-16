@@ -1,11 +1,12 @@
+import uuid from 'uuid/v4'
+import {saveAs} from 'file-saver'
+import JSZip from 'jszip';
 import {
   image2dataURL,
   image2CGA,
   generateBASIC,
   generateDeployScript,
 } from './util.js'
-import {saveAs} from 'file-saver'
-import JSZip from 'jszip';
 export default{
   components:{
     addImage:require('./addImage.vue').default,
@@ -36,6 +37,7 @@ export default{
     newImage(files){
       for(let file of files){
         this.imageList.push({
+          id:uuid(),
           file:file,
           fileName:file.name,
           layout:'fit',
