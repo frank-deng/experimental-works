@@ -33,9 +33,7 @@ export default{
         imageFolder.file(`IMG${('00000'+String(i)).slice(-5)}.DAT`, item.file);
       });
       zip.file('index.json', JSON.stringify(jsonToSave, null, 2));
-      zip.generateAsync({type:'blob'}).then((file)=>{
-        this.$saveAs(file, null, '.zip', '保存草稿');
-      });
+      this.$saveAs(zip.generateAsync({type:'blob'}), null, '.zip', '保存草稿');
     },
     loadDraft(){
       this.$refs.filePicker.click();

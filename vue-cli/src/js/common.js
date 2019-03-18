@@ -27,8 +27,22 @@ export default{
           center:true,
           roundButton:true,
         }).then(({value})=>{
-          saveAs(target, `${value}${extension}`);
-          resolve(value);
+          let extensionInside = value.toUpperCase().indexOf(extension.toUpperCase());
+          if(extensionInside >= 0 && (value.length-extension.length) == extensionInside){
+            value = value.slice(0,-extension.length);
+          }
+          let fileNameSave = `${value}${extension}`;
+          if(target instanceof Promise){
+            target.then((fileContent)=>{
+              saveAs(fileContent,fileNameSave);
+              resolve(true);
+            }).catch((e)=>{
+              reject(e);
+            });
+          }else{
+            saveAs(target,fileNameSave);
+            resolve(true);
+          }
         });
       });
     }
