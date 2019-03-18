@@ -2,7 +2,7 @@
   <div class='retro-ppt'>
     <addImage @upload='newImage'></addImage>
     <el-button type='primary' icon='el-icon-download' size='small' @click='exportAllAsZip'>导出为zip</el-button>
-    <el-button type='primary' icon='el-icon-download' size='small' @click='saveDraft'>保存草稿</el-button>
+    <draftManager v-model='imageList'></draftManager>
     <el-table :data='imageList' row-key='id'>
       <el-table-column prop='layout' label='布局方式' width='100'>
         <template slot-scope='scope'>

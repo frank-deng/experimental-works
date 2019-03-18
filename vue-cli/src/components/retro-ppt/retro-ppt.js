@@ -8,6 +8,7 @@ import {
 export default{
   components:{
     addImage:require('./addImage.vue').default,
+    draftManager:require('./draftManager.vue').default,
     processImage:require('./processImage.vue').default,
   },
   data(){
@@ -70,29 +71,6 @@ export default{
     },
     writeResult(row, image){
       row.image = image;
-    },
-    saveDraft(){
-      if (0==this.imageList.length){
-        this.$alert('请添加图片');
-        return;
-      }
-      let jsonToSave = [];
-      for(let item of this.imageList){
-        jsonToSave.push({
-          layout:'fit',
-          backgroundColor:'#000000',
-          dither:'floyd-steinberg',
-        });
-      }
-      let zip = new JSZip();
-      zip.file('index.json', JSON.stringify(jsonToSave, null, 2));
-      let imageFolder = zip.folder('image');
-      for(let item of this.imageList){
-        imageFolder.file(item.file.name, item.file);
-      }
-      zip.generateAsync({type:'blob'}).then((file)=>{
-        this.$saveAs(file, null, '.zip', '保存草稿');
-      });
     },
     exportAllAsZip(){
       if (0==this.imageList.length){
