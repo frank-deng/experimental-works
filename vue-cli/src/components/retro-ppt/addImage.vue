@@ -1,7 +1,7 @@
 <template>
   <div class='addFile'>
     <el-button size='small' type='primary' icon='el-icon-plus' @click='pickImage'></el-button>
-    <input type='file' class='filePicker' ref='filePicker' multiple='multiple' @change='handleChange'/>
+    <input type='file' class='filePicker' ref='filePicker' multiple='multiple' @change='handleChange' accept='image/*'/>
   </div>
 </template>
 <style scoped>

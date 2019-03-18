@@ -48,7 +48,6 @@ export default{
           image:null,
         });
       }
-      console.log(files, this.imageList);
     },
     deleteImage(idx){
       this.imageList.splice(idx,1);
