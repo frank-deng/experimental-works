@@ -4,8 +4,7 @@ import {
   image2dataURL,
   image2CGA,
 } from './util.js'
-import processImageWorker from './processImage.worker.js'
-//import {getMonochromeImage} from '@/js/monochromeImage.js'
+import {getMonochromeImage} from '@/js/monochromeImage.js'
 var drawMonochrome = function(dest, src){
   let srcLineLength = src.width / 8;
   for(let y = 0; y < src.height; y++){
@@ -134,19 +133,12 @@ export default{
 
         //将图像转成灰度的
         let imageData = ctx.getImageData(0,0,canvasWidth,canvasHeight);
-        let worker = new processImageWorker();
-        worker.addEventListener('error',(e)=>{
-          console.error(e);
-        });
-        worker.addEventListener('message', (resp)=>{
-          this.result = resp.data;
-          drawMonochrome(imageData, this.result);
-          ctx.putImageData(imageData,0,0);
+        this.result = getMonochromeImage(imageData);
+        drawMonochrome(imageData, this.result);
+        ctx.putImageData(imageData,0,0);
 
-          //将最终结果传出去
-          this.$emit('change', this.result);
-        });
-        worker.postMessage(imageData);
+        //将最终结果传出去
+        this.$emit('change', this.result);
       });
     },
     doPreview(){
