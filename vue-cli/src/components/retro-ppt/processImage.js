@@ -133,7 +133,7 @@ export default{
 
         //将图像转成灰度的
         let imageData = ctx.getImageData(0,0,canvasWidth,canvasHeight);
-        this.result = getMonochromeImage(imageData);
+        this.result = getMonochromeImage(imageData, this.dither);
         drawMonochrome(imageData, this.result);
         ctx.putImageData(imageData,0,0);
 

@@ -1,5 +1,9 @@
 import uuid from 'uuid/v4'
 import JSZip from 'jszip';
+import {saveAs} from 'file-saver'
+import {
+  extensionMatch,
+} from '@/js/common.js'
 import {
   image2CGA,
   generateBASIC,
@@ -34,8 +38,13 @@ export default{
     };
   },
   methods:{
-    updateFileList(file, fileList){
-      this.fileList = fileList;
+    clearAllImage(){
+      this.$confirm('是否清空所有图片？',{
+        type:'warning',
+        closeOnClickModal:false,
+      }).then(()=>{
+        this.imageList = [];
+      })
     },
     newImage(files){
       for(let file of files){
@@ -82,20 +91,32 @@ export default{
           return;
         }
       }
-      let zip = new JSZip(), fileList = [];
-      let target = zip.folder('photo');
-      for(let i = 0; i < this.imageList.length; i++){
-        let item = this.imageList[i];
-        let filename = `IMG${('00000'+String(i)).slice(-5)}.PIC`;
-        fileList.push(filename);
-        target.file(filename, image2CGA(item.image));
-      }
-      target.file('PHOTO.BAS', generateBASIC(fileList));
-      target.file('deploy.sh', generateDeployScript(), {
-        unixPermissions:'755',
-      });
-      zip.generateAsync({type:'blob'}).then((file)=>{
-        this.$saveAs(file, null, '.zip', '导出zip');
+      this.$prompt('请输入文件名：', '导出', {
+        closeOnClickModal:false,
+        center:true,
+        roundButton:true,
+      }).then(({value})=>{
+        let fileName = value, folderName = value;
+        if(!extensionMatch('.zip', fileName)){
+          fileName += '.zip';
+        }else{
+          folderName = folderName.slice(0,-4);
+        }
+        let zip = new JSZip(), fileList = [];
+        let target = zip.folder(folderName);
+        for(let i = 0; i < this.imageList.length; i++){
+          let item = this.imageList[i];
+          let filename = `IMG${('00000'+String(i)).slice(-5)}.PIC`;
+          fileList.push(filename);
+          target.file(filename, image2CGA(item.image));
+        }
+        target.file('PHOTO.BAS', generateBASIC(fileList));
+        target.file('deploy.sh', generateDeployScript(), {
+          unixPermissions:'755',
+        });
+        zip.generateAsync({type:'blob'}).then((file)=>{
+          saveAs(file, fileName);
+        });
       });
     },
   },

@@ -1,8 +1,11 @@
 <template>
   <div class='retro-ppt'>
-    <addImage @upload='newImage'></addImage>
-    <el-button type='primary' icon='el-icon-download' size='small' @click='exportAllAsZip'>导出为zip</el-button>
-    <draftManager v-model='imageList'></draftManager>
+    <p class='toolBox'>
+      <addImage class='toolBoxItem' @upload='newImage'></addImage>
+      <el-button class='toolBoxItem' type='primary' icon='el-icon-download' size='small' @click='exportAllAsZip'>导出为zip</el-button>
+      <draftManager class='toolBoxItem' v-model='imageList'></draftManager>
+      <el-button class='toolBoxItem' type='danger' icon='el-icon-delete' size='small' @click='clearAllImage'>清空</el-button>
+    </p>
     <el-table :data='imageList' row-key='id'>
       <el-table-column prop='layout' label='布局方式' width='100'>
         <template slot-scope='scope'>
@@ -42,7 +45,7 @@
               :disabled="scope.$index<=0"></el-button>
             <el-button size='small' icon='el-icon-caret-bottom' @click='moveDownImage(scope.$index)'
               :disabled="scope.$index>=(imageList.length-1)"></el-button>
-            <el-button size='small' icon='el-icon-delete' @click='deleteImage(scope.$index)'></el-button>
+            <el-button size='small' type='danger' icon='el-icon-delete' @click='deleteImage(scope.$index)'></el-button>
           </el-button-group>
         </template>
       </el-table-column>
@@ -56,6 +59,9 @@
 .resultList{
   list-style:none;
   padding:0;
+}
+.toolBoxItem{
+  margin-bottom:4px;
 }
 </style>
 <script src='./retro-ppt.js'></script>

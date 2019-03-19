@@ -9,6 +9,13 @@ export function fillRect(wRect,hRect,wImage,hImage){
   var scale = (ratioSrc > ratioDest) ? (hImage / hRect) : (wImage / wRect);
   return [wImage / scale, hImage / scale];
 }
+export function extensionMatch(extension, filename){
+  let extensionInside = filename.toUpperCase().indexOf(extension.toUpperCase());
+  if(extensionInside >= 0 && (filename.length-extension.length) == extensionInside){
+    return true;
+  }
+  return false;
+}
 
 export default{
   install(Vue){
@@ -27,8 +34,7 @@ export default{
           center:true,
           roundButton:true,
         }).then(({value})=>{
-          let extensionInside = value.toUpperCase().indexOf(extension.toUpperCase());
-          if(extensionInside >= 0 && (value.length-extension.length) == extensionInside){
+          if(extensionMatch(extension, value)){
             value = value.slice(0,-extension.length);
           }
           let fileNameSave = `${value}${extension}`;
