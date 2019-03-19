@@ -9,6 +9,21 @@ import {
   generateBASIC,
   generateDeployScript,
 } from './util.js'
+
+var drawMonochrome2x = function(dest, src){
+  let srcLineLength = src.width / 8;
+  for(let y = 0; y < src.height; y++){
+    for(let x = 0; x < src.width; x++){
+      let offsetSrc = (y*srcLineLength+(x>>3));
+      let value = src.data[offsetSrc] & (1<<(7-(x&7)));
+      let offset = (y*2*src.width+x)*4;
+      dest.data[offset] = dest.data[offset+1] = dest.data[offset+2] = (value ? 0xff : 0);
+      offset = ((y*2+1)*src.width+x)*4;
+      dest.data[offset] = dest.data[offset+1] = dest.data[offset+2] = (value ? 0xff : 0);
+    }
+  }
+}
+
 export default{
   components:{
     addImage:require('./addImage.vue').default,
@@ -17,6 +32,7 @@ export default{
   },
   data(){
     return{
+      currentPage:'list',
       imageList:[],
       layoutSelection:[
         {label:'适应', value:'fit'},
@@ -35,7 +51,15 @@ export default{
         {label:'Floyd-Steinberg', value:'floyd-steinberg'},
         {label:'Minimized Average Error', value:'min-avg-error'},
       ],
+      pageIndex:0,
     };
+  },
+  watch:{
+    imageList(imageList){
+      if(0==imageList.length){
+        this.currentPage = 'list';
+      }
+    },
   },
   methods:{
     clearAllImage(){
@@ -79,6 +103,24 @@ export default{
     },
     writeResult(row, image){
       row.image = image;
+    },
+    doPreview(row, index){
+      if(!row.image){
+        return;
+      }
+
+      //绘制图像到预览页
+      let canvas = this.$refs.targetImagePreview;
+      let canvasWidth = canvas.width, canvasHeight = canvas.height;
+      let ctx = canvas.getContext('2d');
+      ctx.fillStyle = row.backgroundColor;
+      ctx.fillRect(0,0,canvasWidth,canvasHeight);
+      let imageData = ctx.getImageData(0,0,canvasWidth,canvasHeight);
+      drawMonochrome2x(imageData, row.image);
+      ctx.putImageData(imageData,0,0);
+
+      this.pageIndex = index;
+      this.currentPage = 'preview';
     },
     exportAllAsZip(){
       if (0==this.imageList.length){

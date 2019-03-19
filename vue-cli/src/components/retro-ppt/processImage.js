@@ -145,16 +145,7 @@ export default{
       if(!this.result){
         return;
       }
-      this.preview = true;
-      this.$nextTick(()=>{
-        let canvasWidth = this.$refs.targetImagePreview.width, canvasHeight = this.$refs.targetImagePreview.height;
-        let ctx = this.$refs.targetImagePreview.getContext('2d');
-        ctx.fillStyle = this.backgroundColor;
-        ctx.fillRect(0,0,canvasWidth,canvasHeight);
-        let imageData = ctx.getImageData(0,0,canvasWidth,canvasHeight);
-        drawMonochrome2x(imageData, this.result);
-        ctx.putImageData(imageData,0,0);
-      })
+      this.$emit('preview');
     },
     saveImage(index){
       if(!this.result){

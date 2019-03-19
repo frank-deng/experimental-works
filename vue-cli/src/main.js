@@ -38,6 +38,8 @@ import {
   Table,
   TableColumn,
   Dialog,
+  Tabs,
+  TabPane,
 } from 'element-ui'
 Vue.use(Button);
 Vue.use(ButtonGroup);
@@ -56,6 +58,8 @@ Vue.use(ColorPicker);
 Vue.use(Table);
 Vue.use(TableColumn);
 Vue.use(Dialog);
+Vue.use(Tabs);
+Vue.use(TabPane);
 Vue.prototype.$message = Message;
 Vue.prototype.$loading = Loading;
 Vue.prototype.$alert = MessageBox.alert;
