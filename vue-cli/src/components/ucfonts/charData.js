@@ -149,6 +149,21 @@ var paramParser=[
   (data)=>{
   },
 ];
+var drawFont=function(canvas,ctx,operList){
+  var cx=0,cy=0;
+  var handler=[
+    (param)=>{
+      cx=param.x1;cy=param.y1;
+    },
+  ];
+  for(let item of operList){
+    if(!handler[item.oper]){
+      continue;
+    }
+    handler[item.oper](item.param);
+  }
+}
+
 export default{
   props:{
     fontData:null,
