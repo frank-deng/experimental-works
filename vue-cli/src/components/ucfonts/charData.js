@@ -53,6 +53,61 @@ var paramParser=[
       y2:(data[6]<<4)|data[7],
     };
   },
+  (data)=>{
+    let dx=data[0]&0x7;
+    return{
+      dx1:(0x8&data[0]?-dx:dx),
+      y1:(data[1]<<4)|data[2],
+    };
+  },
+  (data)=>{
+    let dy=data[2]&0x7;
+    return{
+      x1:(data[0]<<4)|data[1],
+      dy1:(0x8&data[2]?-dy:dy),
+    };
+  },
+  (data)=>{
+    let dx=data[0]&0x7, dy=data[1]&0x7;
+    return{
+      dx1:(0x8&data[0]?-dx:dx),
+      dy1:(0x8&data[1]?-dy:dy),
+    };
+  },
+  (data)=>{
+    let dx=(data[0]<<2)|(data[1]>>2);
+    let dy=((data[1]&0x3)<<4)|data[2];
+    return{
+      dx1:(32&dx?-(dx&31):(dx&31)),
+      dy1:(32&dy?-(dy&31):(dy&31)),
+    };
+  },
+  (data)=>{
+    let dx1=data[0],dy1=data[1],dx2=data[2],dy2=data[3];
+    return{
+      dx1:(8&dx1?-(dx1&7):(dx1&7)),
+      dy1:(8&dy1?-(dy1&7):(dy1&7)),
+      dx2:(8&dx2?-(dx2&7):(dx2&7)),
+      dy2:(8&dy2?-(dy2&7):(dy2&7)),
+    };
+  },
+  (data)=>{
+  },
+  (data)=>{
+    let dx1=data[0],dy1=data[1],dx2=data[2],dy2=data[3],dx3=data[4],dy3=data[5];
+    return{
+      dx1:(8&dx1?-(dx1&7):(dx1&7)),
+      dy1:(8&dy1?-(dy1&7):(dy1&7)),
+      dx2:(8&dx2?-(dx2&7):(dx2&7)),
+      dy2:(8&dy2?-(dy2&7):(dy2&7)),
+      dx3:(8&dx3?-(dx3&7):(dx3&7)),
+      dye:(8&dy3?-(dy3&7):(dy3&7)),
+    };
+  },
+  (data)=>{
+  },
+  (data)=>{
+  },
 ];
 export default{
   props:{
