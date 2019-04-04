@@ -4,6 +4,56 @@ var jumpStep=[
   3,2,3,4,
   6,6,9,4
 ];
+var paramParser=[
+  (data)=>{
+    return{
+      x1:(data[0]<<4)|data[1],
+      y1:(data[2]<<4)|data[3],
+    };
+  },
+  (data)=>{
+    return{
+      x1:(data[0]<<4)|data[1],
+    };
+  },
+  (data)=>{
+    return{
+      y1:(data[0]<<4)|data[1],
+    };
+  },
+  (data)=>{
+    return{
+      x1:(data[0]<<4)|data[1],
+      y1:(data[2]<<4)|data[3],
+    };
+  },
+  (data)=>{
+    return{
+      x1:(data[0]<<4)|data[1],
+      y1:(data[2]<<4)|data[3],
+      x2:(data[4]<<4)|data[5],
+      y2:(data[6]<<4)|data[7],
+    };
+  },
+  (data)=>{
+    return{
+      x1:(data[0]<<4)|data[1],
+      y1:(data[2]<<4)|data[3],
+      x2:(data[4]<<4)|data[5],
+      y2:(data[6]<<4)|data[7],
+      x3:(data[8]<<4)|data[9],
+      y3:(data[10]<<4)|data[11],
+    };
+  },
+  (data)=>{
+    return{
+      x1:(data[0]<<4)|data[1],
+      y1:(data[2]<<4)|data[3],
+      x2:(data[4]<<4)|data[5],
+      y2:(data[6]<<4)|data[7],
+    };
+  },
+];
 export default{
   props:{
     fontData:null,
@@ -11,7 +61,7 @@ export default{
   data(){
     return{
       fontDataExtract:null,
-      missingHalfBytes:'-',
+      steps:'-',
     };
   },
   computed:{
@@ -22,6 +72,12 @@ export default{
       return this.fontDataExtract.map((n)=>{
         return n.toString(16);
       }).join('');
+    },
+    fontDataLen(){
+      if(!(this.fontDataExtract instanceof Uint8Array)){
+        return '无数据';
+      }
+      return this.fontDataExtract.length;
     },
   },
   watch:{
@@ -41,27 +97,33 @@ export default{
           i++;
         }
         this.fontDataExtract=fontDataExtract;
-        this.check(fontDataExtract);
+        this.steps=this.check(fontDataExtract);
       },
     },
   },
   methods:{
     check(fontData){
-      if(!(fontData instanceof Uint8Array)){
-        console.error('无效数据',formData);
-        return;
-      }
-      //检测步长是否正确
-      let offset=0, times=fontData.length*2;
-      while(offset<fontData.length && --times){
+      let offset=0, steps=[];
+      while(offset<fontData.length){
         let oper=fontData[offset];
+        if(0==oper && offset==(fontData.length-1)){
+          offset++;
+          break;
+        }
+        let paramData=fontData.slice(offset+1,offset+jumpStep[oper]+1);
+        if(paramParser[oper]){
+          paramData=paramParser[oper](paramData);
+        }
+        steps.push({
+          oper:oper,
+          param:paramData,
+        });
         offset+=jumpStep[oper]+1;
       }
-      if(0==times){
-        console.error('死循环');
-      }else{
-        this.missingHalfBytes=(offset-fontData.length);
+      if(offset-fontData.length){
+        throw new Error('无效字符轮廓数据');
       }
+      return steps;
     },
   },
 }
