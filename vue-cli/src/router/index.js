@@ -39,11 +39,6 @@ let router = new Router({
 			name: 'K-Means图像处理',
 			component: (r)=>require.ensure([], ()=>r(require('@/components/KMeans/index.vue')), 'KMeansPosterization'),
 		},
-		{
-			path: '/retro-ppt',
-			name: 'Retro PPT',
-			component: (r)=>require.ensure([], ()=>r(require('@/components/retro-ppt/retro-ppt.vue')), 'retro-ppt'),
-		},
 	],
 });
 router.beforeEach((to, from, next)=>{
