@@ -5,28 +5,33 @@ var jumpStep=[
   6,6,9,4
 ];
 var paramParser=[
+  //0
   (data)=>{
     return{
       x1:(data[0]<<4)|data[1],
       y1:(data[2]<<4)|data[3],
     };
   },
+  //1
   (data)=>{
     return{
       x1:(data[0]<<4)|data[1],
     };
   },
+  //2
   (data)=>{
     return{
       y1:(data[0]<<4)|data[1],
     };
   },
+  //3
   (data)=>{
     return{
       x1:(data[0]<<4)|data[1],
       y1:(data[2]<<4)|data[3],
     };
   },
+  //4
   (data)=>{
     return{
       x1:(data[0]<<4)|data[1],
@@ -35,6 +40,7 @@ var paramParser=[
       y2:(data[6]<<4)|data[7],
     };
   },
+  //5
   (data)=>{
     return{
       x1:(data[0]<<4)|data[1],
@@ -45,6 +51,7 @@ var paramParser=[
       y3:(data[10]<<4)|data[11],
     };
   },
+  //6
   (data)=>{
     return{
       x1:(data[0]<<4)|data[1],
@@ -53,6 +60,7 @@ var paramParser=[
       y2:(data[6]<<4)|data[7],
     };
   },
+  //7
   (data)=>{
     let dx=data[0]&0x7;
     return{
@@ -60,6 +68,7 @@ var paramParser=[
       y1:(data[1]<<4)|data[2],
     };
   },
+  //8
   (data)=>{
     let dy=data[2]&0x7;
     return{
@@ -67,6 +76,7 @@ var paramParser=[
       dy1:(0x8&data[2]?-dy:dy),
     };
   },
+  //9
   (data)=>{
     let dx=data[0]&0x7, dy=data[1]&0x7;
     return{
@@ -74,6 +84,7 @@ var paramParser=[
       dy1:(0x8&data[1]?-dy:dy),
     };
   },
+  //10
   (data)=>{
     let dx=(data[0]<<2)|(data[1]>>2);
     let dy=((data[1]&0x3)<<4)|data[2];
@@ -82,6 +93,7 @@ var paramParser=[
       dy1:(32&dy?-(dy&31):(dy&31)),
     };
   },
+  //11
   (data)=>{
     let dx1=data[0],dy1=data[1],dx2=data[2],dy2=data[3];
     return{
@@ -91,8 +103,20 @@ var paramParser=[
       dy2:(8&dy2?-(dy2&7):(dy2&7)),
     };
   },
+  //12
   (data)=>{
+    let dx1=(data[0]<<2)|(data[1]>>2);
+    let dy1=((data[1]&0x3)<<4)|data[2];
+    let dx2=(data[3]<<2)|(data[4]>>2);
+    let dy2=((data[4]&0x3)<<4)|data[5];
+    return{
+      dx1:(32&dx1?-(dx1&31):(dx1&31)),
+      dy1:(32&dy1?-(dy1&31):(dy1&31)),
+      dx2:(32&dx2?-(dx2&31):(dx2&31)),
+      dy2:(32&dy2?-(dy2&31):(dy2&31)),
+    };
   },
+  //13
   (data)=>{
     let dx1=data[0],dy1=data[1],dx2=data[2],dy2=data[3],dx3=data[4],dy3=data[5];
     return{
@@ -101,11 +125,27 @@ var paramParser=[
       dx2:(8&dx2?-(dx2&7):(dx2&7)),
       dy2:(8&dy2?-(dy2&7):(dy2&7)),
       dx3:(8&dx3?-(dx3&7):(dx3&7)),
-      dye:(8&dy3?-(dy3&7):(dy3&7)),
+      dy3:(8&dy3?-(dy3&7):(dy3&7)),
     };
   },
+  //14
   (data)=>{
+    let dx1=(data[0]<<2)|(data[1]>>2);
+    let dy1=((data[1]&0x3)<<4)|data[2];
+    let dx2=(data[3]<<2)|(data[4]>>2);
+    let dy2=((data[4]&0x3)<<4)|data[5];
+    let dx3=(data[5]<<2)|(data[6]>>2);
+    let dy3=((data[6]&0x3)<<4)|data[7];
+    return{
+      dx1:(32&dx1?-(dx1&31):(dx1&31)),
+      dy1:(32&dy1?-(dy1&31):(dy1&31)),
+      dx2:(32&dx2?-(dx2&31):(dx2&31)),
+      dy2:(32&dy2?-(dy2&31):(dy2&31)),
+      dx3:(32&dx3?-(dx3&31):(dx3&31)),
+      dy3:(32&dy3?-(dy3&31):(dy3&31)),
+    };
   },
+  //15
   (data)=>{
   },
 ];
