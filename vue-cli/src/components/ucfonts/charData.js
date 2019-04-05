@@ -185,7 +185,7 @@ var drawFont=function(canvas,ctx,operList){
       ctx.moveTo(cx,cy);
       cx=param.x2;
       cy=param.y2;
-      ctx.bezierCurveTo(param.x1,param.y1,param.x1,param.y1,cx,cy);
+      ctx.bezierCurveTo(param.x1,param.y1,cx,cy,cx,cy);
       ctx.stroke();
     },
     (param)=>{
