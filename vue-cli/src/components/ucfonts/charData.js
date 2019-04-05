@@ -155,13 +155,44 @@ var drawFont=function(canvas,ctx,operList){
     (param)=>{
       cx=param.x1;cy=param.y1;
     },
+    (param)=>{
+      ctx.moveTo(cx,cy);
+      cx=param.x1;
+      ctx.lineTo(cx,cy);
+    },
+    (param)=>{
+      ctx.moveTo(cx,cy);
+      cy=param.y1;
+      ctx.lineTo(cx,cy);
+    },
+    (param)=>{
+      ctx.moveTo(cx,cy);
+      cx=param.x1;
+      cy=param.y1;
+      ctx.lineTo(cx,cy);
+    },
+    (param)=>{
+      ctx.moveTo(cx,cy);
+      cx=param.x2;
+      cy=param.y2;
+      ctx.bezierCurveTo(param.x1,param.y1,param.x1,param.y1,cx,cy);
+    },
+    (param)=>{
+      ctx.moveTo(cx,cy);
+      cx=param.x3;
+      cy=param.y3;
+      ctx.bezierCurveTo(param.x1,param.y1,param.x2,param.y2,cx,cy);
+    },
   ];
+  ctx.strokeStyle='#000000';
+  ctx.beginPath();
   for(let item of operList){
     if(!handler[item.oper]){
       continue;
     }
     handler[item.oper](item.param);
   }
+  ctx.stroke();
 }
 
 export default{
@@ -208,6 +239,11 @@ export default{
         }
         this.fontDataExtract=fontDataExtract;
         this.steps=this.check(fontDataExtract);
+	this.$nextTick(()=>{
+          let canvas=this.$refs.preview;
+          let ctx=canvas.getContext('2d');
+          drawFont(canvas,ctx,this.steps);
+	})
       },
     },
   },
