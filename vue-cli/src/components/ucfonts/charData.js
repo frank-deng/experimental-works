@@ -205,6 +205,36 @@ var drawFont=function(canvas,ctx,operList){
     }
     handler[item.oper](item.param);
   }
+  let image = ctx.getImageData(0,0,canvas.width,canvas.height);
+  drawLine(image,1,1,30,64);
+  drawLine(image,1,1,30,14);
+  drawLine(image,20,4,10,30);
+  drawLine(image,80,80,4,10);
+  ctx.putImageData(image,0,0);
+}
+var drawLine=function(image,x0,y0,x1,y1){
+  let dx=Math.abs(x1-x0),dy=Math.abs(y1-y0);
+  let sx=x0<x1?1:-1, sy=y0<y1?1:-1;
+  let err=(dx>dy?dx:-dy)/2,e2=null;
+  while(true){
+    //Set Pixel
+    let offset=(y0*image.width+x0)*4;
+    image.data[offset]=image.data[offset+1]=image.data[offset+2]=0x00;
+    image.data[offset+3]=0xff;
+    
+    if(x0==x1 && y0==y1){
+      break;
+    }
+    e2=err;
+    if(e2>-dx){
+      err-=dy;
+      x0+=sx;
+    }
+    if(e2<dy){
+      err+=dx;
+      y0+=sy;
+    }
+  }
 }
 
 export default{
