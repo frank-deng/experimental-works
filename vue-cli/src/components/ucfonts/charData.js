@@ -224,6 +224,38 @@ var drawBezier3=function(image,x0,y0,x1,y1,x2,y2,x3,y3,fraction=32){
   return lines;
 }
 
+var horLineCuts=function(lines,y){
+  let lineCuts=[];
+  for(let line of lines){
+    let x0=line.x0+0.5,y0=line.y0+0.5,x1=line.x1+0.5,y1=line.y1+0.5;
+    if(y1<y0){
+      let temp=y0;y0=y1;y1=temp;
+      temp=x0;x0=x1;x1=temp;
+    }
+    if(y0>y || y1<=y){
+      continue;
+    }
+    //Process vertical lines
+    if(x1==x0){
+      lineCuts.push(x0);
+      continue;
+    }
+    //Process slope lines
+    let slope=(y1-y0)/(x1-x0);
+    lineCuts.push(x0+(y-y0)*slope);
+  }
+  lineCuts.sort((a,b)=>{
+    return (a>b?1:(a<b?-1:0));
+  });
+  let result=[];
+  for(let i=0;i<lineCuts.length;i+=2){
+    result.push({
+      start:lineCuts[0],
+      end:lineCuts[1],
+    });
+  }
+  return result;
+}
 var drawFont=function(canvas,ctx,operList){
   var cx=0,cy=0,lines=[];
   var handler=[
@@ -285,7 +317,18 @@ var drawFont=function(canvas,ctx,operList){
     }
     handler[item.oper](item.param);
   }
-  this.lines=lines;
+
+  //决定填充区域
+  this.lines=[];
+  for(let y=0;y<canvas.height;y++){
+    let lineCuts=horLineCuts(lines,y);
+    if(!lineCuts.length){
+      continue;
+    }
+      this.lines.push({
+        y:y,cuts:lineCuts,
+      });
+  }
 }
 
 export default{
