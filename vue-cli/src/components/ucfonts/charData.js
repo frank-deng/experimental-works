@@ -178,8 +178,8 @@ var drawLine=function(image,x0,y0,x1,y1){
     }
   }
 }
-var drawBezier2=function(image,x0,y0,x1,y1,x2,y2,fraction=100){
-  let x=x0,y=y0;
+var drawBezier2=function(image,x0,y0,x1,y1,x2,y2,fraction=32){
+  let x=x0,y=y0,lines=[];
   for(let i=0;i<=fraction;i++){
     let percent = (i/fraction);
     let mx0=(x0+(x1-x0)*percent), my0=(y0+(y1-y0)*percent);
@@ -187,12 +187,18 @@ var drawBezier2=function(image,x0,y0,x1,y1,x2,y2,fraction=100){
     let px=Math.round(mx0+(mx1-mx0)*percent), py=Math.round(my0+(my1-my0)*percent);
     if(px!=x || py!=y){
       drawLine(image,x,y,px,py);
+      if(py!=y){
+        lines.push({
+          x0:x,y0:y,x1:px,y1:py,
+        });
+      }
     }
     x=px;y=py;
   }
+  return lines;
 }
-var drawBezier3=function(image,x0,y0,x1,y1,x2,y2,x3,y3,fraction=100){
-  let x=x0,y=y0;
+var drawBezier3=function(image,x0,y0,x1,y1,x2,y2,x3,y3,fraction=32){
+  let x=x0,y=y0,lines=[];
   for(let i=0;i<=fraction;i++){
     let percent = (i/fraction);
     let mx0=(x0+(x1-x0)*percent), my0=(y0+(y1-y0)*percent);
@@ -202,14 +208,24 @@ var drawBezier3=function(image,x0,y0,x1,y1,x2,y2,x3,y3,fraction=100){
     let cx1=(mx1+(mx2-mx1)*percent), cy1=(my1+(my2-my1)*percent);
     let px=Math.round(cx0+(cx1-cx0)*percent), py=Math.round(cy0+(cy1-cy0)*percent);
     if(px!=x || py!=y){
-      drawLine(image,x,y,px,py);
+      drawLine(image,
+        Math.round(x),
+        Math.round(y),
+        Math.round(px),
+        Math.round(py));
+      if(py!=y){
+        lines.push({
+          x0:x,y0:y,x1:px,y1:py,
+        });
+      }
     }
     x=px;y=py;
   }
+  return lines;
 }
 
 var drawFont=function(canvas,ctx,operList){
-  var cx=0,cy=0;
+  var cx=0,cy=0,lines=[];
   var handler=[
     (param)=>{
       cx=param.x1;cy=param.y1;
@@ -222,71 +238,43 @@ var drawFont=function(canvas,ctx,operList){
       drawLine(image,cx,cy,param.x1,cy);
       cx=param.x1;
       ctx.putImageData(image,0,0);
-      /*
-      ctx.beginPath();
-      ctx.moveTo(cx,cy);
-      cx=param.x1;
-      ctx.lineTo(cx,cy);
-      ctx.stroke();
-      */
     },
     (param)=>{
+      if(param.y1!=cy){
+        lines.push({
+          x0:cx,y0:cy,x1:cx,y1:param.y1,
+        });
+      }
       let image=ctx.getImageData(0,0,canvas.width,canvas.height);
       drawLine(image,cx,cy,cx,param.y1);
       cy=param.y1;
       ctx.putImageData(image,0,0);
-      /*
-      ctx.beginPath();
-      ctx.moveTo(cx,cy);
-      cy=param.y1;
-      ctx.lineTo(cx,cy);
-      ctx.stroke();
-      */
     },
     (param)=>{
+      if(param.y1!=cy){
+        lines.push({
+          x0:cx,y0:cy,x1:param.x1,y1:param.y1,
+        });
+      }
       let image=ctx.getImageData(0,0,canvas.width,canvas.height);
       drawLine(image,cx,cy,param.x1,param.y1);
       cx=param.x1;
       cy=param.y1;
       ctx.putImageData(image,0,0);
-      /*
-      ctx.beginPath();
-      ctx.moveTo(cx,cy);
-      cx=param.x1;
-      cy=param.y1;
-      ctx.lineTo(cx,cy);
-      ctx.stroke();
-      */
     },
     (param)=>{
       let image=ctx.getImageData(0,0,canvas.width,canvas.height);
-      drawBezier2(image,cx,cy,param.x1,param.y1,param.x2,param.y2);
+      lines=lines.concat(drawBezier2(image,cx,cy,param.x1,param.y1,param.x2,param.y2));
       cx=param.x2;
       cy=param.y2;
       ctx.putImageData(image,0,0);
-      /*
-      ctx.beginPath();
-      ctx.moveTo(cx,cy);
-      cx=param.x2;
-      cy=param.y2;
-      ctx.bezierCurveTo(param.x1,param.y1,cx,cy,cx,cy);
-      ctx.stroke();
-      */
     },
     (param)=>{
       let image=ctx.getImageData(0,0,canvas.width,canvas.height);
-      drawBezier3(image,cx,cy,param.x1,param.y1,param.x2,param.y2,param.x3,param.y3);
+      lines=lines.concat(drawBezier3(image,cx,cy,param.x1,param.y1,param.x2,param.y2,param.x3,param.y3));
       cx=param.x3;
       cy=param.y3;
       ctx.putImageData(image,0,0);
-      /*
-      ctx.beginPath();
-      ctx.moveTo(cx,cy);
-      cx=param.x3;
-      cy=param.y3;
-      ctx.bezierCurveTo(param.x1,param.y1,param.x2,param.y2,cx,cy);
-      ctx.stroke();
-      */
     },
   ];
   ctx.strokeStyle='#000000';
@@ -297,6 +285,7 @@ var drawFont=function(canvas,ctx,operList){
     }
     handler[item.oper](item.param);
   }
+  this.lines=lines;
 }
 
 export default{
@@ -307,6 +296,7 @@ export default{
     return{
       fontDataExtract:null,
       steps:'-',
+      lines:null,
     };
   },
   computed:{
@@ -346,7 +336,7 @@ export default{
         this.$nextTick(()=>{
           let canvas=this.$refs.preview;
           let ctx=canvas.getContext('2d');
-          drawFont(canvas,ctx,this.steps);
+          this.drawFont(canvas,ctx,this.steps);
         })
       },
     },
@@ -375,5 +365,6 @@ export default{
       }
       return steps;
     },
+    drawFont:drawFont,
   },
 }

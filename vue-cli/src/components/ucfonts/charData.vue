@@ -4,6 +4,9 @@
       <div v-for='line of steps'>{{line}}</div>
     </div-->
     <canvas ref='preview' width='170' height='170'></canvas>
+    <div>
+      <div v-for='line of lines'>{{line}}</div>
+    </div>
   </div>
 </template>
 <style scoped>
