@@ -184,7 +184,7 @@ var drawBezier2=function(image,x0,y0,x1,y1,x2,y2,fraction=100){
     let percent = (i/fraction);
     let mx0=(x0+(x1-x0)*percent), my0=(y0+(y1-y0)*percent);
     let mx1=(x1+(x2-x1)*percent), my1=(y1+(y2-y1)*percent);
-    let px=Math.floor(mx0+(mx1-mx0)*percent), py=Math.floor(my0+(my1-my0)*percent);
+    let px=Math.round(mx0+(mx1-mx0)*percent), py=Math.round(my0+(my1-my0)*percent);
     if(px!=x || py!=y){
       drawLine(image,x,y,px,py);
     }
@@ -200,7 +200,7 @@ var drawBezier3=function(image,x0,y0,x1,y1,x2,y2,x3,y3,fraction=100){
     let mx2=(x2+(x3-x2)*percent), my2=(y2+(y3-y2)*percent);
     let cx0=(mx0+(mx1-mx0)*percent), cy0=(my0+(my1-my0)*percent);
     let cx1=(mx1+(mx2-mx1)*percent), cy1=(my1+(my2-my1)*percent);
-    let px=Math.floor(cx0+(cx1-cx0)*percent), py=Math.floor(cy0+(cy1-cy0)*percent);
+    let px=Math.round(cx0+(cx1-cx0)*percent), py=Math.round(cy0+(cy1-cy0)*percent);
     if(px!=x || py!=y){
       drawLine(image,x,y,px,py);
     }
