@@ -150,6 +150,9 @@ var paramParser=[
   },
 ];
 var drawLine=function(image,x0,y0,x1,y1){
+  if(x0==x1 && y0==y1){
+    return;
+  }
   let dx=Math.abs(x1-x0),dy=Math.abs(y1-y0);
   let sx=x0<x1?1:-1, sy=y0<y1?1:-1;
   let err=(dx>dy?dx:-dy)/2,e2=null;
@@ -175,20 +178,38 @@ var drawLine=function(image,x0,y0,x1,y1){
     }
   }
 }
-var drawBezier=function(image,x0,y0,x1,y1,x2,y2,fraction){
+var drawBezier2=function(image,x0,y0,x1,y1,x2,y2,fraction=100){
   let x=x0,y=y0;
   for(let i=0;i<=fraction;i++){
     let percent = (i/fraction);
-
     let mx0=(x0+(x1-x0)*percent), my0=(y0+(y1-y0)*percent);
     let mx1=(x1+(x2-x1)*percent), my1=(y1+(y2-y1)*percent);
-    let px=(mx0+(mx1-mx0)*percent), py=(my0+(my1-my0)*percent);
-    drawLine(image,x,y,px,py);
+    let px=Math.floor(mx0+(mx1-mx0)*percent), py=Math.floor(my0+(my1-my0)*percent);
+    if(px!=x || py!=y){
+      drawLine(image,x,y,px,py);
+    }
     x=px;y=py;
   }
 }
+var drawBezier3=function(image,x0,y0,x1,y1,x2,y2,x3,y3,fraction=100){
+  let x=x0,y=y0;
+  for(let i=0;i<=fraction;i++){
+    let percent = (i/fraction);
+    let mx0=(x0+(x1-x0)*percent), my0=(y0+(y1-y0)*percent);
+    let mx1=(x1+(x2-x1)*percent), my1=(y1+(y2-y1)*percent);
+    let mx2=(x2+(x3-x2)*percent), my2=(y2+(y3-y2)*percent);
+    let cx0=(mx0+(mx1-mx0)*percent), cy0=(my0+(my1-my0)*percent);
+    let cx1=(mx1+(mx2-mx1)*percent), cy1=(my1+(my2-my1)*percent);
+    let px=Math.floor(cx0+(cx1-cx0)*percent), py=Math.floor(cy0+(cy1-cy0)*percent);
+    if(px!=x || py!=y){
+      drawLine(image,x,y,px,py);
+    }
+    x=px;y=py;
+  }
+}
+
 var drawFont=function(canvas,ctx,operList){
-  var cx=0,cy=0,image=ctx.getImageData(0,0,canvas.width,canvas.height);
+  var cx=0,cy=0;
   var handler=[
     (param)=>{
       cx=param.x1;cy=param.y1;
@@ -197,8 +218,10 @@ var drawFont=function(canvas,ctx,operList){
       ctx.fill();
     },
     (param)=>{
+      let image=ctx.getImageData(0,0,canvas.width,canvas.height);
       drawLine(image,cx,cy,param.x1,cy);
       cx=param.x1;
+      ctx.putImageData(image,0,0);
       /*
       ctx.beginPath();
       ctx.moveTo(cx,cy);
@@ -208,8 +231,10 @@ var drawFont=function(canvas,ctx,operList){
       */
     },
     (param)=>{
+      let image=ctx.getImageData(0,0,canvas.width,canvas.height);
       drawLine(image,cx,cy,cx,param.y1);
       cy=param.y1;
+      ctx.putImageData(image,0,0);
       /*
       ctx.beginPath();
       ctx.moveTo(cx,cy);
@@ -219,9 +244,11 @@ var drawFont=function(canvas,ctx,operList){
       */
     },
     (param)=>{
+      let image=ctx.getImageData(0,0,canvas.width,canvas.height);
       drawLine(image,cx,cy,param.x1,param.y1);
       cx=param.x1;
       cy=param.y1;
+      ctx.putImageData(image,0,0);
       /*
       ctx.beginPath();
       ctx.moveTo(cx,cy);
@@ -232,9 +259,11 @@ var drawFont=function(canvas,ctx,operList){
       */
     },
     (param)=>{
-      drawBezier(image,cx,cy,param.x1,param.y1,param.x2,param.y2);
+      let image=ctx.getImageData(0,0,canvas.width,canvas.height);
+      drawBezier2(image,cx,cy,param.x1,param.y1,param.x2,param.y2);
       cx=param.x2;
       cy=param.y2;
+      ctx.putImageData(image,0,0);
       /*
       ctx.beginPath();
       ctx.moveTo(cx,cy);
@@ -245,12 +274,19 @@ var drawFont=function(canvas,ctx,operList){
       */
     },
     (param)=>{
+      let image=ctx.getImageData(0,0,canvas.width,canvas.height);
+      drawBezier3(image,cx,cy,param.x1,param.y1,param.x2,param.y2,param.x3,param.y3);
+      cx=param.x3;
+      cy=param.y3;
+      ctx.putImageData(image,0,0);
+      /*
       ctx.beginPath();
       ctx.moveTo(cx,cy);
       cx=param.x3;
       cy=param.y3;
       ctx.bezierCurveTo(param.x1,param.y1,param.x2,param.y2,cx,cy);
       ctx.stroke();
+      */
     },
   ];
   ctx.strokeStyle='#000000';
@@ -261,11 +297,6 @@ var drawFont=function(canvas,ctx,operList){
     }
     handler[item.oper](item.param);
   }
-  drawLine(image,1,1,30,64);
-  drawLine(image,1,1,30,14);
-  drawLine(image,20,4,10,30);
-  drawLine(image,-10,-10,200,400);
-  ctx.putImageData(image,0,0);
 }
 
 export default{
@@ -312,11 +343,11 @@ export default{
         }
         this.fontDataExtract=fontDataExtract;
         this.steps=this.check(fontDataExtract);
-	this.$nextTick(()=>{
+        this.$nextTick(()=>{
           let canvas=this.$refs.preview;
           let ctx=canvas.getContext('2d');
           drawFont(canvas,ctx,this.steps);
-	})
+        })
       },
     },
   },
