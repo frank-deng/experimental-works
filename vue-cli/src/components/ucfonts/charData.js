@@ -154,45 +154,57 @@ var drawFont=function(canvas,ctx,operList){
   var handler=[
     (param)=>{
       cx=param.x1;cy=param.y1;
+      ctx.beginPath();
+      ctx.arc(cx,cy,2,0,2*Math.PI);
+      ctx.fill();
     },
     (param)=>{
+      ctx.beginPath();
       ctx.moveTo(cx,cy);
       cx=param.x1;
       ctx.lineTo(cx,cy);
+      ctx.stroke();
     },
     (param)=>{
+      ctx.beginPath();
       ctx.moveTo(cx,cy);
       cy=param.y1;
       ctx.lineTo(cx,cy);
+      ctx.stroke();
     },
     (param)=>{
+      ctx.beginPath();
       ctx.moveTo(cx,cy);
       cx=param.x1;
       cy=param.y1;
       ctx.lineTo(cx,cy);
+      ctx.stroke();
     },
     (param)=>{
+      ctx.beginPath();
       ctx.moveTo(cx,cy);
       cx=param.x2;
       cy=param.y2;
       ctx.bezierCurveTo(param.x1,param.y1,param.x1,param.y1,cx,cy);
+      ctx.stroke();
     },
     (param)=>{
+      ctx.beginPath();
       ctx.moveTo(cx,cy);
       cx=param.x3;
       cy=param.y3;
       ctx.bezierCurveTo(param.x1,param.y1,param.x2,param.y2,cx,cy);
+      ctx.stroke();
     },
   ];
   ctx.strokeStyle='#000000';
-  ctx.beginPath();
+  ctx.fillStyle='#ff0000';
   for(let item of operList){
     if(!handler[item.oper]){
       continue;
     }
     handler[item.oper](item.param);
   }
-  ctx.stroke();
 }
 
 export default{

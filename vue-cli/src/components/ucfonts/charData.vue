@@ -3,7 +3,7 @@
     <!--div>
       <div v-for='line of steps'>{{line}}</div>
     </div-->
-    <canvas ref='preview' width='256' height='256'></canvas>
+    <canvas ref='preview' width='170' height='170'></canvas>
   </div>
 </template>
 <style scoped>
