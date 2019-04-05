@@ -149,8 +149,46 @@ var paramParser=[
   (data)=>{
   },
 ];
+var drawLine=function(image,x0,y0,x1,y1){
+  let dx=Math.abs(x1-x0),dy=Math.abs(y1-y0);
+  let sx=x0<x1?1:-1, sy=y0<y1?1:-1;
+  let err=(dx>dy?dx:-dy)/2,e2=null;
+  while(true){
+    //Set Pixel
+    if(x0>=0 && x0<image.width && y0>=0 && y0<image.height){
+      let offset=(y0*image.width+x0)*4;
+      image.data[offset]=image.data[offset+1]=image.data[offset+2]=0x00;
+      image.data[offset+3]=0xff;
+    }
+    
+    if(x0==x1 && y0==y1){
+      break;
+    }
+    e2=err;
+    if(e2>-dx){
+      err-=dy;
+      x0+=sx;
+    }
+    if(e2<dy){
+      err+=dx;
+      y0+=sy;
+    }
+  }
+}
+var drawBezier=function(image,x0,y0,x1,y1,x2,y2,fraction){
+  let x=x0,y=y0;
+  for(let i=0;i<=fraction;i++){
+    let percent = (i/fraction);
+
+    let mx0=(x0+(x1-x0)*percent), my0=(y0+(y1-y0)*percent);
+    let mx1=(x1+(x2-x1)*percent), my1=(y1+(y2-y1)*percent);
+    let px=(mx0+(mx1-mx0)*percent), py=(my0+(my1-my0)*percent);
+    drawLine(image,x,y,px,py);
+    x=px;y=py;
+  }
+}
 var drawFont=function(canvas,ctx,operList){
-  var cx=0,cy=0;
+  var cx=0,cy=0,image=ctx.getImageData(0,0,canvas.width,canvas.height);
   var handler=[
     (param)=>{
       cx=param.x1;cy=param.y1;
@@ -159,34 +197,52 @@ var drawFont=function(canvas,ctx,operList){
       ctx.fill();
     },
     (param)=>{
+      drawLine(image,cx,cy,param.x1,cy);
+      cx=param.x1;
+      /*
       ctx.beginPath();
       ctx.moveTo(cx,cy);
       cx=param.x1;
       ctx.lineTo(cx,cy);
       ctx.stroke();
+      */
     },
     (param)=>{
+      drawLine(image,cx,cy,cx,param.y1);
+      cy=param.y1;
+      /*
       ctx.beginPath();
       ctx.moveTo(cx,cy);
       cy=param.y1;
       ctx.lineTo(cx,cy);
       ctx.stroke();
+      */
     },
     (param)=>{
+      drawLine(image,cx,cy,param.x1,param.y1);
+      cx=param.x1;
+      cy=param.y1;
+      /*
       ctx.beginPath();
       ctx.moveTo(cx,cy);
       cx=param.x1;
       cy=param.y1;
       ctx.lineTo(cx,cy);
       ctx.stroke();
+      */
     },
     (param)=>{
+      drawBezier(image,cx,cy,param.x1,param.y1,param.x2,param.y2);
+      cx=param.x2;
+      cy=param.y2;
+      /*
       ctx.beginPath();
       ctx.moveTo(cx,cy);
       cx=param.x2;
       cy=param.y2;
       ctx.bezierCurveTo(param.x1,param.y1,cx,cy,cx,cy);
       ctx.stroke();
+      */
     },
     (param)=>{
       ctx.beginPath();
@@ -205,36 +261,11 @@ var drawFont=function(canvas,ctx,operList){
     }
     handler[item.oper](item.param);
   }
-  let image = ctx.getImageData(0,0,canvas.width,canvas.height);
   drawLine(image,1,1,30,64);
   drawLine(image,1,1,30,14);
   drawLine(image,20,4,10,30);
-  drawLine(image,80,80,4,10);
+  drawLine(image,-10,-10,200,400);
   ctx.putImageData(image,0,0);
-}
-var drawLine=function(image,x0,y0,x1,y1){
-  let dx=Math.abs(x1-x0),dy=Math.abs(y1-y0);
-  let sx=x0<x1?1:-1, sy=y0<y1?1:-1;
-  let err=(dx>dy?dx:-dy)/2,e2=null;
-  while(true){
-    //Set Pixel
-    let offset=(y0*image.width+x0)*4;
-    image.data[offset]=image.data[offset+1]=image.data[offset+2]=0x00;
-    image.data[offset+3]=0xff;
-    
-    if(x0==x1 && y0==y1){
-      break;
-    }
-    e2=err;
-    if(e2>-dx){
-      err-=dy;
-      x0+=sx;
-    }
-    if(e2<dy){
-      err+=dx;
-      y0+=sy;
-    }
-  }
 }
 
 export default{
