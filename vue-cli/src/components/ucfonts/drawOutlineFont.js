@@ -48,8 +48,7 @@ var drawLine=function(image,x0,y0,x1,y1){
     //Set Pixel
     if(x0>=0 && x0<image.width && y0>=0 && y0<image.height){
       let offset=(y0*image.width+x0)*4;
-      //image.data[offset]=image.data[offset+1]=image.data[offset+2]=0x00;
-      image.data[offset]=0xff;
+      image.data[offset]=image.data[offset+1]=image.data[offset+2]=0x00;
       image.data[offset+3]=0xff;
     }
     
@@ -67,10 +66,10 @@ var drawLine=function(image,x0,y0,x1,y1){
     }
   }
 }
-var horFill=function(image,y,lines){
+var horFill=function(image,_x0,_y0,w,y,lines){
   let lineCuts=[];
   for(let line of lines){
-    let x0=line.x0,y0=line.y0+0.5,x1=line.x1,y1=line.y1+0.5;
+    let x0=line.x0,y0=line.y0-0.1,x1=line.x1,y1=line.y1-0.1;
     //忽略水平的直线
     if(y1==y0){
       continue;
@@ -94,10 +93,13 @@ var horFill=function(image,y,lines){
   lineCuts.sort((a,b)=>{
     return (a>b?1:(a<b?-1:0));
   });
-  for(let x=0;x<image.width;x++){
+  for(let x=0;x<w;x++){
     for(let i=0;i<lineCuts.length;i+=2){
       if(x>=lineCuts[i] && x<lineCuts[i+1]){
-        let offset=(y*image.width+x)*4;
+        if((x+_x0)>=image.width || (y+_y0)>=image.height){
+          continue;
+        }
+        let offset=((y+_y0)*image.width+(x+_x0))*4;
         image.data[offset]=image.data[offset+1]=image.data[offset+2]=0x00;
         image.data[offset+3]=0xff;
         break;
@@ -106,59 +108,118 @@ var horFill=function(image,y,lines){
   }
 }
 export function drawOutlineFont(image,x0,y0,w,h,operList){
-  var cx=0,cy=0,lines=[];
+  var cx=0,cy=0,linesGrp=[],lines=[];
   var handler=[
     (param)=>{ //0
       cx=param.x1;
       cy=param.y1;
-      let offset=(cy*image.width+cx)*4;
-      image.data[offset+2]=0xff;
-      image.data[offset+3]=0xff;
+      lines=[];
+      linesGrp.push(lines);
     },
     (param)=>{ //1
-      if(param.x1!=cx){
-        lines.push({x0:cx,y0:cy,x1:param.x1,y1:cy});
+      let lineParam={
+        x0:Math.round(cx*w/BASE_WIDTH),
+        y0:Math.round(cy*h/BASE_HEIGHT),
+        x1:Math.round(param.x1*w/BASE_WIDTH),
+        y1:Math.round(cy*h/BASE_HEIGHT),
+      };
+      if(lineParam.x0!=lineParam.x1){
+        lines.push(lineParam);
       }
       cx=param.x1;
     },
     (param)=>{ //2
-      if(param.y1!=cy){
-        lines.push({x0:cx,y0:cy,x1:cx,y1:param.y1});
+      let lineParam={
+        x0:Math.round(cx*w/BASE_WIDTH),
+        y0:Math.round(cy*h/BASE_HEIGHT),
+        x1:Math.round(cx*w/BASE_WIDTH),
+        y1:Math.round(param.y1*h/BASE_HEIGHT),
+      };
+      if(lineParam.y0!=lineParam.y1){
+        lines.push(lineParam);
       }
       cy=param.y1;
     },
     (param)=>{ //3
-      if(param.x1!=cx||param.y1!=cy){
-        lines.push({x0:cx,y0:cy,x1:param.x1,y1:param.y1});
+      let lineParam={
+        x0:Math.round(cx*w/BASE_WIDTH),
+        y0:Math.round(cy*h/BASE_HEIGHT),
+        x1:Math.round(param.x1*w/BASE_WIDTH),
+        y1:Math.round(param.y1*h/BASE_HEIGHT),
+      };
+      if(lineParam.x0!=lineParam.x1 || lineParam.y0!=lineParam.y1){
+        lines.push(lineParam);
       }
       cx=param.x1;
       cy=param.y1;
     },
     (param)=>{ //4
-      lines=lines.concat(linesBezier2(cx,cy,param.x1,param.y1,param.x2,param.y2));
+      let blines=linesBezier2(
+        Math.round(cx*w/BASE_WIDTH),
+        Math.round(cy*h/BASE_HEIGHT),
+        Math.round(param.x1*w/BASE_WIDTH),
+        Math.round(param.y1*h/BASE_HEIGHT),
+        Math.round(param.x2*w/BASE_WIDTH),
+        Math.round(param.y2*h/BASE_HEIGHT),
+      );
+      for(let item of blines){
+        lines.push(item);
+      }
       cx=param.x2;
       cy=param.y2;
     },
     (param)=>{ //5
-      lines=lines.concat(linesBezier3(cx,cy,param.x1,param.y1,param.x2,param.y2,param.x3,param.y3));
+      let blines=linesBezier3(
+        Math.round(cx*w/BASE_WIDTH),
+        Math.round(cy*h/BASE_HEIGHT),
+        Math.round(param.x1*w/BASE_WIDTH),
+        Math.round(param.y1*h/BASE_HEIGHT),
+        Math.round(param.x2*w/BASE_WIDTH),
+        Math.round(param.y2*h/BASE_HEIGHT),
+        Math.round(param.x3*w/BASE_WIDTH),
+        Math.round(param.y3*h/BASE_HEIGHT),
+      );
+      for(let item of blines){
+        lines.push(item);
+      }
       cx=param.x3;
       cy=param.y3;
     },
     (param)=>{ //6
       if(param.x1!=param.x2 && param.y1!=param.y2){
-        lines.push({x0:param.x1,y0:param.y1,x1:param.x2,y1:param.y1});
-        lines.push({x0:param.x1,y0:param.y2,x1:param.x2,y1:param.y2});
-        lines.push({x0:param.x1,y0:param.y1,x1:param.x1,y1:param.y2});
-        lines.push({x0:param.x2,y0:param.y1,x1:param.x2,y1:param.y2});
+        lines.push({
+          x0:Math.round(param.x1*w/BASE_WIDTH),
+          y0:Math.round(param.y1*h/BASE_HEIGHT),
+          x1:Math.round(param.x2*w/BASE_WIDTH),
+          y1:Math.round(param.y1*h/BASE_HEIGHT),
+        });
+        lines.push({
+          x0:Math.round(param.x1*w/BASE_WIDTH),
+          y0:Math.round(param.y2*h/BASE_HEIGHT),
+          x1:Math.round(param.x2*w/BASE_WIDTH),
+          y1:Math.round(param.y2*h/BASE_HEIGHT),
+        });
+        lines.push({
+          x0:Math.round(param.x1*w/BASE_WIDTH),
+          y0:Math.round(param.y1*h/BASE_HEIGHT),
+          x1:Math.round(param.x1*w/BASE_WIDTH),
+          y1:Math.round(param.y2*h/BASE_HEIGHT),
+        });
+        lines.push({
+          x0:Math.round(param.x2*w/BASE_WIDTH),
+          y0:Math.round(param.y1*h/BASE_HEIGHT),
+          x1:Math.round(param.x2*w/BASE_WIDTH),
+          y1:Math.round(param.y2*h/BASE_HEIGHT),
+        });
       }
     },
     (param)=>{ //7
       if(param.dx1){
         lines.push({
-          x0:cx,
-          y0:cy,
-          x1:cx+param.dx1,
-          y1:param.y1,
+          x0:Math.round(cx*w/BASE_WIDTH),
+          y0:Math.round(cy*h/BASE_HEIGHT),
+          x1:Math.round((cx+param.dx1)*w/BASE_WIDTH),
+          y1:Math.round(param.y1*h/BASE_HEIGHT),
         });
       }
       cx+=param.dx1;
@@ -166,21 +227,36 @@ export function drawOutlineFont(image,x0,y0,w,h,operList){
     },
     (param)=>{ //8
       if(param.dy1){
-        lines.push({x0:cx,y0:cy,x1:param.x1,y1:cy+param.dy1});
+        lines.push({
+          x0:Math.round(cx*w/BASE_WIDTH),
+          y0:Math.round(cy*h/BASE_HEIGHT),
+          x1:Math.round(param.x1*w/BASE_WIDTH),
+          y1:Math.round((cy+param.dy1)*h/BASE_HEIGHT),
+        });
       }
       cx=param.x1;
       cy+=param.dy1;
     },
     (param)=>{ //9
       if(param.dx1||param.dy1){
-        lines.push({x0:cx,y0:cy,x1:cx+param.dx1,y1:cy+param.dy1});
+        lines.push({
+          x0:Math.round(cx*w/BASE_WIDTH),
+          y0:Math.round(cy*h/BASE_HEIGHT),
+          x1:Math.round((cx+param.dx1)*w/BASE_WIDTH),
+          y1:Math.round((cy+param.dy1)*h/BASE_HEIGHT),
+        });
       }
       cx+=param.dx1;
       cy+=param.dy1;
     },
     (param)=>{ //10
       if(param.dx1||param.dy1){
-        lines.push({x0:cx,y0:cy,x1:cx+param.dx1,y1:cy+param.dy1});
+        lines.push({
+          x0:Math.round(cx*w/BASE_WIDTH),
+          y0:Math.round(cy*h/BASE_HEIGHT),
+          x1:Math.round((cx+param.dx1)*w/BASE_WIDTH),
+          y1:Math.round((cy+param.dy1)*h/BASE_HEIGHT),
+        });
       }
       cx+=param.dx1;
       cy+=param.dy1;
@@ -190,7 +266,17 @@ export function drawOutlineFont(image,x0,y0,w,h,operList){
       let _dy1=param.dy1;
       let _dx2=param.dx1+param.dx2;
       let _dy2=param.dy1+param.dy2;
-      lines=lines.concat(linesBezier2(cx,cy,cx+_dx1,cy+_dy1,cx+_dx2,cy+_dy2));
+      let blines=linesBezier2(
+        Math.round(cx*w/BASE_WIDTH),
+        Math.round(cy*h/BASE_HEIGHT),
+        Math.round((cx+_dx1)*w/BASE_WIDTH),
+        Math.round((cy+_dy1)*h/BASE_HEIGHT),
+        Math.round((cx+_dx2)*w/BASE_WIDTH),
+        Math.round((cy+_dy2)*h/BASE_HEIGHT),
+      );
+      for(let item of blines){
+        lines.push(item);
+      }
       cx+=_dx2;
       cy+=_dy2;
     },
@@ -199,7 +285,17 @@ export function drawOutlineFont(image,x0,y0,w,h,operList){
       let _dy1=param.dy1;
       let _dx2=param.dx1+param.dx2;
       let _dy2=param.dy1+param.dy2;
-      lines=lines.concat(linesBezier2(cx,cy,cx+_dx1,cy+_dy1,cx+_dx2,cy+_dy2));
+      let blines=linesBezier2(
+        Math.round(cx*w/BASE_WIDTH),
+        Math.round(cy*h/BASE_HEIGHT),
+        Math.round((cx+_dx1)*w/BASE_WIDTH),
+        Math.round((cy+_dy1)*h/BASE_HEIGHT),
+        Math.round((cx+_dx2)*w/BASE_WIDTH),
+        Math.round((cy+_dy2)*h/BASE_HEIGHT),
+      );
+      for(let item of blines){
+        lines.push(item);
+      }
       cx+=_dx2;
       cy+=_dy2;
     },
@@ -210,7 +306,19 @@ export function drawOutlineFont(image,x0,y0,w,h,operList){
       let _dy2=param.dy1+param.dy2;
       let _dx3=param.dx1+param.dx2+param.dx3;
       let _dy3=param.dy1+param.dy2+param.dy3;
-      lines=lines.concat(linesBezier3(cx,cy,cx+_dx1,cy+_dy1,cx+_dy2,cy+_dy2,cx+_dy3,cy+_dy3));
+      let blines=linesBezier3(
+        Math.round(cx*w/BASE_WIDTH),
+        Math.round(cy*h/BASE_HEIGHT),
+        Math.round((cx+_dx1)*w/BASE_WIDTH),
+        Math.round((cy+_dy1)*h/BASE_HEIGHT),
+        Math.round((cx+_dy2)*w/BASE_WIDTH),
+        Math.round((cy+_dy2)*h/BASE_HEIGHT),
+        Math.round((cx+_dy3)*w/BASE_WIDTH),
+        Math.round((cy+_dy3)*h/BASE_HEIGHT),
+      );
+      for(let item of blines){
+        lines.push(item);
+      }
       cx+=_dx3;
       cy+=_dy3;
     },
@@ -221,29 +329,35 @@ export function drawOutlineFont(image,x0,y0,w,h,operList){
       let _dy2=param.dy1+param.dy2;
       let _dx3=param.dx1+param.dx2+param.dx3;
       let _dy3=param.dy1+param.dy2+param.dy3;
-      lines=lines.concat(linesBezier3(cx,cy,cx+_dx1,cy+_dy1,cx+_dy2,cy+_dy2,cx+_dy3,cy+_dy3));
+      let blines=linesBezier3(
+        Math.round(cx*w/BASE_WIDTH),
+        Math.round(cy*h/BASE_HEIGHT),
+        Math.round((cx+_dx1)*w/BASE_WIDTH),
+        Math.round((cy+_dy1)*h/BASE_HEIGHT),
+        Math.round((cx+_dy2)*w/BASE_WIDTH),
+        Math.round((cy+_dy2)*h/BASE_HEIGHT),
+        Math.round((cx+_dy3)*w/BASE_WIDTH),
+        Math.round((cy+_dy3)*h/BASE_HEIGHT),
+      );
+      for(let item of blines){
+        lines.push(item);
+      }
       cx+=_dx3;
       cy+=_dy3;
     },
+    ()=>{ //15
+    },
   ];
   for(let item of operList){
-    if(!handler[item.oper]){
-      console.error('Unknown operation:',item.oper);
-      continue;
-    }
-    if(item.oper>7){
-      console.log(item);
-    }
     handler[item.oper](item.param);
   }
 
-  for(let line of lines){
-    drawLine(image,x0+line.x0,y0+line.y0,x0+line.x1,y0+line.y1);
+  for(let lines of linesGrp){
+    for(let y=0;y<h;y++){
+      horFill(image,x0,y0,w,y,lines);
+    }
+    for(let line of lines){
+      drawLine(image,x0+line.x0,y0+line.y0,x0+line.x1,y0+line.y1);
+    }
   }
-
-  /*
-  for(let y=0;y<h;y++){
-    let lineCuts=horFill(image,y,lines);
-  }
-  */
 }
