@@ -186,12 +186,10 @@ var drawBezier2=function(image,x0,y0,x1,y1,x2,y2,fraction=32){
     let mx1=(x1+(x2-x1)*percent), my1=(y1+(y2-y1)*percent);
     let px=Math.round(mx0+(mx1-mx0)*percent), py=Math.round(my0+(my1-my0)*percent);
     if(px!=x || py!=y){
-      drawLine(image,x,y,px,py);
-      if(py!=y){
-        lines.push({
-          x0:x,y0:y,x1:px,y1:py,
-        });
-      }
+      //drawLine(image,x,y,px,py);
+      lines.push({
+        x0:x,y0:y,x1:px,y1:py,
+      });
     }
     x=px;y=py;
   }
@@ -208,68 +206,64 @@ var drawBezier3=function(image,x0,y0,x1,y1,x2,y2,x3,y3,fraction=32){
     let cx1=(mx1+(mx2-mx1)*percent), cy1=(my1+(my2-my1)*percent);
     let px=Math.round(cx0+(cx1-cx0)*percent), py=Math.round(cy0+(cy1-cy0)*percent);
     if(px!=x || py!=y){
-      drawLine(image,
-        Math.round(x),
-        Math.round(y),
-        Math.round(px),
-        Math.round(py));
-      if(py!=y){
-        lines.push({
-          x0:x,y0:y,x1:px,y1:py,
-        });
-      }
+      //drawLine(image,x,y,px,py);
+      lines.push({
+        x0:x,y0:y,x1:px,y1:py,
+      });
     }
     x=px;y=py;
   }
   return lines;
 }
 
-var horLineCuts=function(lines,y){
+var horFill=function(image,y,lines){
   let lineCuts=[];
   for(let line of lines){
-    let x0=line.x0+0.5,y0=line.y0+0.5,x1=line.x1+0.5,y1=line.y1+0.5;
+    let x0=line.x0,y0=line.y0+0.5,x1=line.x1,y1=line.y1+0.5;
+    //忽略水平的直线
+    if(y1==y0){
+      continue;
+    }
     if(y1<y0){
       let temp=y0;y0=y1;y1=temp;
       temp=x0;x0=x1;x1=temp;
     }
+    //当前行与该线不相交
     if(y0>y || y1<=y){
       continue;
     }
-    //Process vertical lines
     if(x1==x0){
+      //处理垂直的直线
       lineCuts.push(x0);
-      continue;
+    }else{
+      //处理斜线
+      lineCuts.push(x0+(x1-x0)*(y-y0)/(y1-y0));
     }
-    //Process slope lines
-    let slope=(y1-y0)/(x1-x0);
-    lineCuts.push(x0+(y-y0)/slope);
   }
   lineCuts.sort((a,b)=>{
     return (a>b?1:(a<b?-1:0));
   });
-  let result=[];
-  for(let i=0;i<lineCuts.length;i+=2){
-    result.push({
-      start:lineCuts[0],
-      end:lineCuts[1],
-    });
+  for(let x=0;x<image.width;x++){
+    for(let i=0;i<lineCuts.length;i+=2){
+      if(x>=lineCuts[i] && x<lineCuts[i+1]){
+        let offset=(y*image.width+x)*4;
+        image.data[offset]=image.data[offset+1]=image.data[offset+2]=0x00;
+        image.data[offset+3]=0xff;
+        break;
+      }
+    }
   }
-  return result;
 }
 var drawFont=function(canvas,ctx,operList){
   var cx=0,cy=0,lines=[];
+  var image=ctx.getImageData(0,0,canvas.width,canvas.height);
   var handler=[
     (param)=>{
       cx=param.x1;cy=param.y1;
-      ctx.beginPath();
-      ctx.arc(cx,cy,2,0,2*Math.PI);
-      ctx.fill();
     },
     (param)=>{
-      let image=ctx.getImageData(0,0,canvas.width,canvas.height);
-      drawLine(image,cx,cy,param.x1,cy);
+      //drawLine(image,cx,cy,param.x1,cy);
       cx=param.x1;
-      ctx.putImageData(image,0,0);
     },
     (param)=>{
       if(param.y1!=cy){
@@ -277,10 +271,8 @@ var drawFont=function(canvas,ctx,operList){
           x0:cx,y0:cy,x1:cx,y1:param.y1,
         });
       }
-      let image=ctx.getImageData(0,0,canvas.width,canvas.height);
-      drawLine(image,cx,cy,cx,param.y1);
+      //drawLine(image,cx,cy,cx,param.y1);
       cy=param.y1;
-      ctx.putImageData(image,0,0);
     },
     (param)=>{
       if(param.y1!=cy){
@@ -288,29 +280,21 @@ var drawFont=function(canvas,ctx,operList){
           x0:cx,y0:cy,x1:param.x1,y1:param.y1,
         });
       }
-      let image=ctx.getImageData(0,0,canvas.width,canvas.height);
-      drawLine(image,cx,cy,param.x1,param.y1);
+      //drawLine(image,cx,cy,param.x1,param.y1);
       cx=param.x1;
       cy=param.y1;
-      ctx.putImageData(image,0,0);
     },
     (param)=>{
-      let image=ctx.getImageData(0,0,canvas.width,canvas.height);
       lines=lines.concat(drawBezier2(image,cx,cy,param.x1,param.y1,param.x2,param.y2));
       cx=param.x2;
       cy=param.y2;
-      ctx.putImageData(image,0,0);
     },
     (param)=>{
-      let image=ctx.getImageData(0,0,canvas.width,canvas.height);
       lines=lines.concat(drawBezier3(image,cx,cy,param.x1,param.y1,param.x2,param.y2,param.x3,param.y3));
       cx=param.x3;
       cy=param.y3;
-      ctx.putImageData(image,0,0);
     },
   ];
-  ctx.strokeStyle='#000000';
-  ctx.fillStyle='#ff0000';
   for(let item of operList){
     if(!handler[item.oper]){
       continue;
@@ -320,15 +304,11 @@ var drawFont=function(canvas,ctx,operList){
 
   //决定填充区域
   this.lines=[];
-  for(let y=0;y<canvas.height;y++){
-    let lineCuts=horLineCuts(lines,y);
-    if(!lineCuts.length){
-      continue;
-    }
-      this.lines.push({
-        y:y,cuts:lineCuts,
-      });
+  for(let y=0;y<image.height;y++){
+    let lineCuts=horFill(image,y,lines);
   }
+
+  ctx.putImageData(image,0,0);
 }
 
 export default{
