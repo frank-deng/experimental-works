@@ -173,8 +173,6 @@ var processFontData=function(buffer){
     steps.push({
       oper:oper,
       param:parseParam(oper,fontData.slice(offset+1,offset+jumpStep[oper]+1)),
-      width:170,
-      height:170,
     });
     offset+=jumpStep[oper]+1;
   }

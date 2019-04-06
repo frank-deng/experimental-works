@@ -7,8 +7,11 @@ export default{
   },
   data(){
     return{
-      textInput:null,
+      textInput:'、',
       fontData:{},
+      width:100,
+      height:100,
+      x:0,y:0,
     };
   },
   computed:{

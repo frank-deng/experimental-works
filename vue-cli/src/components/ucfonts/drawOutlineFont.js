@@ -1,33 +1,6 @@
-var drawLine=function(image,x0,y0,x1,y1){
-  if(x0==x1 && y0==y1){
-    return;
-  }
-  let dx=Math.abs(x1-x0),dy=Math.abs(y1-y0);
-  let sx=x0<x1?1:-1, sy=y0<y1?1:-1;
-  let err=(dx>dy?dx:-dy)/2,e2=null;
-  while(true){
-    //Set Pixel
-    if(x0>=0 && x0<image.width && y0>=0 && y0<image.height){
-      let offset=(y0*image.width+x0)*4;
-      image.data[offset]=image.data[offset+1]=image.data[offset+2]=0x00;
-      image.data[offset+3]=0xff;
-    }
-    
-    if(x0==x1 && y0==y1){
-      break;
-    }
-    e2=err;
-    if(e2>-dx){
-      err-=dy;
-      x0+=sx;
-    }
-    if(e2<dy){
-      err+=dx;
-      y0+=sy;
-    }
-  }
-}
-var linesBezier2=function(image,x0,y0,x1,y1,x2,y2,fraction=32){
+const BASE_WIDTH=170,BASE_HEIGHT=170
+//Generate line sequence from bezier curve
+var linesBezier2=function(x0,y0,x1,y1,x2,y2,fraction=32){
   let x=x0,y=y0,lines=[];
   for(let i=0;i<=fraction;i++){
     let percent = (i/fraction);
@@ -43,7 +16,7 @@ var linesBezier2=function(image,x0,y0,x1,y1,x2,y2,fraction=32){
   }
   return lines;
 }
-var linesBezier3=function(image,x0,y0,x1,y1,x2,y2,x3,y3,fraction=32){
+var linesBezier3=function(x0,y0,x1,y1,x2,y2,x3,y3,fraction=32){
   let x=x0,y=y0,lines=[];
   for(let i=0;i<=fraction;i++){
     let percent = (i/fraction);
@@ -63,6 +36,37 @@ var linesBezier3=function(image,x0,y0,x1,y1,x2,y2,x3,y3,fraction=32){
   return lines;
 }
 
+//Actual drawing
+var drawLine=function(image,x0,y0,x1,y1){
+  if(x0==x1 && y0==y1){
+    return;
+  }
+  let dx=Math.abs(x1-x0),dy=Math.abs(y1-y0);
+  let sx=x0<x1?1:-1, sy=y0<y1?1:-1;
+  let err=(dx>dy?dx:-dy)/2,e2=null;
+  while(true){
+    //Set Pixel
+    if(x0>=0 && x0<image.width && y0>=0 && y0<image.height){
+      let offset=(y0*image.width+x0)*4;
+      //image.data[offset]=image.data[offset+1]=image.data[offset+2]=0x00;
+      image.data[offset]=0xff;
+      image.data[offset+3]=0xff;
+    }
+    
+    if(x0==x1 && y0==y1){
+      break;
+    }
+    e2=err;
+    if(e2>-dx){
+      err-=dy;
+      x0+=sx;
+    }
+    if(e2<dy){
+      err+=dx;
+      y0+=sy;
+    }
+  }
+}
 var horFill=function(image,y,lines){
   let lineCuts=[];
   for(let line of lines){
@@ -101,41 +105,125 @@ var horFill=function(image,y,lines){
     }
   }
 }
-export function drawOutlineFont(image,x,y,w,h,operList){
+export function drawOutlineFont(image,x0,y0,w,h,operList){
   var cx=0,cy=0,lines=[];
   var handler=[
-    (param)=>{
-      cx=param.x1;cy=param.y1;
+    (param)=>{ //0
+      cx=param.x1;
+      cy=param.y1;
+      let offset=(cy*image.width+cx)*4;
+      image.data[offset+2]=0xff;
+      image.data[offset+3]=0xff;
     },
-    (param)=>{
+    (param)=>{ //1
+      if(param.x1!=cx){
+        lines.push({x0:cx,y0:cy,x1:param.x1,y1:cy});
+      }
       cx=param.x1;
     },
-    (param)=>{
+    (param)=>{ //2
       if(param.y1!=cy){
-        lines.push({
-          x0:cx,y0:cy,x1:cx,y1:param.y1,
-        });
+        lines.push({x0:cx,y0:cy,x1:cx,y1:param.y1});
       }
       cy=param.y1;
     },
-    (param)=>{
-      if(param.y1!=cy){
-        lines.push({
-          x0:cx,y0:cy,x1:param.x1,y1:param.y1,
-        });
+    (param)=>{ //3
+      if(param.x1!=cx||param.y1!=cy){
+        lines.push({x0:cx,y0:cy,x1:param.x1,y1:param.y1});
       }
       cx=param.x1;
       cy=param.y1;
     },
-    (param)=>{
-      lines=lines.concat(linesBezier2(image,cx,cy,param.x1,param.y1,param.x2,param.y2));
+    (param)=>{ //4
+      lines=lines.concat(linesBezier2(cx,cy,param.x1,param.y1,param.x2,param.y2));
       cx=param.x2;
       cy=param.y2;
     },
-    (param)=>{
-      lines=lines.concat(linesBezier3(image,cx,cy,param.x1,param.y1,param.x2,param.y2,param.x3,param.y3));
+    (param)=>{ //5
+      lines=lines.concat(linesBezier3(cx,cy,param.x1,param.y1,param.x2,param.y2,param.x3,param.y3));
       cx=param.x3;
       cy=param.y3;
+    },
+    (param)=>{ //6
+      if(param.x1!=param.x2 && param.y1!=param.y2){
+        lines.push({x0:param.x1,y0:param.y1,x1:param.x2,y1:param.y1});
+        lines.push({x0:param.x1,y0:param.y2,x1:param.x2,y1:param.y2});
+        lines.push({x0:param.x1,y0:param.y1,x1:param.x1,y1:param.y2});
+        lines.push({x0:param.x2,y0:param.y1,x1:param.x2,y1:param.y2});
+      }
+    },
+    (param)=>{ //7
+      if(param.dx1){
+        lines.push({
+          x0:cx,
+          y0:cy,
+          x1:cx+param.dx1,
+          y1:param.y1,
+        });
+      }
+      cx+=param.dx1;
+      cy=param.y1;
+    },
+    (param)=>{ //8
+      if(param.dy1){
+        lines.push({x0:cx,y0:cy,x1:param.x1,y1:cy+param.dy1});
+      }
+      cx=param.x1;
+      cy+=param.dy1;
+    },
+    (param)=>{ //9
+      if(param.dx1||param.dy1){
+        lines.push({x0:cx,y0:cy,x1:cx+param.dx1,y1:cy+param.dy1});
+      }
+      cx+=param.dx1;
+      cy+=param.dy1;
+    },
+    (param)=>{ //10
+      if(param.dx1||param.dy1){
+        lines.push({x0:cx,y0:cy,x1:cx+param.dx1,y1:cy+param.dy1});
+      }
+      cx+=param.dx1;
+      cy+=param.dy1;
+    },
+    (param)=>{ //11
+      let _dx1=param.dx1;
+      let _dy1=param.dy1;
+      let _dx2=param.dx1+param.dx2;
+      let _dy2=param.dy1+param.dy2;
+      lines=lines.concat(linesBezier2(cx,cy,cx+_dx1,cy+_dy1,cx+_dx2,cy+_dy2));
+      cx+=_dx2;
+      cy+=_dy2;
+    },
+    (param)=>{ //12
+      let _dx1=param.dx1;
+      let _dy1=param.dy1;
+      let _dx2=param.dx1+param.dx2;
+      let _dy2=param.dy1+param.dy2;
+      lines=lines.concat(linesBezier2(cx,cy,cx+_dx1,cy+_dy1,cx+_dx2,cy+_dy2));
+      cx+=_dx2;
+      cy+=_dy2;
+    },
+    (param)=>{ //13
+      let _dx1=param.dx1;
+      let _dy1=param.dy1;
+      let _dx2=param.dx1+param.dx2;
+      let _dy2=param.dy1+param.dy2;
+      let _dx3=param.dx1+param.dx2+param.dx3;
+      let _dy3=param.dy1+param.dy2+param.dy3;
+      lines=lines.concat(linesBezier3(cx,cy,cx+_dx1,cy+_dy1,cx+_dy2,cy+_dy2,cx+_dy3,cy+_dy3));
+      cx+=_dx3;
+      cy+=_dy3;
+    },
+    (param)=>{ //14
+      let _dx1=param.dx1;
+      let _dy1=param.dy1;
+      let _dx2=param.dx1+param.dx2;
+      let _dy2=param.dy1+param.dy2;
+      let _dx3=param.dx1+param.dx2+param.dx3;
+      let _dy3=param.dy1+param.dy2+param.dy3;
+      lines=lines.concat(linesBezier3(cx,cy,cx+_dx1,cy+_dy1,cx+_dy2,cy+_dy2,cx+_dy3,cy+_dy3));
+      cx+=_dx3;
+      cy+=_dy3;
     },
   ];
   for(let item of operList){
@@ -143,10 +231,19 @@ export function drawOutlineFont(image,x,y,w,h,operList){
       console.error('Unknown operation:',item.oper);
       continue;
     }
+    if(item.oper>7){
+      console.log(item);
+    }
     handler[item.oper](item.param);
   }
 
-  for(let y=0;y<image.height;y++){
+  for(let line of lines){
+    drawLine(image,x0+line.x0,y0+line.y0,x0+line.x1,y0+line.y1);
+  }
+
+  /*
+  for(let y=0;y<h;y++){
     let lineCuts=horFill(image,y,lines);
   }
+  */
 }
