@@ -1,33 +1,36 @@
+import {
+  loadOutlineFont,
+} from './loadOutlineFont.js';
 export default{
   components:{
     charData:require('./charData.vue').default,
   },
   data(){
     return{
-      fontData:null,
-      offsetList:[],
+      textInput:null,
+      fontData:{},
     };
   },
+  computed:{
+    fontDataChar(){
+      if(!this.textInput || !this.textInput.length){
+        return '';
+      }
+      return this.fontData[this.textInput.charCodeAt(0).toString(16)];
+    },
+  },
   created(){
-    this.axios.get('./static/HZKPST',{
+    let taskHZKPST=this.axios.get('./static/HZKPST',{
       responseType:'arraybuffer',
     }).then((resp)=>{
-      this.fontData=resp.data;
-      let dataView=new DataView(this.fontData);
-      //for(let qu=0xa1;qu<=0xa9;qu++){
-      for(let qu=0xa1;qu<=0xa1;qu++){
-        //for(let wei=0xa1;wei<=0xfe;wei++){
-        for(let wei=0xee;wei<=0xfe;wei++){
-          let offset=((qu-0xa1)*94+(wei-0xa1))*6;
-          let dataOffset=(dataView.getInt32(offset,true)&0xfffffff);
-          let dataLength=dataView.getUint16(offset+4,true);
-          this.offsetList.push({
-            offset:dataOffset,
-            length:dataLength,
-            buffer:dataLength?new Uint8Array(this.fontData,dataOffset,dataLength):null,
-          });
-        }
-      }
+      Object.assign(this.fontData,loadOutlineFont('HZKPST',resp.data));
+    }).catch((e)=>{
+      console.error(e);
+    });
+    let taskHZKPS=this.axios.get('./static/HZKPSSTJ',{
+      responseType:'arraybuffer',
+    }).then((resp)=>{
+      Object.assign(this.fontData,loadOutlineFont('HZKPS',resp.data));
     }).catch((e)=>{
       console.error(e);
     });
