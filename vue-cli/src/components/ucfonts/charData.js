@@ -242,7 +242,7 @@ var horLineCuts=function(lines,y){
     }
     //Process slope lines
     let slope=(y1-y0)/(x1-x0);
-    lineCuts.push(x0+(y-y0)*slope);
+    lineCuts.push(x0+(y-y0)/slope);
   }
   lineCuts.sort((a,b)=>{
     return (a>b?1:(a<b?-1:0));
