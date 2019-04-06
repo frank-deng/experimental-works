@@ -182,7 +182,21 @@ var processFontData=function(buffer){
 
   return steps;
 }
-var loadHZKPST=function(arrayBuffer){
+export function loadASCPS(arrayBuffer){
+  let fontCount=10,fontData=[],dataView=new DataView(arrayBuffer);
+  for(let fontIdx=0;fontIdx<fontCount;fontIdx++){
+    let fontDataCur={};
+    for(let ch=33;ch<=0x7e;ch++){
+      let offset=(fontIdx*94+(ch-33))*6;
+      let dataOffset=(dataView.getInt32(offset,true)&0xfffffff);
+      let dataLength=dataView.getUint16(offset+4,true);
+      fontDataCur[ch.toString(16)]=processFontData(new Uint8Array(arrayBuffer,dataOffset,dataLength));
+    }
+    fontData.push(fontDataCur);
+  }
+  return fontData;
+}
+export function loadHZKPST(arrayBuffer){
   let fontData={},dataView=new DataView(arrayBuffer);
   for(let qu=0xa1;qu<=0xa9;qu++){
     for(let wei=0xa1;wei<=0xfe;wei++){
@@ -203,7 +217,7 @@ var loadHZKPST=function(arrayBuffer){
   }
   return fontData;
 }
-var loadHZKPS=function(arrayBuffer){
+export function loadHZKPS(arrayBuffer){
   let fontData={},dataView=new DataView(arrayBuffer);
   for(let qu=0xb0;qu<=0xf7;qu++){
     for(let wei=0xa1;wei<=0xfe;wei++){
@@ -223,16 +237,4 @@ var loadHZKPS=function(arrayBuffer){
     }
   }
   return fontData;
-}
-export function loadOutlineFont(type,arrayBuffer){
-  switch(type){
-    case 'ascii':
-    break;
-    case 'HZKPST':
-      return loadHZKPST(arrayBuffer);
-    break;
-    case 'HZKPS':
-      return loadHZKPS(arrayBuffer);
-    break;
-  }
 }

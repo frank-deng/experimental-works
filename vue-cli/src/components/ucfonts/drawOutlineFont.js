@@ -107,8 +107,8 @@ var horFill=function(image,_x0,_y0,w,y,lines){
     }
   }
 }
-export function drawOutlineFont(image,x0,y0,w,h,operList){
-  var cx=0,cy=0,linesGrp=[],lines=[];
+export function drawOutlineFont(image,x0,y0,w,h,operList,fillByGroup=false){
+  var cx=0,cy=0,lines=[],linesGrp=[lines];
   var handler=[
     (param)=>{ //0
       cx=param.x1;
@@ -186,32 +186,29 @@ export function drawOutlineFont(image,x0,y0,w,h,operList){
       cy=param.y3;
     },
     (param)=>{ //6
-      if(param.x1!=param.x2 && param.y1!=param.y2){
-        lines.push({
-          x0:Math.round(param.x1*w/BASE_WIDTH),
-          y0:Math.round(param.y1*h/BASE_HEIGHT),
-          x1:Math.round(param.x2*w/BASE_WIDTH),
-          y1:Math.round(param.y1*h/BASE_HEIGHT),
-        });
-        lines.push({
-          x0:Math.round(param.x1*w/BASE_WIDTH),
-          y0:Math.round(param.y2*h/BASE_HEIGHT),
-          x1:Math.round(param.x2*w/BASE_WIDTH),
-          y1:Math.round(param.y2*h/BASE_HEIGHT),
-        });
-        lines.push({
-          x0:Math.round(param.x1*w/BASE_WIDTH),
-          y0:Math.round(param.y1*h/BASE_HEIGHT),
-          x1:Math.round(param.x1*w/BASE_WIDTH),
-          y1:Math.round(param.y2*h/BASE_HEIGHT),
-        });
-        lines.push({
-          x0:Math.round(param.x2*w/BASE_WIDTH),
-          y0:Math.round(param.y1*h/BASE_HEIGHT),
-          x1:Math.round(param.x2*w/BASE_WIDTH),
-          y1:Math.round(param.y2*h/BASE_HEIGHT),
-        });
+      let x0=Math.round(param.x1*w/BASE_WIDTH),
+        y0=Math.round(param.y1*h/BASE_HEIGHT),
+        x1=Math.round(param.x2*w/BASE_WIDTH),
+        y1=Math.round(param.y2*h/BASE_HEIGHT);
+      if(x0==x1 || y0==y1){
+        return;
       }
+      lines.push({
+        x0:x0,x1:x1,
+        y0:y0,y1:y0,
+      });
+      lines.push({
+        x0:x0,x1:x0,
+        y0:y0,y1:y1,
+      });
+      lines.push({
+        x0:x1,x1:x1,
+        y0:y0,y1:y1,
+      });
+      lines.push({
+        x0:x0,x1:x1,
+        y0:y1,y1:y1,
+      });
     },
     (param)=>{ //7
       if(param.dx1){
@@ -352,12 +349,28 @@ export function drawOutlineFont(image,x0,y0,w,h,operList){
     handler[item.oper](item.param);
   }
 
-  for(let lines of linesGrp){
-    for(let y=0;y<h;y++){
-      horFill(image,x0,y0,w,y,lines);
+  if(fillByGroup){
+    for(let lines of linesGrp){
+      if(0==lines.length){
+        continue;
+      }
+      for(let y=0;y<h;y++){
+        horFill(image,x0,y0,w,y,lines);
+      }
+      for(let line of lines){
+        drawLine(image,x0+line.x0,y0+line.y0,x0+line.x1,y0+line.y1);
+      }
     }
-    for(let line of lines){
-      drawLine(image,x0+line.x0,y0+line.y0,x0+line.x1,y0+line.y1);
+  }else{
+    let linesAll = [];
+    for(let lines of linesGrp){
+      for(let line of lines){
+        drawLine(image,x0+line.x0,y0+line.y0,x0+line.x1,y0+line.y1);
+        linesAll.push(line);
+      }
+    }
+    for(let y=0;y<h;y++){
+      horFill(image,x0,y0,w,y,linesAll);
     }
   }
 }
