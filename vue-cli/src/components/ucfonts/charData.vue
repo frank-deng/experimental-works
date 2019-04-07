@@ -1,6 +1,7 @@
 <template>
   <div class='charData'>
     <canvas ref='preview' width='170' height='170'></canvas>
+    <div>{{range}}</div>
   </div>
 </template>
 <style scoped>

@@ -113,8 +113,10 @@ export function drawOutlineFont(image,x0,y0,w,h,operList,fillByGroup=false){
     (param)=>{ //0
       cx=param.x1;
       cy=param.y1;
-      lines=[];
-      linesGrp.push(lines);
+      if(fillByGroup){
+        lines=[];
+        linesGrp.push(lines);
+      }
     },
     (param)=>{ //1
       let lineParam={
@@ -349,28 +351,31 @@ export function drawOutlineFont(image,x0,y0,w,h,operList,fillByGroup=false){
     handler[item.oper](item.param);
   }
 
-  if(fillByGroup){
-    for(let lines of linesGrp){
-      if(0==lines.length){
-        continue;
-      }
-      for(let y=0;y<h;y++){
-        horFill(image,x0,y0,w,y,lines);
-      }
-      for(let line of lines){
-        drawLine(image,x0+line.x0,y0+line.y0,x0+line.x1,y0+line.y1);
-      }
-    }
-  }else{
-    let linesAll = [];
-    for(let lines of linesGrp){
-      for(let line of lines){
-        drawLine(image,x0+line.x0,y0+line.y0,x0+line.x1,y0+line.y1);
-        linesAll.push(line);
-      }
+  //本字符的绑定边框
+  let bx0=null,bx1=null;
+  for(let lines of linesGrp){
+    if(0==lines.length){
+      continue;
     }
     for(let y=0;y<h;y++){
-      horFill(image,x0,y0,w,y,linesAll);
+      horFill(image,x0,y0,w,y,lines);
+    }
+    for(let line of lines){
+      drawLine(image,x0+line.x0,y0+line.y0,x0+line.x1,y0+line.y1);
+      //获取本字符的绑定边框
+      if(null===bx0||line.x0<bx0){
+        bx0=line.x0;
+      }
+      if(null===bx1||line.x0>bx1){
+        bx1=line.x0;
+      }
+      if(null===bx0||line.x1<bx0){
+        bx0=line.x1;
+      }
+      if(null===bx1||line.x1>bx1){
+        bx1=line.x1;
+      }
     }
   }
+  return[bx0,bx1];
 }

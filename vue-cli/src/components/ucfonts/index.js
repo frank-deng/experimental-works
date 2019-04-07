@@ -13,8 +13,8 @@ export default{
       fontData:{},
       ascFontData:[],
       ascFont:0,
-      width:100,
-      height:100,
+      width:170,
+      height:170,
       x:0,y:0,
     };
   },
