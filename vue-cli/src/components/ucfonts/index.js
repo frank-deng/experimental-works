@@ -9,7 +9,7 @@ export default{
   },
   data(){
     return{
-      textInput:'、',
+      textInput:'',
       fontData:{},
       ascFontData:[],
       ascFont:0,
@@ -32,6 +32,9 @@ export default{
       Object.assign(this.fontData,this.ascFontData[this.ascFont]);
     },
   },
+  updated(){
+    this.$refs.charData.update();
+  },
   created(){
     let taskASCPS=this.axios.get('./static/ASCPS',{
       responseType:'arraybuffer',
@@ -48,7 +51,7 @@ export default{
     }).catch((e)=>{
       console.error(e);
     });
-    let taskHZKPS=this.axios.get('./static/HZKPSSTJ',{
+    let taskHZKPS=this.axios.get('./static/HZKPSKTJ',{
       responseType:'arraybuffer',
     }).then((resp)=>{
       Object.assign(this.fontData,loadHZKPS(resp.data));

@@ -6,11 +6,11 @@ export default{
     fontData:null,
     width:{
       type:Number,
-      default:100,
+      default:170,
     },
     height:{
       type:Number,
-      default:100,
+      default:170,
     },
     x:{
       type:Number,
