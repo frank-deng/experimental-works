@@ -37,7 +37,7 @@ var linesBezier3=function(x0,y0,x1,y1,x2,y2,x3,y3,fraction=32){
 }
 
 //Actual drawing
-var drawLine=function(image,x0,y0,x1,y1){
+var drawLine=function(image,x0,y0,x1,y1,color){
   if(x0==x1 && y0==y1){
     return;
   }
@@ -48,7 +48,7 @@ var drawLine=function(image,x0,y0,x1,y1){
     //Set Pixel
     if(x0>=0 && x0<image.width && y0>=0 && y0<image.height){
       let offset=(y0*image.width+x0)*4;
-      image.data[offset]=image.data[offset+1]=image.data[offset+2]=0x00;
+      image.data[offset]=image.data[offset+1]=image.data[offset+2]=color?0xff:0x00;
       image.data[offset+3]=0xff;
     }
     
@@ -66,7 +66,7 @@ var drawLine=function(image,x0,y0,x1,y1){
     }
   }
 }
-var horFill=function(image,_x0,_y0,w,y,lines){
+var horFill=function(image,_x0,_y0,w,y,lines,color){
   let lineCuts=[];
   for(let line of lines){
     let x0=line.x0,y0=line.y0-0.1,x1=line.x1,y1=line.y1-0.1;
@@ -96,18 +96,18 @@ var horFill=function(image,_x0,_y0,w,y,lines){
   for(let x=0;x<w;x++){
     for(let i=0;i<lineCuts.length;i+=2){
       if(x>=lineCuts[i] && x<lineCuts[i+1]){
-        if((x+_x0)>=image.width || (y+_y0)>=image.height){
+        if((x+_x0)<0 || (x+_x0)>=image.width || (y+_y0)<0 || (y+_y0)>=image.height){
           continue;
         }
         let offset=((y+_y0)*image.width+(x+_x0))*4;
-        image.data[offset]=image.data[offset+1]=image.data[offset+2]=0x00;
+        image.data[offset]=image.data[offset+1]=image.data[offset+2]=color?0xff:0x00;
         image.data[offset+3]=0xff;
         break;
       }
     }
   }
 }
-export function drawOutlineFont(image,x0,y0,w,h,operList,fillByGroup=false){
+export function drawOutlineFont(image,x0,y0,w,h,operList,fillByGroup=false,color){
   var cx=0,cy=0,lines=[],linesGrp=[lines];
   var handler=[
     (param)=>{ //0
@@ -358,10 +358,10 @@ export function drawOutlineFont(image,x0,y0,w,h,operList,fillByGroup=false){
       continue;
     }
     for(let y=0;y<h;y++){
-      horFill(image,x0,y0,w,y,lines);
+      horFill(image,x0,y0,w,y,lines,color);
     }
     for(let line of lines){
-      drawLine(image,x0+line.x0,y0+line.y0,x0+line.x1,y0+line.y1);
+      drawLine(image,x0+line.x0,y0+line.y0,x0+line.x1,y0+line.y1,color);
       //获取本字符的绑定边框
       if(null===bx0||line.x0<bx0){
         bx0=line.x0;
