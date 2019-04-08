@@ -349,9 +349,11 @@ export function drawOutlineFont(image,x0,y0,w,h,operList,fillByGroup=false,color
   ];
   let i=0;
   for(let item of operList){
+    /*
     if((item.oper>0 && item.oper<7) || (i && 0==item.oper)){
       break;
     }
+    */
     console.log(JSON.stringify(item,null,2));
     handler[item.oper](item.param);
     i++;

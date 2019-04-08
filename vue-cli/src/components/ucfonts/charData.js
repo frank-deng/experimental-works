@@ -3,7 +3,10 @@ import {
 } from './drawOutlineFont.js';
 export default{
   props:{
-    fontData:null,
+    fontData:{
+      type:null,
+      default:()=>[],
+    },
     width:{
       type:Number,
       default:170,
@@ -35,18 +38,6 @@ export default{
         }
         this.update();
       },
-    },
-    width(){
-      this.update();
-    },
-    height(){
-      this.update();
-    },
-    x(){
-      this.update();
-    },
-    y(){
-      this.update();
     },
   },
   methods:{

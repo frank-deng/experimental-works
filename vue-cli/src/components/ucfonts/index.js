@@ -9,41 +9,22 @@ export default{
   },
   data(){
     return{
-      textInput:'',
+      textInput:'婷',
       fontData:{},
-      ascFontData:[],
-      ascFont:0,
-      width:170,
-      height:170,
-      x:0,y:0,
+      fontDataChar:[],
     };
   },
-  computed:{
-    fontDataChar(){
+  methods:{
+    drawFont(){
       if(!this.textInput || !this.textInput.length){
-        return '';
+        return;
       }
       let charCode = this.textInput.charCodeAt(0).toString(16);
-      return this.fontData[charCode];
+      this.fontDataChar=this.fontData[charCode];
+      this.$refs.charData.update();
     },
-  },
-  watch:{
-    ascFont(ascFont){
-      Object.assign(this.fontData,this.ascFontData[this.ascFont]);
-    },
-  },
-  updated(){
-    this.$refs.charData.update();
   },
   created(){
-    let taskASCPS=this.axios.get('./static/ASCPS',{
-      responseType:'arraybuffer',
-    }).then((resp)=>{
-      this.ascFontData=loadASCPS(resp.data);
-      Object.assign(this.fontData,this.ascFontData[this.ascFont]);
-    }).catch((e)=>{
-      console.error(e);
-    });
     let taskHZKPST=this.axios.get('./static/HZKPST',{
       responseType:'arraybuffer',
     }).then((resp)=>{
@@ -58,5 +39,8 @@ export default{
     }).catch((e)=>{
       console.error(e);
     });
+    Promise.all([taskHZKPST,taskHZKPS]).then(()=>{
+      this.drawFont();
+    })
   },
 }
