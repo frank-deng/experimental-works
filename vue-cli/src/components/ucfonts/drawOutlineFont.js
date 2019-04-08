@@ -48,7 +48,9 @@ var drawLine=function(image,x0,y0,x1,y1,color){
     //Set Pixel
     if(x0>=0 && x0<image.width && y0>=0 && y0<image.height){
       let offset=(y0*image.width+x0)*4;
-      image.data[offset]=image.data[offset+1]=image.data[offset+2]=color?0xff:0x00;
+      //image.data[offset]=image.data[offset+1]=image.data[offset+2]=color?0xff:0x00;
+      image.data[offset]=0xff;
+      image.data[offset+1]=image.data[offset+2]=0x00;
       image.data[offset+3]=0xff;
     }
     
@@ -107,16 +109,105 @@ var horFill=function(image,_x0,_y0,w,y,lines,color){
     }
   }
 }
+
+var lineCrossed=function(x0,y0,x1,y1,x2,y2,x3,y3){
+  let a0=y1-y0,b0=x0-x1,c0=x0*y1-x1*y0;
+  let a1=y3-y2,b1=x2-x3,c1=x2*y3-x3*y2;
+  let det=a0*b1-a1*b0;
+  if(0==det){
+    return null;
+  }
+  let cx=(c0*b1-c1*b0)/det,cy=(a0*c1-a1*c0)/det;
+  if((Math.abs(cx-(x0+x1)/2) <= Math.abs(x1-x0)/2) &&
+     (Math.abs(cy-(y0+y1)/2) <= Math.abs(y1-y0)/2) &&
+     (Math.abs(cx-(x2+x3)/2) <= Math.abs(x3-x2)/2) &&
+     (Math.abs(cy-(y2+y3)/2) <= Math.abs(y3-y2)/2)){
+    return[cx,cy];
+  }else{
+    return null;
+  }
+}
+var conflictDetect=function(lines0,lines1,rect0,rect1){
+  if(rect0&&rect1){
+    if(rect0.x1<rect1.x0 && rect1.x1<rect0.x0 && rect0.y1<rect1.y0 && rect1.y1<rect0.y0){
+      return false;
+    }
+  }
+  for(let a of lines0){
+    for(let b of lines1){
+      if(lineCrossed(
+          a.x0,a.y0,a.x1,a.y1,
+          b.x0,b.y0,b.x1,b.y1
+        )){
+        return true;
+      }
+    }
+  }
+  return false;
+}
+var getLinesRect=function(lines){
+  let x0=null,y0=null,x1=0,y1=0;
+  for(let line of lines){
+    if(null===x0 || x0>line.x0){
+      x0=line.x0;
+    }
+    if(null===x0 || x0>line.x1){
+      x0=line.x1;
+    }
+    if(x1<line.x0){
+      x1=line.x0;
+    }
+    if(x1<line.x1){
+      x1=line.x1;
+    }
+    if(null===y0 || y0>line.y0){
+      y0=line.y0;
+    }
+    if(null===y0 || y0>line.y1){
+      y0=line.y1;
+    }
+    if(y1<line.y0){
+      y1=line.y0;
+    }
+    if(y1<line.y1){
+      y1=line.y1;
+    }
+  }
+  return {x0:x0,y0:y0,x1:x1,y1:y1};
+}
+var regroupLines=function(linesGrp,rectGrp){
+  let result=[],remain=linesGrp.slice();
+  for(let i=0;i<remain.length;i++){
+    if(undefined===remain[i]){
+      continue;
+    }
+    let group=linesGrp[i];
+    for(let j=1;j<remain.length;j++){
+      if(undefined===remain[j]){
+        continue;
+      }
+      if(!conflictDetect(linesGrp[i],linesGrp[j],rectGrp[i],rectGrp[j])){
+        group=group.concat(linesGrp[j]);
+        remain[j]=undefined;
+      }
+    }
+    result.push(group);
+  }
+  return result;
+}
 export function drawOutlineFont(image,x0,y0,w,h,operList,fillByGroup=false,color){
   var cx=0,cy=0,lines=[],linesGrp=[lines];
+  var newGroup=()=>{
+    if(lines.length){
+      lines=[];
+      linesGrp.push(lines);
+    }
+  }
   var handler=[
     (param)=>{ //0
+      newGroup();
       cx=param.x1;
       cy=param.y1;
-      if(fillByGroup){
-        lines=[];
-        linesGrp.push(lines);
-      }
     },
     (param)=>{ //1
       let lineParam={
@@ -195,22 +286,24 @@ export function drawOutlineFont(image,x0,y0,w,h,operList,fillByGroup=false,color
       if(x0==x1 || y0==y1){
         return;
       }
-      lines.push({
+      let rectLines=[];
+      rectLines.push({
         x0:x0,x1:x1,
         y0:y0,y1:y0,
       });
-      lines.push({
+      rectLines.push({
         x0:x0,x1:x0,
         y0:y0,y1:y1,
       });
-      lines.push({
+      rectLines.push({
         x0:x1,x1:x1,
         y0:y0,y1:y1,
       });
-      lines.push({
+      rectLines.push({
         x0:x0,x1:x1,
         y0:y1,y1:y1,
       });
+      //linesGrp.unshift(rectLines);
     },
     (param)=>{ //7
       if(param.dx1){
@@ -351,14 +444,27 @@ export function drawOutlineFont(image,x0,y0,w,h,operList,fillByGroup=false,color
     handler[item.oper](item.param);
   }
 
+  //笔画冲突检测
+  let rectGrp=linesGrp.map((n)=>getLinesRect(n));
+  let linesGrpNew=regroupLines(linesGrp,rectGrp);
+  console.log(linesGrpNew);
+  /*
+  linesGrpNew=[[]];
+  for(let lines of linesGrp){
+    for(let line of lines){
+      linesGrpNew[0].push(line);
+    }
+  }
+  */
+
   //本字符的绑定边框
   let bx0=null,bx1=null;
-  for(let lines of linesGrp){
+  for(let lines of linesGrpNew){
     if(0==lines.length){
       continue;
     }
     for(let y=0;y<h;y++){
-      horFill(image,x0,y0,w,y,lines,color);
+      //horFill(image,x0,y0,w,y,lines,color);
     }
     for(let line of lines){
       drawLine(image,x0+line.x0,y0+line.y0,x0+line.x1,y0+line.y1,color);

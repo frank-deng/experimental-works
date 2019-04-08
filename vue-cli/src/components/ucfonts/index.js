@@ -9,8 +9,8 @@ export default{
   },
   data(){
     return{
-      textInput:'婷',
-      hzkps:'HZKPSKTJ',
+      textInput:'春',
+      hzkps:'HZKPSSTJ',
       fontData:{},
       fontDataChar:[],
     };
