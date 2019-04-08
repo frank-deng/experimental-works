@@ -186,6 +186,7 @@ export function loadASCPS(arrayBuffer){
   let fontCount=10,fontData=[],dataView=new DataView(arrayBuffer);
   for(let fontIdx=0;fontIdx<fontCount;fontIdx++){
     let fontDataCur={};
+    fontDataCur[(0x20).toString(16)]='space';
     for(let ch=33;ch<=0x7e;ch++){
       let offset=(fontIdx*94+(ch-33))*6;
       let dataOffset=(dataView.getInt32(offset,true)&0xfffffff);
@@ -205,7 +206,7 @@ export function loadHZKPST(arrayBuffer){
       let dataOffset=(dataView.getInt32(offset,true)&0xfffffff);
       let dataLength=dataView.getUint16(offset+4,true);
       if(!dataLength){
-        fontData[charCodeStr]=null;
+        fontData[charCodeStr]='fullSpace';
         continue;
       }
       try{

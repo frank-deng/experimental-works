@@ -310,13 +310,13 @@ export function drawOutlineFont(image,x0,y0,w,h,operList,fillByGroup=false,color
         Math.round(cy*h/BASE_HEIGHT),
         Math.round((cx+_dx1)*w/BASE_WIDTH),
         Math.round((cy+_dy1)*h/BASE_HEIGHT),
-        Math.round((cx+_dy2)*w/BASE_WIDTH),
+        Math.round((cx+_dx2)*w/BASE_WIDTH),
         Math.round((cy+_dy2)*h/BASE_HEIGHT),
-        Math.round((cx+_dy3)*w/BASE_WIDTH),
+        Math.round((cx+_dx3)*w/BASE_WIDTH),
         Math.round((cy+_dy3)*h/BASE_HEIGHT),
       );
       for(let item of blines){
-        //lines.push(item);
+        lines.push(item);
       }
       cx+=_dx3;
       cy+=_dy3;
@@ -333,13 +333,13 @@ export function drawOutlineFont(image,x0,y0,w,h,operList,fillByGroup=false,color
         Math.round(cy*h/BASE_HEIGHT),
         Math.round((cx+_dx1)*w/BASE_WIDTH),
         Math.round((cy+_dy1)*h/BASE_HEIGHT),
-        Math.round((cx+_dy2)*w/BASE_WIDTH),
+        Math.round((cx+_dx2)*w/BASE_WIDTH),
         Math.round((cy+_dy2)*h/BASE_HEIGHT),
-        Math.round((cx+_dy3)*w/BASE_WIDTH),
+        Math.round((cx+_dx3)*w/BASE_WIDTH),
         Math.round((cy+_dy3)*h/BASE_HEIGHT),
       );
       for(let item of blines){
-        //lines.push(item);
+        lines.push(item);
       }
       cx+=_dx3;
       cy+=_dy3;
@@ -347,25 +347,8 @@ export function drawOutlineFont(image,x0,y0,w,h,operList,fillByGroup=false,color
     ()=>{ //15
     },
   ];
-  let i=0;
   for(let item of operList){
-    /*
-    if((item.oper>0 && item.oper<7) || (i && 0==item.oper)){
-      break;
-    }
-    */
-    switch(item.oper){
-      //case 9:
-      //case 10:
-      //case 11:
-      //case 12:
-      case 13:
-      case 14:
-        console.log(JSON.stringify(item,null,2));
-      break;
-    }
     handler[item.oper](item.param);
-    i++;
   }
 
   //本字符的绑定边框
@@ -375,7 +358,7 @@ export function drawOutlineFont(image,x0,y0,w,h,operList,fillByGroup=false,color
       continue;
     }
     for(let y=0;y<h;y++){
-      //horFill(image,x0,y0,w,y,lines,color);
+      horFill(image,x0,y0,w,y,lines,color);
     }
     for(let line of lines){
       drawLine(image,x0+line.x0,y0+line.y0,x0+line.x1,y0+line.y1,color);

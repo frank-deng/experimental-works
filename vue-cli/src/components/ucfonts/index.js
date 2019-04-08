@@ -10,7 +10,7 @@ export default{
   data(){
     return{
       textInput:'婷',
-      hzkps:'HZKPSFSJ',
+      hzkps:'HZKPSKTJ',
       fontData:{},
       fontDataChar:[],
     };
