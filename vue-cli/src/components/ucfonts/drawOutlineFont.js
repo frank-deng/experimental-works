@@ -48,9 +48,7 @@ var drawLine=function(image,x0,y0,x1,y1,color){
     //Set Pixel
     if(x0>=0 && x0<image.width && y0>=0 && y0<image.height){
       let offset=(y0*image.width+x0)*4;
-      //image.data[offset]=image.data[offset+1]=image.data[offset+2]=color?0xff:0x00;
-      image.data[offset]=0xff;
-      image.data[offset+1]=image.data[offset+2]=0x00;
+      image.data[offset]=image.data[offset+1]=image.data[offset+2]=color?0xff:0x00;
       image.data[offset+3]=0xff;
     }
     
@@ -175,32 +173,37 @@ var getLinesRect=function(lines){
   }
   return {x0:x0,y0:y0,x1:x1,y1:y1};
 }
-var regroupLines=function(linesGrp,rectGrp){
+var isolatedLineGrps=function(linesGrp){
+  let rectGrp=linesGrp.map((n)=>getLinesRect(n));
   let result=[],remain=linesGrp.slice();
   for(let i=0;i<remain.length;i++){
     if(undefined===remain[i]){
       continue;
     }
     let group=linesGrp[i];
-    for(let j=1;j<remain.length;j++){
+    for(let j=i+1;j<remain.length;j++){
       if(undefined===remain[j]){
         continue;
       }
-      if(!conflictDetect(linesGrp[i],linesGrp[j],rectGrp[i],rectGrp[j])){
+      if(conflictDetect(linesGrp[i],linesGrp[j],rectGrp[i],rectGrp[j])){
         group=group.concat(linesGrp[j]);
-        remain[j]=undefined;
+        remain[i]=remain[j]=undefined;
       }
     }
-    result.push(group);
+    if(remain[i]){
+      result.push(i);
+    }
   }
   return result;
 }
-export function drawOutlineFont(image,x0,y0,w,h,operList,fillByGroup=false,color){
-  var cx=0,cy=0,lines=[],linesGrp=[lines];
+export function drawOutlineFont(image,x0,y0,w,h,operList,color){
+  var cx=0,cy=0,lines=[],linesGrp=[lines],linesOrig=[],linesGrpOrig=[linesOrig];
   var newGroup=()=>{
     if(lines.length){
       lines=[];
       linesGrp.push(lines);
+      linesOrig=[];
+      linesGrpOrig.push(linesOrig);
     }
   }
   var handler=[
@@ -218,6 +221,7 @@ export function drawOutlineFont(image,x0,y0,w,h,operList,fillByGroup=false,color
       };
       if(lineParam.x0!=lineParam.x1){
         lines.push(lineParam);
+        linesOrig.push({x0:cx,y0:cy,x1:param.x1,y1:cy});
       }
       cx=param.x1;
     },
@@ -230,6 +234,7 @@ export function drawOutlineFont(image,x0,y0,w,h,operList,fillByGroup=false,color
       };
       if(lineParam.y0!=lineParam.y1){
         lines.push(lineParam);
+        linesOrig.push({x0:cx,y0:cy,x1:cx,y1:param.y1});
       }
       cy=param.y1;
     },
@@ -242,6 +247,7 @@ export function drawOutlineFont(image,x0,y0,w,h,operList,fillByGroup=false,color
       };
       if(lineParam.x0!=lineParam.x1 || lineParam.y0!=lineParam.y1){
         lines.push(lineParam);
+        linesOrig.push({x0:cx,y0:cy,x1:param.x1,y1:param.y1});
       }
       cx=param.x1;
       cy=param.y1;
@@ -257,6 +263,10 @@ export function drawOutlineFont(image,x0,y0,w,h,operList,fillByGroup=false,color
       );
       for(let item of blines){
         lines.push(item);
+      }
+      let blinesOrig=linesBezier2(cx,cy,param.x1,param.y1,param.x2,param.y2);
+      for(let item of blinesOrig){
+        linesOrig.push(item);
       }
       cx=param.x2;
       cy=param.y2;
@@ -275,6 +285,10 @@ export function drawOutlineFont(image,x0,y0,w,h,operList,fillByGroup=false,color
       for(let item of blines){
         lines.push(item);
       }
+      let blinesOrig=linesBezier3(cx,cy,param.x1,param.y1,param.x2,param.y2,param.x3,param.y3);
+      for(let item of blinesOrig){
+        linesOrig.push(item);
+      }
       cx=param.x3;
       cy=param.y3;
     },
@@ -286,24 +300,22 @@ export function drawOutlineFont(image,x0,y0,w,h,operList,fillByGroup=false,color
       if(x0==x1 || y0==y1){
         return;
       }
-      let rectLines=[];
-      rectLines.push({
-        x0:x0,x1:x1,
-        y0:y0,y1:y0,
-      });
-      rectLines.push({
-        x0:x0,x1:x0,
-        y0:y0,y1:y1,
-      });
-      rectLines.push({
-        x0:x1,x1:x1,
-        y0:y0,y1:y1,
-      });
-      rectLines.push({
-        x0:x0,x1:x1,
-        y0:y1,y1:y1,
-      });
-      //linesGrp.unshift(rectLines);
+      linesGrp.unshift([
+        {x0:x0,x1:x1,y0:y0,y1:y0},
+        {x0:x0,x1:x0,y0:y0,y1:y1},
+        {x0:x1,x1:x1,y0:y0,y1:y1},
+        {x0:x0,x1:x1,y0:y1,y1:y1},
+      ]);
+      x0=param.x1;
+      y0=param.y1;
+      x1=param.x2;
+      y1=param.y2;
+      linesGrpOrig.unshift([
+        {x0:x0,x1:x1,y0:y0,y1:y0},
+        {x0:x0,x1:x0,y0:y0,y1:y1},
+        {x0:x1,x1:x1,y0:y0,y1:y1},
+        {x0:x0,x1:x1,y0:y1,y1:y1},
+      ]);
     },
     (param)=>{ //7
       if(param.dx1){
@@ -312,6 +324,12 @@ export function drawOutlineFont(image,x0,y0,w,h,operList,fillByGroup=false,color
           y0:Math.round(cy*h/BASE_HEIGHT),
           x1:Math.round((cx+param.dx1)*w/BASE_WIDTH),
           y1:Math.round(param.y1*h/BASE_HEIGHT),
+        });
+        linesOrig.push({
+          x0:cx,
+          y0:cy,
+          x1:(cx+param.dx1),
+          y1:param.y1,
         });
       }
       cx+=param.dx1;
@@ -325,6 +343,12 @@ export function drawOutlineFont(image,x0,y0,w,h,operList,fillByGroup=false,color
           x1:Math.round(param.x1*w/BASE_WIDTH),
           y1:Math.round((cy+param.dy1)*h/BASE_HEIGHT),
         });
+        linesOrig.push({
+          x0:cx,
+          y0:cy,
+          x1:param.x1,
+          y1:(cy+param.dy1),
+        });
       }
       cx=param.x1;
       cy+=param.dy1;
@@ -337,6 +361,12 @@ export function drawOutlineFont(image,x0,y0,w,h,operList,fillByGroup=false,color
           x1:Math.round((cx+param.dx1)*w/BASE_WIDTH),
           y1:Math.round((cy+param.dy1)*h/BASE_HEIGHT),
         });
+        linesOrig.push({
+          x0:cx,
+          y0:cy,
+          x1:(cx+param.dx1),
+          y1:(cy+param.dy1),
+        });
       }
       cx+=param.dx1;
       cy+=param.dy1;
@@ -348,6 +378,12 @@ export function drawOutlineFont(image,x0,y0,w,h,operList,fillByGroup=false,color
           y0:Math.round(cy*h/BASE_HEIGHT),
           x1:Math.round((cx+param.dx1)*w/BASE_WIDTH),
           y1:Math.round((cy+param.dy1)*h/BASE_HEIGHT),
+        });
+        linesOrig.push({
+          x0:cx,
+          y0:cy,
+          x1:(cx+param.dx1),
+          y1:(cy+param.dy1),
         });
       }
       cx+=param.dx1;
@@ -369,6 +405,10 @@ export function drawOutlineFont(image,x0,y0,w,h,operList,fillByGroup=false,color
       for(let item of blines){
         lines.push(item);
       }
+      let blinesOrig=linesBezier2(cx,cy,(cx+_dx1),(cy+_dy1),(cx+_dx2),(cy+_dy2));
+      for(let item of blinesOrig){
+        linesOrig.push(item);
+      }
       cx+=_dx2;
       cy+=_dy2;
     },
@@ -387,6 +427,10 @@ export function drawOutlineFont(image,x0,y0,w,h,operList,fillByGroup=false,color
       );
       for(let item of blines){
         lines.push(item);
+      }
+      let blinesOrig=linesBezier2(cx,cy,(cx+_dx1),(cy+_dy1),(cx+_dx2),(cy+_dy2));
+      for(let item of blinesOrig){
+        linesOrig.push(item);
       }
       cx+=_dx2;
       cy+=_dy2;
@@ -411,6 +455,10 @@ export function drawOutlineFont(image,x0,y0,w,h,operList,fillByGroup=false,color
       for(let item of blines){
         lines.push(item);
       }
+      let blinesOrig=linesBezier2(cx,cy,(cx+_dx1),(cy+_dy1),(cx+_dx2),(cy+_dy2),(cx+_dx3),(cy+_dy3));
+      for(let item of blinesOrig){
+        linesOrig.push(item);
+      }
       cx+=_dx3;
       cy+=_dy3;
     },
@@ -434,6 +482,10 @@ export function drawOutlineFont(image,x0,y0,w,h,operList,fillByGroup=false,color
       for(let item of blines){
         lines.push(item);
       }
+      let blinesOrig=linesBezier2(cx,cy,(cx+_dx1),(cy+_dy1),(cx+_dx2),(cy+_dy2),(cx+_dx3),(cy+_dy3));
+      for(let item of blinesOrig){
+        linesOrig.push(item);
+      }
       cx+=_dx3;
       cy+=_dy3;
     },
@@ -444,27 +496,21 @@ export function drawOutlineFont(image,x0,y0,w,h,operList,fillByGroup=false,color
     handler[item.oper](item.param);
   }
 
-  //笔画冲突检测
-  let rectGrp=linesGrp.map((n)=>getLinesRect(n));
-  let linesGrpNew=regroupLines(linesGrp,rectGrp);
-  console.log(linesGrpNew);
-  /*
-  linesGrpNew=[[]];
-  for(let lines of linesGrp){
-    for(let line of lines){
-      linesGrpNew[0].push(line);
-    }
+  //寻找孤立的笔画，然后把他们放一起
+  let isolatedLines=[];
+  for(let i of isolatedLineGrps(linesGrpOrig)){
+    isolatedLines=isolatedLines.concat(linesGrp[i]);
+    linesGrp[i]=null;
   }
-  */
+  linesGrp.unshift(isolatedLines);
 
-  //本字符的绑定边框
   let bx0=null,bx1=null;
-  for(let lines of linesGrpNew){
-    if(0==lines.length){
+  for(let lines of linesGrp){
+    if(!Array.isArray(lines) || 0==lines.length){
       continue;
     }
     for(let y=0;y<h;y++){
-      //horFill(image,x0,y0,w,y,lines,color);
+      horFill(image,x0,y0,w,y,lines,color);
     }
     for(let line of lines){
       drawLine(image,x0+line.x0,y0+line.y0,x0+line.x1,y0+line.y1,color);
@@ -485,3 +531,4 @@ export function drawOutlineFont(image,x0,y0,w,h,operList,fillByGroup=false,color
   }
   return[bx0,bx1];
 }
+
