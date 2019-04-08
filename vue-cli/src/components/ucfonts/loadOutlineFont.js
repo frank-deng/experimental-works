@@ -136,8 +136,8 @@ var parseParam=function(oper,buffer){
       let dy1=((data[1]&0x3)<<4)|data[2];
       let dx2=(data[3]<<2)|(data[4]>>2);
       let dy2=((data[4]&0x3)<<4)|data[5];
-      let dx3=(data[5]<<2)|(data[6]>>2);
-      let dy3=((data[6]&0x3)<<4)|data[7];
+      let dx3=(data[6]<<2)|(data[7]>>2);
+      let dy3=((data[7]&0x3)<<4)|data[8];
       return{
         dx1:(32&dx1?-(dx1&31):(dx1&31)),
         dy1:(32&dy1?-(dy1&31):(dy1&31)),

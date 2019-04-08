@@ -4,6 +4,12 @@ import Router from 'vue-router'
 Vue.use(Router);
 let router = new Router({
 	routes: [
+        {
+			path: '/',
+			name: 'UCDOS轮廓字体实验',
+			component: (r)=>require.ensure([], ()=>r(require('@/components/ucfonts/index.vue')), 'KMeansPosterization'),
+		},
+/*
 		{
 			path: '/',
 			name: '首页',
@@ -44,6 +50,7 @@ let router = new Router({
 			name: 'UCDOS轮廓字体实验',
 			component: (r)=>require.ensure([], ()=>r(require('@/components/ucfonts/index.vue')), 'KMeansPosterization'),
 		},
+*/
 	],
 });
 router.beforeEach((to, from, next)=>{

@@ -266,12 +266,12 @@ export function drawOutlineFont(image,x0,y0,w,h,operList,fillByGroup=false,color
       let _dx2=param.dx1+param.dx2;
       let _dy2=param.dy1+param.dy2;
       let blines=linesBezier2(
-        (cx),
-        (cy),
-        ((cx+_dx1)),
-        ((cy+_dy1)),
-        ((cx+_dx2)),
-        ((cy+_dy2)),
+        Math.round(cx*w/BASE_WIDTH),
+        Math.round(cy*h/BASE_HEIGHT),
+        Math.round((cx+_dx1)*w/BASE_WIDTH),
+        Math.round((cy+_dy1)*h/BASE_HEIGHT),
+        Math.round((cx+_dx2)*w/BASE_WIDTH),
+        Math.round((cy+_dy2)*h/BASE_HEIGHT),
       );
       for(let item of blines){
         lines.push(item);
@@ -285,12 +285,12 @@ export function drawOutlineFont(image,x0,y0,w,h,operList,fillByGroup=false,color
       let _dx2=param.dx1+param.dx2;
       let _dy2=param.dy1+param.dy2;
       let blines=linesBezier2(
-        (cx*w/BASE_WIDTH),
-        (cy*h/BASE_HEIGHT),
-        ((cx+_dx1)*w/BASE_WIDTH),
-        ((cy+_dy1)*h/BASE_HEIGHT),
-        ((cx+_dx2)*w/BASE_WIDTH),
-        ((cy+_dy2)*h/BASE_HEIGHT),
+        Math.round(cx*w/BASE_WIDTH),
+        Math.round(cy*h/BASE_HEIGHT),
+        Math.round((cx+_dx1)*w/BASE_WIDTH),
+        Math.round((cy+_dy1)*h/BASE_HEIGHT),
+        Math.round((cx+_dx2)*w/BASE_WIDTH),
+        Math.round((cy+_dy2)*h/BASE_HEIGHT),
       );
       for(let item of blines){
         lines.push(item);
@@ -316,7 +316,7 @@ export function drawOutlineFont(image,x0,y0,w,h,operList,fillByGroup=false,color
         Math.round((cy+_dy3)*h/BASE_HEIGHT),
       );
       for(let item of blines){
-        lines.push(item);
+        //lines.push(item);
       }
       cx+=_dx3;
       cy+=_dy3;
@@ -339,7 +339,7 @@ export function drawOutlineFont(image,x0,y0,w,h,operList,fillByGroup=false,color
         Math.round((cy+_dy3)*h/BASE_HEIGHT),
       );
       for(let item of blines){
-        lines.push(item);
+        //lines.push(item);
       }
       cx+=_dx3;
       cy+=_dy3;
@@ -354,7 +354,16 @@ export function drawOutlineFont(image,x0,y0,w,h,operList,fillByGroup=false,color
       break;
     }
     */
-    console.log(JSON.stringify(item,null,2));
+    switch(item.oper){
+      //case 9:
+      //case 10:
+      //case 11:
+      //case 12:
+      case 13:
+      case 14:
+        console.log(JSON.stringify(item,null,2));
+      break;
+    }
     handler[item.oper](item.param);
     i++;
   }

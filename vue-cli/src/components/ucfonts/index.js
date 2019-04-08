@@ -10,6 +10,7 @@ export default{
   data(){
     return{
       textInput:'婷',
+      hzkps:'HZKPSFSJ',
       fontData:{},
       fontDataChar:[],
     };
@@ -32,7 +33,7 @@ export default{
     }).catch((e)=>{
       console.error(e);
     });
-    let taskHZKPS=this.axios.get('./static/HZKPSKTJ',{
+    let taskHZKPS=this.axios.get(`./static/${this.hzkps}`,{
       responseType:'arraybuffer',
     }).then((resp)=>{
       Object.assign(this.fontData,loadHZKPS(resp.data));
