@@ -1,4 +1,7 @@
 import {
+  saveAs,
+}from 'file-saver';
+import {
   loadASCPS,
   loadHZKPST,
   loadHZKPS,
@@ -23,6 +26,10 @@ export default{
       let charCode = this.textInput.charCodeAt(0).toString(16);
       this.fontDataChar=this.fontData[charCode];
       this.$refs.charData.update();
+    },
+    getFont(){
+      let data=Uint8Array.from(require('./fontData.js').default);
+      saveAs(new Blob([data]),'asc8x8.fon');
     },
   },
   created(){
