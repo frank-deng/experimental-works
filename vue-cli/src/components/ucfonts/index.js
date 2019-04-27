@@ -12,8 +12,8 @@ export default{
   },
   data(){
     return{
-      textInput:'婷',
-      hzkps:'HZKPSFSJ',
+      textInput:'黄',
+      hzkps:'HZKPSKTJ',
       fontData:{},
       fontDataChar:[],
     };

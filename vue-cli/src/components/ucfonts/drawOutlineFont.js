@@ -126,11 +126,13 @@ var lineCrossed=function(x0,y0,x1,y1,x2,y2,x3,y3){
   }
 }
 var conflictDetect=function(lines0,lines1,rect0,rect1){
+  /*
   if(rect0&&rect1){
     if(rect0.x1<rect1.x0 && rect1.x1<rect0.x0 && rect0.y1<rect1.y0 && rect1.y1<rect0.y0){
       return false;
     }
   }
+  */
   for(let a of lines0){
     for(let b of lines1){
       if(lineCrossed(
@@ -455,7 +457,7 @@ export function drawOutlineFont(image,x0,y0,w,h,operList,color){
       for(let item of blines){
         lines.push(item);
       }
-      let blinesOrig=linesBezier2(cx,cy,(cx+_dx1),(cy+_dy1),(cx+_dx2),(cy+_dy2),(cx+_dx3),(cy+_dy3));
+      let blinesOrig=linesBezier3(cx,cy,(cx+_dx1),(cy+_dy1),(cx+_dx2),(cy+_dy2),(cx+_dx3),(cy+_dy3));
       for(let item of blinesOrig){
         linesOrig.push(item);
       }
@@ -482,7 +484,7 @@ export function drawOutlineFont(image,x0,y0,w,h,operList,color){
       for(let item of blines){
         lines.push(item);
       }
-      let blinesOrig=linesBezier2(cx,cy,(cx+_dx1),(cy+_dy1),(cx+_dx2),(cy+_dy2),(cx+_dx3),(cy+_dy3));
+      let blinesOrig=linesBezier3(cx,cy,(cx+_dx1),(cy+_dy1),(cx+_dx2),(cy+_dy2),(cx+_dx3),(cy+_dy3));
       for(let item of blinesOrig){
         linesOrig.push(item);
       }
