@@ -38,12 +38,7 @@ let router = new Router({
 			path: '/KMeansPosterization',
 			name: 'K-Means图像处理',
 			component: (r)=>require.ensure([], ()=>r(require('@/components/KMeans/index.vue')), 'KMeansPosterization'),
-		},
-		{
-			path: '/ucfonts',
-			name: 'UCDOS轮廓字体实验',
-			component: (r)=>require.ensure([], ()=>r(require('@/components/ucfonts/index.vue')), 'KMeansPosterization'),
-		},
+		}
 	],
 });
 router.beforeEach((to, from, next)=>{

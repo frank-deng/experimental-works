@@ -65,17 +65,17 @@
 		}
 
 		//Parse notes to instructions
-		var octave = 5, baseDuration = 60 * 4 / 128, noteLenDef = 4, gap = 0.01, time = 0;
+		var octave = 5, baseDuration = 60 * 4 / 128, noteLenDef = 4, durationFrac=(7/8), time = 0;
 		var result = [];
 		var commandProcessor = {
 			'ML':()=>{
-				gap = 0;
+				durationFrac = 1;
 			},
 			'MS':()=>{
-				gap = 0.1;
+				durationFrac = 3/4;
 			},
 			'MN':()=>{
-				gap = 0.01;
+				durationFrac = 7/8;
 			},
 			'<':()=>{
 				if (octave > 0){
@@ -118,24 +118,19 @@
 
 			let freq = note2num[note]? noteFreq[note2num[note]-1+octave * 12] : 0;
 
-			if (!gap){
+      if(1==durationFrac){
 				result.push({
 					freq: freq,
 					time: time,
 				});
-			} else if (duration > gap) {
+      }else{
 				result.push({
 					freq: freq,
-					time: time,
+					time: time*durationFrac,
 				});
 				result.push({
 					freq: 0,
-					time: time + duration - gap,
-				});
-			} else {
-				result.push({
-					freq: 0,
-					time: time,
+					time: time*(1-durationFrac),
 				});
 			}
 			time += duration;
