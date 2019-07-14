@@ -22,6 +22,7 @@
 		1046.5, 1108.7, 1174.7, 1244.5, 1318.5, 1396.9, 1480.0, 1568.0, 1661.2, 1760.0, 1864.7, 1975.53,
 		2093.0, 2217.5, 2349.3, 2489.0, 2637.0, 2793.8, 2960.0, 3136.0, 3322.4, 3520.0, 3729.3, 3951.05,
 		4186.0, 4439.9, 4498.6, 4978.0, 5474.0, 5587.7, 5919.9, 6271.9, 6644.9, 7040.0, 7458.6, 7902.1,
+    8372.0, 8869.8, 9397.3, 9956.1, 10548, 11175, 11840, 12544, 13290, 14080, 14917, 15804
 	];
 	var processMML = function(_mml){
 		//Parse mml into notes
@@ -94,7 +95,7 @@
 				noteLenDef = len;
 			},
 			'O':(_octave)=>{
-				octave = _octave;
+				octave = _octave+2;
 			},
 		};
 		for (let cmd of commands) {
@@ -124,13 +125,14 @@
 					time: time,
 				});
       }else{
+        let gap = duration * (1-durationFrac);
 				result.push({
 					freq: freq,
-					time: time*durationFrac,
+					time: time,
 				});
 				result.push({
 					freq: 0,
-					time: time*(1-durationFrac),
+					time: time+duration-gap,
 				});
 			}
 			time += duration;
