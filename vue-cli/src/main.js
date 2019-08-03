@@ -12,7 +12,7 @@ import 'element-ui/lib/theme-chalk/index.css'
 import axios from 'axios'
 Vue.prototype.axios = axios;
 
-import common from '@/js/common.js'
+import common from '@/components/common.js'
 Vue.use(common);
 
 Vue.config.productionTip = false
@@ -66,11 +66,8 @@ Vue.prototype.$alert = MessageBox.alert;
 Vue.prototype.$prompt = MessageBox.prompt;
 Vue.prototype.$confirm = MessageBox.confirm;
 
-/* eslint-disable no-new */
 new Vue({
-  el: '#app',
   router,
-  components: { App },
-  template: '<App/>'
-})
+  render: h => h(App)
+}).$mount('#app')
 
