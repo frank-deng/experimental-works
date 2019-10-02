@@ -1,9 +1,13 @@
+/* global __DEV__ */
+import echarts from 'echarts';
 export default{
   data(){
     return{
     };
   },
   mounted(){
+    this.drawGraph();
+
     let size=2048;
     let tatamiPattern=new Image();
     tatamiPattern.src=require('@/assets/tatami.jpg');
@@ -57,6 +61,20 @@ export default{
     });
   },
   methods:{
+    drawGraph(){
+      if(!this.$refs.graphContainer){
+        return;
+      }
+      let option={
+        silent:true,
+        animation:false,
+        title:{
+          text:'测试图表'
+        }
+      };
+      let graph=echarts.init(this.$refs.graphContainer);
+      graph.setOption(option);
+    }
   }
 }
 

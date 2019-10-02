@@ -1,9 +1,20 @@
 <template>
   <div class='testPage'>
+    <div class='graphContainerOuter'>
+      <div class='graphContainer' ref='graphContainer'></div>
+    </div>
     <canvas class='drawCanvas' ref='drawCanvas'></canvas>
   </div>
 </template>
 <style scoped>
+.graphContainerOuter{
+  overflow:auto;
+}
+.graphContainer{
+  width:1000px;
+  height:600px;
+  margin:auto;
+}
 .drawCanvas{
   display:block;
   margin:0 auto;
