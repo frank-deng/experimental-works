@@ -68,9 +68,64 @@ export default{
       let option={
         silent:true,
         animation:false,
-        title:{
-          text:'测试图表'
-        }
+        xAxis:{
+          type:'category',
+          splitLine:{
+            show:true
+          },
+          data:['A1','A2','A3','A4','A5']
+        },
+        yAxis:{
+          type:'category',
+          splitLine:{
+            show:true
+          },
+          data:['1年','2年','3年','4年','5年']
+        },
+        series:[
+          {
+            type:'custom',
+            xAxisIndex:0,
+            yAxisIndex:0,
+            data:[
+              [0,0,23],
+              [0,2,23],
+              [0,2,20],
+            ],
+            renderItem(param,api){
+              console.log(param);
+              let data=[api.value(0),api.value(1),api.value(2)];
+              let coord=api.coord(data),size=api.size(data);
+              let padding=[12,12];
+              let rectSize=[
+                size[0]-padding[0]*2,
+                size[1]-padding[1]*2
+              ]
+              return{
+                type:'group',
+                position:[
+                  coord[0]-size[0]/2+padding[0],
+                  coord[1]-size[1]/2+padding[1]
+                ],
+                width:size[0]-padding[0]*2,
+                height:size[1]-padding[1]*2,
+                children:[
+                  {
+                    type:'rect',
+                    shape:{
+                      x:0,y:0,
+                      width:rectSize[0],
+                      height:rectSize[1]
+                    },
+                    style:{
+                      fill:'rgba(255,0,255,0.5)'
+                    }
+                  }
+                ]
+              };
+            }
+          }
+        ]
       };
       let graph=echarts.init(this.$refs.graphContainer);
       graph.setOption(option);
