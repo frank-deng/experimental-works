@@ -88,19 +88,28 @@ export default{
             xAxisIndex:0,
             yAxisIndex:0,
             data:[
-              [0,0,23],
-              [0,2,23],
-              [0,2,20],
+              [0,0,0.1,0],
+              [0,2,0.4,1],
+              [0,2,0.6,0],
+              [0,2,1,0],
             ],
             renderItem(param,api){
-              console.log(param);
-              let data=[api.value(0),api.value(1),api.value(2)];
+              let keyRegion = `${api.value(0)}-${api.value(1)}`;
+              let value = api.value(2), type = api.value(3);
+              if(!param.context[keyRegion]){
+                param.context[keyRegion]=[];
+              }
+              let valueList = param.context[keyRegion];
+              valueList.push(value);
+
+              let data=[api.value(0),api.value(1),value];
               let coord=api.coord(data),size=api.size(data);
               let padding=[12,12];
-              let rectSize=[
-                size[0]-padding[0]*2,
-                size[1]-padding[1]*2
-              ]
+              let rectWidth = size[0]-padding[0]*2;
+              let rectHeight = size[1]-padding[1]*2;
+
+              let x=(valueList.length-1)*12, y=value*rectHeight;
+
               return{
                 type:'group',
                 position:[
@@ -110,15 +119,26 @@ export default{
                 width:size[0]-padding[0]*2,
                 height:size[1]-padding[1]*2,
                 children:[
+                  /*
                   {
                     type:'rect',
                     shape:{
                       x:0,y:0,
-                      width:rectSize[0],
-                      height:rectSize[1]
+                      width:rectWidth,
+                      height:rectHeight
                     },
                     style:{
-                      fill:'rgba(255,0,255,0.5)'
+                      fill:'rgba(255,0,255,0.1)'
+                    }
+                  },
+                  */
+                  {
+                    type:'circle',
+                    shape:{
+                      cx:x,cy:y,r:6
+                    },
+                    style:{
+                      fill:'rgba(255,0,255,1)'
                     }
                   }
                 ]
