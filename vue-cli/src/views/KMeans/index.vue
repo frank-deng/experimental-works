@@ -53,6 +53,7 @@
   margin:10px;
 }
 .formPreparation{
+  width:100%;
   max-width:800px;
 }
 .imageArea{

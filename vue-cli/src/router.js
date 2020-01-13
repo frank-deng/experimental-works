@@ -10,6 +10,11 @@ let router = new Router({
 			component:require('@/views/IndexPage/IndexPage.vue').default,
 		},
 		{
+			path:'/zrender',
+			name:'ZRender Try',
+			component:()=>import(/* webpackChunkName: "zrender-try" */'@/views/ZRenderTry/main.vue')
+		},
+		{
 			path:'/dtmf',
 			name:'DTMF音效',
 			component:()=>import(/* webpackChunkName: "dtmf" */'@/views/DTMFEffect/index.vue')
