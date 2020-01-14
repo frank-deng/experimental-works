@@ -1,6 +1,8 @@
 <template>
   <div class='zrender-try'>
     <div class='zr-container' ref='zrContainer'></div>
+    <el-button size='mini' @click='glitch'>Giltch</el-button>
+    <el-button size='mini' @click='animate'>Animate</el-button>
   </div>
 </template>
 <style scoped>
