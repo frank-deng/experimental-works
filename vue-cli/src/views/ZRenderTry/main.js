@@ -7,7 +7,9 @@ export default{
     };
   },
   mounted(){
-    this.zr=ZRender.init(this.$refs.zrContainer);
+    this.zr=ZRender.init(this.$refs.zrContainer,{
+      renderer:'svg'
+    });
     this.draw();
   },
   beforeDestroy(){
@@ -18,15 +20,37 @@ export default{
   methods:{
     draw(){
       let text=new ZRender.Text({
-        position:[6,6],
         style:{
-          text:'666'
+          text:'666',
+          textFill:'#cccccc',
+          fontSize:16,
+          textVerticalAlign:'middle',
+          textLineHeight:30,
+          textPosition:[0,0]
+        }
+      });
+
+      let rect=new ZRender.Rect({
+        shape:{
+          x:0,
+          y:0,
+          width:30,
+          height:30
         },
+        style:{
+          fill:'#233333'
+        }
+      })
+
+      let group=new ZRender.Group({
+        position:[0,0],
         cursor:'pointer',
         draggable:true
       });
-      this.zr.add(text);
-      this.zrItem=text;
+      group.add(rect);
+      group.add(text);
+      this.zr.add(group);
+      this.zrItem=group;
     },
     animate(){
       this.zrItem.animate('position',false).when(1000,[75,115]).start();
