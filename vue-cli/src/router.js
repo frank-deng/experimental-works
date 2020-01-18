@@ -45,6 +45,11 @@ let router = new Router({
 			component:()=>import(/* webpackChunkName: "KMeansPosterization" */'@/views/KMeans/index.vue')
 		},
 		{
+			path:'/dithering',
+			name:'图像抖动处理',
+			component:()=>import(/* webpackChunkName: "dithering" */'@/views/dithering/index.vue')
+		},
+		{
 			path:'/testPage',
 			name:'测试页面',
 			component:()=>import(/* webpackChunkName: "testPage" */'@/views/TestPage/testPage.vue')

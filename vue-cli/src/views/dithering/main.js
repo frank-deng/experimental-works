@@ -1,6 +1,6 @@
 import fecha from 'fecha';
-import KMeansWorker from './kmeans.worker.js';
 import {fitRect as _fitRect} from '@/components/common.js';
+import RGBQuant from 'rgbquant';
 
 function fitRect(wdest, hdest, wsrc, hsrc) {
   if (wsrc <= wdest && hsrc <= hdest) {
@@ -27,7 +27,7 @@ export default {
         maxHeight:640,
         dither:false,
         fileList:[],
-        colors:[],
+        colorCount:16,
         _validation:{
           fileList:{
             required:true,
@@ -47,16 +47,9 @@ export default {
             {required:true, message:'请填写图片最大宽度'},
             {type:'number', message:'请输入数字类型的值'},
           ],
-          colors:{
-            required:true,
-            validator:(rule,value,callback)=>{
-              if(0==value.length){
-                callback(new Error('请添加初始颜色'));
-                return;
-              }
-              callback();
-            },
-          },
+          colorCount:[
+            {required:true, message:'请填写颜色数'}
+          ]
         },
       },
       loading:false,
@@ -113,11 +106,11 @@ export default {
       canvas.style.width = `${destSize.width}px`;
       canvas.style.height = `${destSize.height}px`;
     };
+    window.addEventListener('resize', resizeCanvas);
 
     var reader = new FileReader();
     this.reader = reader;
     var image = new Image();
-    var kmeansWorker = new KMeansWorker();
 
     reader.addEventListener('load', (event)=>{
       image.src = event.target.result;
@@ -138,11 +131,34 @@ export default {
       var canvasWidth = vm.$refs.canvasImage.width;
       var canvasHeight = vm.$refs.canvasImage.height;
       var imageData = ctx.getImageData(0, 0, canvasWidth, canvasHeight);
-      kmeansWorker.postMessage({
-        imageData:imageData,
-        dither:vm.formPreparation.dither,
-        initPoints:vm.formPreparation.colors,
+
+      //Generate palette optimized
+      var q=new RGBQuant({
+        colors:vm.formPreparation.colorCount
+        /*
+        colors:2,
+        palette:[
+          [0,0,0],
+          [0,255,0]
+        ]
+        */
       });
+      q.sample(imageData);
+      console.log(q.palette());
+
+      var result=q.reduce(imageData,1,'FloydSteinberg',true);
+      console.log(result);
+      for(let i=0; i<result.length; i++){
+        imageData.data[i]=result[i];
+      }
+      ctx.putImageData(imageData,0,0);
+
+      //Show result
+      vm.displayResult = true;
+      vm.$nextTick(()=>{
+        resizeCanvas();
+        vm.loading = false;
+      })
     });
     image.addEventListener('error', ()=>{
       vm.loading = false;
@@ -155,23 +171,6 @@ export default {
         customClass:'dialogFailed',
       });
     });
-    kmeansWorker.addEventListener('message', (resp)=>{
-      if (resp.data.message){
-        alert(resp.data.message);
-        return;
-      }
-      var ctx = vm.$refs.canvasImage.getContext('2d');
-      ctx.putImageData(resp.data.imageData, 0, 0);
-      this.displayResult = true;
-      this.$nextTick(()=>{
-        resizeCanvas();
-        this.loading = false;
-      })
-    });
-    kmeansWorker.addEventListener('error',(e)=>{
-      console.error('Error from worker.', e);
-    });
-    window.addEventListener('resize', resizeCanvas);
-  },
+  }
 }
 
