@@ -11,15 +11,16 @@
       <el-button-group><!--
         --><el-button class='textButton' type='text' icon='el-icon-plus' @click='addColor'></el-button><!--
         --><el-button class='textButton' type='text' icon='el-icon-download' @click='downloadPalette'></el-button><!--
+        --><el-button class='textButton' type='text' icon='el-icon-upload2' @click='handlePaletteUpload'></el-button><!--
       --></el-button-group><!--
-      --><el-upload action='' class='paletteUpload'
+      --><!--el-upload action='' class='paletteUpload'
         :multiple='false'
         :limit='1'
         :show-file-list='false'
         :auto-upload='true'
         :before-upload='handlePaletteUpload'>
         <el-button class='textButton' type='text' icon='el-icon-upload2'></el-button>
-      </el-upload>
+      </el-upload-->
     </div>
   </div>
 </template>

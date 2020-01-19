@@ -1,4 +1,5 @@
 import {saveAs} from 'file-saver';
+import selectFiles from 'select-files';
 
 //Generate default colors
 var color2hex=function(r,g,b){
@@ -10,10 +11,9 @@ var color2hex=function(r,g,b){
 export default{
   props:{
     value:{
-      default(){
-        return [];
-      },
-    },
+      type:Array,
+      default:()=>[]
+    }
   },
   data(){
     return{
@@ -54,31 +54,19 @@ export default{
         this.update();
       }
     },
-    /*
-    resetColors(){
-      this.colors = [];
-      for(var i=0;i<27;i++){
-        let values=[0x00,0x7f,0xff];
-        let r = values[Math.floor(i/9)%3], g = values[Math.floor(i/3)%3], b = values[i%3];
-        this.colors.push({
-          value:color2hex(r,g,b),
-        });
-      }
-      this.update();
-    },
-    */
     downloadPalette(){
       let data = this.colors.map((item)=>{
         return item.value;
       }).join('\n');
       saveAs(new Blob([data], {type:'text/plain;charset=utf-8'}), 'palette.pal');
     },
-    handlePaletteUpload(file){
+    handlePaletteUpload(){
       var reader = new FileReader();
       reader.addEventListener('load', (event)=>{
-        let colorsFromFile = String.fromCharCode.apply(null, Buffer.from(event.target.result.split(',')[1], 'base64'));
-        this.colors = [];
+        let colorsFromFile = event.target.result;
+        this.$set(this,'colors',[]);
         for(let value of colorsFromFile.split('\n')){
+          value=value.trim();
           if(!(/^\#[0-9A-Fa-f]{6}$/.test(value))){
             return;
           }
@@ -86,11 +74,12 @@ export default{
             value:value,
           });
         }
-        console.log();
         this.update();
+        console.log(this.value);
       });
-      reader.readAsDataURL(file);
-      return false;
+      selectFiles({accept:'.pal'}).then((fileList)=>{
+        reader.readAsText(fileList[0]);
+      });
     },
     update(){
       this.$emit('input', this.colors.map((item)=>{
@@ -103,3 +92,4 @@ export default{
     }
   }
 }
+

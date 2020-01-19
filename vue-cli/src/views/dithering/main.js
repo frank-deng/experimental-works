@@ -2,6 +2,7 @@ import {saveAs} from 'file-saver';
 import fecha from 'fecha';
 import {fitRect as _fitRect} from '@/components/common.js';
 import RGBQuant from 'rgbquant';
+import KMeans from './kmeans.js';
 
 function fitRect(wdest, hdest, wsrc, hsrc) {
   if (wsrc <= wdest && hsrc <= hdest) {
@@ -119,6 +120,9 @@ export default {
   watch:{
     'formPreparation.fileList'(){
       this.$refs.formPreparation.clearValidate('fileList');
+    },
+    'formPreparation.palette'(value){
+      console.log('>',value);
     }
   },
   methods:{
@@ -141,7 +145,7 @@ export default {
       });
     },
     onSaveFile(e){
-      let filename = 'IMG_'+fecha.format(new Date(), 'YYYYMMDD_HHMMSS.png');
+      let filename = 'IMG_'+fecha.format(new Date(), 'YYYYMMDD_HHmmss.png');
       saveAs(this.$refs.canvasImage.toDataURL('image/png'), filename);
     },
     goBack(){
@@ -203,6 +207,13 @@ export default {
           Object.assign(opts,{
             colors:vm.formPreparation.palette.length,
             palette:vm.formPreparation.palette
+          });
+        break;
+        case 'kmeans':
+          let palette=KMeans(vm.formPreparation.initialColor,imageData);
+          Object.assign(opts,{
+            colors:palette.length,
+            palette
           });
         break;
       }
