@@ -8,7 +8,7 @@ export default{
   },
   mounted(){
     this.zr=ZRender.init(this.$refs.zrContainer,{
-      renderer:'svg'
+      devicePixelRatio:2 //1 will blurry on high-res display, 3 and larger will have alias on low-res display
     });
     this.draw();
   },
@@ -20,13 +20,13 @@ export default{
   methods:{
     draw(){
       let text=new ZRender.Text({
+        position:[0,15],
         style:{
           text:'666',
           textFill:'#cccccc',
           fontSize:16,
           textVerticalAlign:'middle',
-          textLineHeight:30,
-          textPosition:[0,0]
+          textLineHeight:30
         }
       });
 

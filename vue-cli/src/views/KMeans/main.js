@@ -1,3 +1,4 @@
+import {saveAs} from 'file-saver';
 import fecha from 'fecha';
 import KMeansWorker from './kmeans.worker.js';
 import {fitRect as _fitRect} from '@/components/common.js';

@@ -1,3 +1,4 @@
+import {saveAs} from 'file-saver';
 import fecha from 'fecha';
 import {fitRect as _fitRect} from '@/components/common.js';
 import RGBQuant from 'rgbquant';
@@ -22,12 +23,65 @@ export default {
   },
   data(){
     return{
+      paletteModeList:[
+        {
+          name:'自适应调色板',
+          value:'adaptive'
+        },
+        {
+          name:'固定调色板',
+          value:'fixed'
+        },
+      ],
+      ditherMethodList:[
+        {
+          name:'无',
+          value:null
+        },
+        {
+          name:'Floyd-Steinberg',
+          value:'FloydSteinberg'
+        },
+        {
+          name:'False Floyd-Steinberg',
+          value:'FalseFloydSteinberg'
+        },
+        {
+          name:'Stucki',
+          value:'Stucki'
+        },
+        {
+          name:'Atkinson',
+          value:'Atkinson'
+        },
+        {
+          name:'Jarvis',
+          value:'Jarvis'
+        },
+        {
+          name:'Burkes',
+          value:'Burkes'
+        },
+        {
+          name:'Sierra',
+          value:'Sierra'
+        },
+        {
+          name:'Two Sierra',
+          value:'TwoSierra'
+        },
+        {
+          name:'Sierra Lite',
+          value:'SierraLite'
+        },
+      ],
       formPreparation:{
         maxWidth:640,
         maxHeight:640,
-        dither:false,
         fileList:[],
+        paletteMode:'adaptive',
         colorCount:16,
+        ditherMethod:null,
         _validation:{
           fileList:{
             required:true,
@@ -41,11 +95,9 @@ export default {
           },
           maxWidth:[
             {required:true, message:'请填写图片最大宽度'},
-            {type:'number', message:'请输入数字类型的值'},
           ],
           maxHeight:[
             {required:true, message:'请填写图片最大宽度'},
-            {type:'number', message:'请输入数字类型的值'},
           ],
           colorCount:[
             {required:true, message:'请填写颜色数'}
@@ -60,10 +112,7 @@ export default {
   watch:{
     'formPreparation.fileList'(){
       this.$refs.formPreparation.clearValidate('fileList');
-    },
-    'formPreparation.colors'(){
-      this.$refs.formPreparation.clearValidate('colors');
-    },
+    }
   },
   methods:{
     updateFileList(file, fileList){
@@ -81,6 +130,7 @@ export default {
     noMoreFiles(){
       this.$alert('一次只能打开一个文件。', {
         type:'error',
+        center:true
       });
     },
     onSaveFile(e){
@@ -89,10 +139,13 @@ export default {
     },
     goBack(){
       this.displayResult = false;
-      this.resetForm();
+      this.$nextTick(()=>{
+        this.resetForm();
+      });
     },
     resetForm(){
-      this.formPreparation.filelist = [];
+      this.$refs.fileUpload.clearFiles();
+      this.formPreparation.fileList=[];
     },
   },
   mounted(){
@@ -117,6 +170,7 @@ export default {
     });
     var vm = this;
     image.addEventListener('load', function(e){
+      //Downscale image according to maximum size specified
       var destSize = fitRect(
         vm.formPreparation.maxWidth,
         vm.formPreparation.maxHeight,
@@ -132,22 +186,15 @@ export default {
       var canvasHeight = vm.$refs.canvasImage.height;
       var imageData = ctx.getImageData(0, 0, canvasWidth, canvasHeight);
 
-      //Generate palette optimized
-      var q=new RGBQuant({
+      //Specify options
+      let opts={
         colors:vm.formPreparation.colorCount
-        /*
-        colors:2,
-        palette:[
-          [0,0,0],
-          [0,255,0]
-        ]
-        */
-      });
-      q.sample(imageData);
-      console.log(q.palette());
+      };
 
-      var result=q.reduce(imageData,1,'FloydSteinberg',true);
-      console.log(result);
+      //Start processing image
+      var q=new RGBQuant(opts);
+      q.sample(imageData);
+      var result=q.reduce(imageData,1,vm.formPreparation.ditherMethod,true);
       for(let i=0; i<result.length; i++){
         imageData.data[i]=result[i];
       }

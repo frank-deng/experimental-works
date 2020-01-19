@@ -12,9 +12,6 @@ import 'element-ui/lib/theme-chalk/index.css'
 import axios from 'axios'
 Vue.prototype.axios = axios;
 
-import common from '@/components/common.js'
-Vue.use(common);
-
 Vue.config.productionTip = false
 
 import {
@@ -40,6 +37,8 @@ import {
   Dialog,
   Tabs,
   TabPane,
+	Radio,
+	RadioGroup,
 } from 'element-ui'
 Vue.use(Button);
 Vue.use(ButtonGroup);
@@ -60,6 +59,8 @@ Vue.use(TableColumn);
 Vue.use(Dialog);
 Vue.use(Tabs);
 Vue.use(TabPane);
+Vue.use(Radio);
+Vue.use(RadioGroup);
 Vue.prototype.$message = Message;
 Vue.prototype.$loading = Loading;
 Vue.prototype.$alert = MessageBox.alert;

@@ -10,25 +10,42 @@
       label-width="110px">
       <el-form-item label="选择文件" prop='fileList'>
         <el-upload action='' class='fileUpload'
+          ref='fileUpload'
           list-type='picture'
           :multiple='false'
+          accept='image/*'
           :limit='1'
           :show-file-list='true'
           :auto-upload='false'
           :on-change='updateFileList'
           :on-remove='updateFileList'
           :on-exceed='noMoreFiles'>
-          <el-button>打开图片文件</el-button>
+          <el-button :disabled='!!formPreparation.fileList.length'>打开图片文件</el-button>
         </el-upload>
       </el-form-item>
       <el-form-item label="图片最大宽度" prop='maxWidth' class='imageSizeInput'>
-        <el-input v-model.number='formPreparation.maxWidth'></el-input>
+        <el-input-number :min='2' v-model.number='formPreparation.maxWidth'></el-input-number>
       </el-form-item>
       <el-form-item label="图片最大高度" prop='maxHeight' class='imageSizeInput'>
-        <el-input v-model.number='formPreparation.maxHeight'></el-input>
+        <el-input-number :min='2' v-model.number='formPreparation.maxHeight'></el-input-number>
+      </el-form-item>
+      <el-form-item label="颜色数" prop='paletteMode'>
+        <el-radio-group v-model='formPreparation.paletteMode'>
+          <el-radio v-for='item of paletteModeList'
+            :key='item.value'
+            :label='item.value'>{{item.name}}</el-radio>
+        </el-radio-group>
       </el-form-item>
       <el-form-item label="颜色数" prop='colorCount'>
         <el-input-number v-model.number='formPreparation.colorCount' :min='2'></el-input-number>
+      </el-form-item>
+      <el-form-item label="图像抖动" prop='ditherMethod'>
+        <el-select v-model='formPreparation.ditherMethod'>
+          <el-option v-for='item of ditherMethodList'
+            :key='item.value'
+            :label='item.name'
+            :value='item.value'></el-option>
+        </el-select>
       </el-form-item>
       <el-form-item>
         <el-button type='primary' @click='doProcessFile' :disabled='loading' :icon='loading ? "el-icon-loading" : null'>
