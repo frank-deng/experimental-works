@@ -4,7 +4,6 @@
       class='formPreparation'
       ref='formPreparation'
       :model='formPreparation'
-      :rules='formPreparation._validation'
       :disabled='loading'
       size='small'
       label-width="110px">
@@ -29,15 +28,21 @@
       <el-form-item label="图片最大高度" prop='maxHeight' class='imageSizeInput'>
         <el-input-number :min='2' v-model.number='formPreparation.maxHeight'></el-input-number>
       </el-form-item>
-      <el-form-item label="颜色数" prop='paletteMode'>
+      <el-form-item label="调色板模式" prop='paletteMode'>
         <el-radio-group v-model='formPreparation.paletteMode'>
-          <el-radio v-for='item of paletteModeList'
+          <el-radio-button v-for='item of paletteModeList'
             :key='item.value'
-            :label='item.value'>{{item.name}}</el-radio>
+            :label='item.value'>{{item.name}}</el-radio-button>
         </el-radio-group>
       </el-form-item>
-      <el-form-item label="颜色数" prop='colorCount'>
+      <el-form-item label="颜色数" prop='colorCount' v-show='"adaptive"==formPreparation.paletteMode'>
         <el-input-number v-model.number='formPreparation.colorCount' :min='2'></el-input-number>
+      </el-form-item>
+      <el-form-item label="调色板" prop='palette' v-show='"fixed"==formPreparation.paletteMode'>
+        <colorManager v-model='formPreparation.palette'></colorManager>
+      </el-form-item>
+      <el-form-item label="初始颜色" prop='initialColor' v-show='"kmeans"==formPreparation.paletteMode'>
+        <colorManager v-model='formPreparation.initialColor'></colorManager>
       </el-form-item>
       <el-form-item label="图像抖动" prop='ditherMethod'>
         <el-select v-model='formPreparation.ditherMethod'>
@@ -48,7 +53,7 @@
         </el-select>
       </el-form-item>
       <el-form-item>
-        <el-button type='primary' @click='doProcessFile' :disabled='loading' :icon='loading ? "el-icon-loading" : null'>
+        <el-button type='primary' @click='doProcessFile' :disabled='!allowProcessImage' :icon='loading ? "el-icon-loading" : null'>
           {{loading ? "图片处理中" : "开始处理图片"}}
         </el-button>
       </el-form-item>

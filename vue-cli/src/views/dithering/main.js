@@ -32,6 +32,10 @@ export default {
           name:'固定调色板',
           value:'fixed'
         },
+        {
+          name:'K-Means',
+          value:'kmeans'
+        }
       ],
       ditherMethodList:[
         {
@@ -81,33 +85,36 @@ export default {
         fileList:[],
         paletteMode:'adaptive',
         colorCount:16,
-        ditherMethod:null,
-        _validation:{
-          fileList:{
-            required:true,
-            validator:(rule,value,callback)=>{
-              if(0==value.length){
-                callback(new Error('请选择文件'));
-                return;
-              }
-              callback();
-            },
-          },
-          maxWidth:[
-            {required:true, message:'请填写图片最大宽度'},
-          ],
-          maxHeight:[
-            {required:true, message:'请填写图片最大宽度'},
-          ],
-          colorCount:[
-            {required:true, message:'请填写颜色数'}
-          ]
-        },
+        palette:[],
+        initialColor:[],
+        ditherMethod:null
       },
       loading:false,
       reader:undefined,
       displayResult:false,
     };
+  },
+  created(){
+    let initialColor=[];
+    for(var i=0;i<27;i++){
+      let values=[0x00,0x7f,0xff];
+      let r = values[Math.floor(i/9)%3], g = values[Math.floor(i/3)%3], b = values[i%3];
+      initialColor.push([r,g,b]);
+    }
+    this.formPreparation.initialColor=initialColor;
+  },
+  computed:{
+    allowProcessImage(){
+      if('fixed'==this.formPreparation.paletteMode
+        && 0==this.formPreparation.palette.length){
+        return false;
+      }
+      if('kmeans'==this.formPreparation.paletteMode
+        && 0==this.formPreparation.initialColor.length){
+        return false;
+      }
+      return !this.loading && this.formPreparation.fileList.length;
+    }
   },
   watch:{
     'formPreparation.fileList'(){
@@ -187,9 +194,18 @@ export default {
       var imageData = ctx.getImageData(0, 0, canvasWidth, canvasHeight);
 
       //Specify options
-      let opts={
-        colors:vm.formPreparation.colorCount
-      };
+      let opts={};
+      switch(vm.formPreparation.paletteMode){
+        case 'adaptive':
+          opts.colors=vm.formPreparation.colorCount;
+        break;
+        case 'fixed':
+          Object.assign(opts,{
+            colors:vm.formPreparation.palette.length,
+            palette:vm.formPreparation.palette
+          });
+        break;
+      }
 
       //Start processing image
       var q=new RGBQuant(opts);
@@ -207,16 +223,11 @@ export default {
         vm.loading = false;
       })
     });
-    image.addEventListener('error', ()=>{
+    image.addEventListener('error',(e)=>{
+      console.error(e);
       vm.loading = false;
       vm.resetForm();
-      vm.$alert('图片加载失败', '错误', {
-        type:'error',
-        center:true,
-        roundButton:true,
-        showClose:false,
-        customClass:'dialogFailed',
-      });
+      vm.$message.error('图片加载失败！');
     });
   }
 }

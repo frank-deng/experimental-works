@@ -38,6 +38,7 @@ import {
   Tabs,
   TabPane,
 	Radio,
+	RadioButton,
 	RadioGroup,
 } from 'element-ui'
 Vue.use(Button);
@@ -60,6 +61,7 @@ Vue.use(Dialog);
 Vue.use(Tabs);
 Vue.use(TabPane);
 Vue.use(Radio);
+Vue.use(RadioButton);
 Vue.use(RadioGroup);
 Vue.prototype.$message = Message;
 Vue.prototype.$loading = Loading;

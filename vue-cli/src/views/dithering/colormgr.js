@@ -17,27 +17,26 @@ export default{
   },
   data(){
     return{
-      editing:false,
       colors:[],
     };
   },
   watch:{
-    value(value){
-      if (!Array.isArray(value) || !value.length){
-        return;
+    value:{
+      immediate:true,
+      handler(value){
+        if (!Array.isArray(value) || !value.length){
+          return;
+        }
+        this.colors = [];
+        for(let item of value){
+          this.colors.push({
+            value:color2hex(item[0],item[1],item[2]),
+          });
+        }
       }
-      this.colors = [];
-      for(let item of value){
-        this.colors.push({
-          value:color2hex(item[0],item[1],item[2]),
-        });
-      }
-    },
+    }
   },
   methods:{
-    startEditing(){
-      this.editing = true;
-    },
     deleteColor(idx){
       this.colors.splice(idx,1);
       this.update();
@@ -55,6 +54,7 @@ export default{
         this.update();
       }
     },
+    /*
     resetColors(){
       this.colors = [];
       for(var i=0;i<27;i++){
@@ -66,6 +66,7 @@ export default{
       }
       this.update();
     },
+    */
     downloadPalette(){
       let data = this.colors.map((item)=>{
         return item.value;
@@ -85,6 +86,8 @@ export default{
             value:value,
           });
         }
+        console.log();
+        this.update();
       });
       reader.readAsDataURL(file);
       return false;
@@ -97,9 +100,6 @@ export default{
           parseInt(item.value.slice(5,7),16),
         ];
       }));
-    },
-  },
-  mounted(){
-    this.resetColors();
-  },
+    }
+  }
 }
