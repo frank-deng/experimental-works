@@ -40,7 +40,6 @@
       </el-form-item>
       <el-form-item label="调色板" prop='palette' v-show='"fixed"==formPreparation.paletteMode'>
         <colorManager v-model='formPreparation.palette'></colorManager>
-        {{formPreparation.palette}}
       </el-form-item>
       <el-form-item label="初始颜色" prop='initialColor' v-show='"kmeans"==formPreparation.paletteMode'>
         <colorManager v-model='formPreparation.initialColor'></colorManager>

@@ -60,6 +60,10 @@ export default{
       }).join('\n');
       saveAs(new Blob([data], {type:'text/plain;charset=utf-8'}), 'palette.pal');
     },
+    clearPalette(){
+      this.colors=[];
+      this.update();
+    },
     handlePaletteUpload(){
       var reader = new FileReader();
       reader.addEventListener('load', (event)=>{
@@ -68,14 +72,13 @@ export default{
         for(let value of colorsFromFile.split('\n')){
           value=value.trim();
           if(!(/^\#[0-9A-Fa-f]{6}$/.test(value))){
-            return;
+            continue;
           }
           this.colors.push({
             value:value,
           });
         }
         this.update();
-        console.log(this.value);
       });
       selectFiles({accept:'.pal'}).then((fileList)=>{
         reader.readAsText(fileList[0]);
