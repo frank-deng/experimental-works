@@ -48,20 +48,16 @@ export default {
           value:'FloydSteinberg'
         },
         {
-          name:'False Floyd-Steinberg',
-          value:'FalseFloydSteinberg'
-        },
-        {
-          name:'Stucki',
-          value:'Stucki'
-        },
-        {
           name:'Atkinson',
           value:'Atkinson'
         },
         {
           name:'Jarvis',
           value:'Jarvis'
+        },
+        {
+          name:'Stucki',
+          value:'Stucki'
         },
         {
           name:'Burkes',
@@ -78,6 +74,10 @@ export default {
         {
           name:'Sierra Lite',
           value:'SierraLite'
+        },
+        {
+          name:'False Floyd-Steinberg',
+          value:'FalseFloydSteinberg'
         },
       ],
       formPreparation:{

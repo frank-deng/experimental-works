@@ -45,6 +45,11 @@ let router = new Router({
 			component:()=>import(/* webpackChunkName: "dithering" */'@/views/dithering/index.vue')
 		},
 		{
+			path:'/ncov',
+			name:'肺炎疫情',
+			component:()=>import(/* webpackChunkName: "ncov" */'@/views/ncov/ncov.vue')
+		},
+		{
 			path:'/testPage',
 			name:'测试页面',
 			component:()=>import(/* webpackChunkName: "testPage" */'@/views/TestPage/testPage.vue')

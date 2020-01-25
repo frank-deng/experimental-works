@@ -3,7 +3,6 @@
     <div class='graphContainerOuter'>
       <div class='graphContainer' ref='graphContainer'></div>
     </div>
-    <canvas class='drawCanvas' ref='drawCanvas'></canvas>
   </div>
 </template>
 <style scoped>
