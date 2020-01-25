@@ -40,11 +40,6 @@ let router = new Router({
 			component:()=>import(/* webpackChunkName: "DrawPad" */'@/views/DrawPad/main.vue')
 		},
 		{
-			path:'/KMeansPosterization',
-			name:'K-Means图像处理',
-			component:()=>import(/* webpackChunkName: "KMeansPosterization" */'@/views/KMeans/index.vue')
-		},
-		{
 			path:'/dithering',
 			name:'图像抖动处理',
 			component:()=>import(/* webpackChunkName: "dithering" */'@/views/dithering/index.vue')
