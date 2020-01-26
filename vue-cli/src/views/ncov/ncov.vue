@@ -5,11 +5,11 @@
 </template>
 <style scoped lang='less'>
 .新型肺炎病毒疫情{
-  background-color:#ff9999;
   .graphContainer{
-    width:800px;
-    height:600px;
-    margin:auto;
+    display:block;
+    margin:0 10px 10px 10px;
+    text-align:center;
+    background-color:#ff9999;
   }
 }
 </style>
