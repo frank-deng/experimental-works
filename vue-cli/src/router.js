@@ -50,6 +50,11 @@ let router = new Router({
 			component:()=>import(/* webpackChunkName: "ncov" */'@/views/ncov/ncov.vue')
 		},
 		{
+			path:'/minesweeper',
+			name:'扫雷',
+			component:()=>import(/* webpackChunkName: "minesweeper" */'@/views/minesweeper/minesweeper.vue')
+		},
+		{
 			path:'/testPage',
 			name:'测试页面',
 			component:()=>import(/* webpackChunkName: "testPage" */'@/views/TestPage/testPage.vue')
