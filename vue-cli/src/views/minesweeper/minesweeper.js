@@ -5,6 +5,7 @@ export default{
   },
   data(){
     return{
+      level:null,
       width:30,
       height:16,
       mines:99,
@@ -13,11 +14,68 @@ export default{
       status:'start'
     };
   },
+  computed:{
+    minesMarked(){
+      if(!Array.isArray(this.board)){
+        return 0;
+      }
+      let result=0;
+      for(let row of this.board){
+        for(let cell of row){
+          if(cell.mark){
+            result++;
+          }
+        }
+      }
+      return result;
+    }
+  },
+  watch:{
+    status(status){
+      if('success'==status){
+        this.$message.success({
+          message:'成功了',
+          showClose:true,
+          offset:60
+        });
+      }else if('failed'==status){
+        this.$message.error({
+          message:'失败了',
+          showClose:true,
+          offset:60
+        });
+      }
+    }
+  },
   created(){
-    this.restart();
+    this.restart('novice');
   },
   methods:{
-    restart(){
+    restart(level){
+      this.level=level;
+      switch(level){
+        case 'novice':
+          Object.assign(this,{
+            width:10,
+            height:10,
+            mines:10
+          });
+        break;
+        case 'medium':
+          Object.assign(this,{
+            width:16,
+            height:16,
+            mines:40
+          });
+        break;
+        case 'expert':
+          Object.assign(this,{
+            width:30,
+            height:16,
+            mines:99
+          });
+        break;
+      }
       this.steps=0;
       this.createBoard(this.width,this.height);
     },
@@ -65,18 +123,24 @@ export default{
         if(Math.random()>0.5){
           continue;
         }
-        let j=Math.floor(Math.random()*(length-i-1)+i+1);
-        let temp=cellList[i];
-        cellList[i]=cellList[j];
-        cellList[j]=temp;
+        let j=Math.floor(Math.random()*(length-i-1))+i+1;
+        if(cellList[j]){
+          let temp=cellList[i];
+          cellList[i]=cellList[j];
+          cellList[j]=temp;
+        }
       }
 
       //布雷
-      for(let i=0; i<mineCount; i++){
-        let iCell=Math.round(Math.random()*(cellList.length-1));
-        let {row,col}=cellList[iCell];
-        this.board[row][col].mine=true;
-        cellList.splice(iCell,1);
+      for(let i=0; i<mineCount && cellList.length; i++){
+        let iCell=Math.floor(Math.random()*(cellList.length-1));
+        try{
+          let {row,col}=cellList[iCell];
+          this.board[row][col].mine=true;
+          cellList.splice(iCell,1);
+        }catch(e){
+          console.error(iCell,cellList.length,cellList[iCell]);
+        }
       }
 
       //标上数字
@@ -118,6 +182,11 @@ export default{
       }
       let cell=this.board[row][col];
 
+      //不可挖开的方块
+      if(cell.mark || cell.dig){
+        return;
+      }
+
       this.steps++;
 
       //标记当前块
@@ -152,6 +221,8 @@ export default{
     },
     dig(row,col){
       let cell=this.board[row][col];
+
+      //不可挖开的方块
       if(cell.mark){
         return;
       }

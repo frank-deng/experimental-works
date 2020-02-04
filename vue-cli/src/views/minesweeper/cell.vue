@@ -19,6 +19,7 @@
   height:14px;
 }
 .minesweeper-cell{
+  overflow:hidden;
   width:20px;
   height:20px;
   line-height:20px;
