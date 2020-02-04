@@ -20,9 +20,9 @@
 }
 .minesweeper-cell{
   overflow:hidden;
-  width:20px;
-  height:20px;
-  line-height:20px;
+  width:30px;
+  height:30px;
+  line-height:30px;
   font-size:14px;
   vertical-align:middle;
   text-align:center;

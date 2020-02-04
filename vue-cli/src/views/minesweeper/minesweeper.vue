@@ -1,14 +1,13 @@
 <template>
   <div class='minesweeper' oncontextmenu='return false'>
     <div class='toolbox'>
-      <el-button-group>
-        <el-button type='primary' size='mini' @click='restart("novice")'>初级</el-button>
-        <el-button type='primary' size='mini' @click='restart("medium")'>中级</el-button>
-        <el-button type='primary' size='mini' @click='restart("expert")'>高级</el-button>
-        <el-button type='primary' size='mini' @click='restart("custom")'>自定义</el-button>
-      </el-button-group>
-      步数：{{steps}}
-      {{minesMarked}}/{{mines}}
+      <el-button type='primary' size='mini' @click='restart'>新游戏</el-button>
+      <template v-if='board'>
+        <div class='steps'>步数：{{steps}}</div>
+        <div class='mines'>{{minesMarked}}/{{mines}}</div>
+        <div class='success' v-if='"success"==status'>成功了</div>
+        <div class='failed' v-if='"failed"==status'>失败了</div>
+      </template>
     </div>
     <div class='board-container' v-if='board'>
       <div class='board-row' v-for='(rowData,row) of board'>
@@ -18,6 +17,7 @@
         </div>
       </div>
     </div>
+    <newLevel ref='newLevel'></newLevel>
   </div>
 </template>
 <style scoped lang='less'>
@@ -25,10 +25,26 @@
   .toolbox{
     text-align:center;
     margin-bottom:10px;
+    .steps,.mines,.success,.failed{
+      width:60px;
+      line-height:28px;
+      display:inline-block;
+      vertical-align:top;
+      font-size:14px;
+    }
+    .steps{
+      width:100px;
+    }
+    .success{
+      color:#00cc00;
+    }
+    .failed{
+      color:#cc0000;
+    }
   }
   .board-container{
     user-select:none;
-    margin:0 auto;
+    margin:0 auto 10px auto;
     display:table;
     table-layout:fixed;
     .board-row{

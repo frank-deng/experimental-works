@@ -1,17 +1,19 @@
 import BoardCell from './cell.vue';
+import newLevel from './newLevel.vue';
 export default{
   components:{
-    BoardCell
+    BoardCell,
+    newLevel
   },
   data(){
     return{
       level:null,
-      width:30,
-      height:16,
-      mines:99,
-      steps:0,
+      width:null,
+      height:null,
+      mines:null,
+      steps:null,
       board:null,
-      status:'start'
+      status:null
     };
   },
   computed:{
@@ -33,51 +35,23 @@ export default{
   watch:{
     status(status){
       if('success'==status){
-        this.$message.success({
-          message:'成功了',
-          showClose:true,
-          offset:60
-        });
       }else if('failed'==status){
-        this.$message.error({
-          message:'失败了',
-          showClose:true,
-          offset:60
-        });
       }
     }
   },
-  created(){
-    this.restart('novice');
-  },
   methods:{
-    restart(level){
-      this.level=level;
-      switch(level){
-        case 'novice':
-          Object.assign(this,{
-            width:10,
-            height:10,
-            mines:10
-          });
-        break;
-        case 'medium':
-          Object.assign(this,{
-            width:16,
-            height:16,
-            mines:40
-          });
-        break;
-        case 'expert':
-          Object.assign(this,{
-            width:30,
-            height:16,
-            mines:99
-          });
-        break;
-      }
-      this.steps=0;
-      this.createBoard(this.width,this.height);
+    restart(){
+      this.$refs.newLevel.open().then(resp=>{
+        Object.assign(this,{
+          level:resp.level,
+          width:resp.width,
+          height:resp.height,
+          mines:resp.mines,
+          status:'start',
+          steps:0
+        });
+        this.createBoard(this.width,this.height);
+      })
     },
     createBoard(width,height){
       let board=[];
