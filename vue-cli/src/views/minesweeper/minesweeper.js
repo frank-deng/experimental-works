@@ -1,5 +1,7 @@
 import BoardCell from './cell.vue';
 import newLevel from './newLevel.vue';
+import fecha from 'fecha';
+import {saveAs} from 'file-saver';
 export default{
   components:{
     BoardCell,
@@ -13,7 +15,10 @@ export default{
       mines:null,
       steps:null,
       board:null,
-      status:null
+      status:null,
+      startTime:null,
+      endTime:null,
+      log:[]
     };
   },
   computed:{
@@ -34,12 +39,57 @@ export default{
   },
   watch:{
     status(status){
-      if('success'==status){
-      }else if('failed'==status){
+      if('running'==status){
+        this.startTime=new Date().getTime();
+      }else if('failed'==status || 'success'==status){
+        this.endTime=new Date().getTime();
+        this.writeLog();
       }
     }
   },
+  created(){
+    this.readLog();
+  },
   methods:{
+    readLog(){
+      try{
+        let logData=localStorage.getItem('minesweeper_log');
+        if(!logData){
+          return;
+        }
+        this.log=JSON.parse(logData);
+      }catch(e){
+        console.error(e);
+      }
+    },
+    writeLog(){
+      this.log.push({
+        level:this.level,
+        width:this.width,
+        height:this.height,
+        mines:this.mines,
+        startTime:this.startTime,
+        endTime:this.endTime,
+        status:this.status,
+        steps:this.steps
+      });
+      localStorage.setItem('minesweeper_log',JSON.stringify(this.log));
+    },
+    exportLog(){
+      let lines=[
+        '"Level","Start Time","Time Elapsed","Steps","Success"'
+      ]
+      for(let line of this.log){
+        if('custom'==line.level){
+          continue;
+        }
+        let startTime=fecha.format(line.startTime,'YYYY-MM-DD HH:mm:ss'),
+          elapsedSeconds=Math.round((line.endTime-line.startTime)/1000),
+          statusText=('success'==line.status ? 'Y' : 'N');
+        lines.push(`"${line.level}","${startTime}",${elapsedSeconds},${line.steps},${statusText}`);
+      }
+      saveAs(new Blob([lines.join('\r\n')]),'minesweeper.csv');
+    },
     restart(){
       this.$refs.newLevel.open().then(resp=>{
         Object.assign(this,{
@@ -48,6 +98,8 @@ export default{
           height:resp.height,
           mines:resp.mines,
           status:'start',
+          startTime:null,
+          endTime:null,
           steps:0
         });
         this.createBoard(this.width,this.height);

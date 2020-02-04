@@ -1,15 +1,16 @@
 <template>
   <div class='minesweeper' oncontextmenu='return false'>
-    <div class='toolbox'>
-      <el-button type='primary' size='mini' @click='restart'>新游戏</el-button>
-      <template v-if='board'>
-        <div class='steps'>步数：{{steps}}</div>
-        <div class='mines'>{{minesMarked}}/{{mines}}</div>
-        <div class='success' v-if='"success"==status'>成功了</div>
-        <div class='failed' v-else-if='"failed"==status'>失败了</div>
-        <div class='statusSpacer' v-else></div>
-      </template>
-    </div>
+    <div class='toolbox'><!--
+      --><el-button type='primary' size='mini' @click='restart'>新游戏</el-button><!--
+      --><el-button size='mini' @click='exportLog'>游戏记录</el-button><!--
+      --><template v-if='board'><!--
+        --><div class='steps'>步数：{{steps}}</div><!--
+        --><div class='mines'>{{minesMarked}}/{{mines}}</div><!--
+        --><div class='success' v-if='"success"==status'>成功了</div><!--
+        --><div class='failed' v-else-if='"failed"==status'>失败了</div><!--
+        --><div class='statusSpacer' v-else></div><!--
+      --></template><!--
+    --></div>
     <div class='board-container' v-if='board'>
       <div class='board-row' v-for='(rowData,row) of board'>
         <div class='board-cell' v-for='(cell,col) of rowData'>
