@@ -1,6 +1,14 @@
+import BoardCell from './cell.vue';
 export default{
+  components:{
+    BoardCell
+  },
   data(){
     return{
+      width:30,
+      height:16,
+      mines:99,
+      steps:0,
       board:null,
       status:'start'
     };
@@ -10,7 +18,8 @@ export default{
   },
   methods:{
     restart(){
-      this.createBoard(16,16);
+      this.steps=0;
+      this.createBoard(this.width,this.height);
     },
     createBoard(width,height){
       let board=[];
@@ -103,37 +112,30 @@ export default{
       }
       return count;
     },
-    displayText(cell){
-      if(cell.mark){
-        return '旗';
-      }
-      if(!cell.dig && ('running'==this.status || 'start'==this.status)){
-        return '';
-      }
-      if(cell.mine){
-        return '雷';
-      }
-      if(cell.counter>0){
-        return cell.counter;
-      }
-    },
     operate(row,col,e){
       if('start'!=this.status && 'running'!=this.status){
         return;
       }
-
       let cell=this.board[row][col];
+
+      this.steps++;
+
+      //标记当前块
       if(e.shiftKey){
         cell.mark=!cell.mark;
-      }else if(!cell.mark){
+        return;
+      }
+      
+      //挖开当前块
+      if(!cell.mark){
         this.dig(row,col);
       }
 
-      if('running'==this.status){
-        //处理更多雷
-        while(this.autoproc()){}
+      //处理更多雷
+      while('running'==this.status && this.autoproc()){}
 
-        //当前局是否完成
+      //当前局是否完成
+      if('running'==this.status){
         let finished=true;
         for(let row of this.board){
           for(let cell of row){
@@ -156,7 +158,7 @@ export default{
 
       //第一次挖开
       if('start'==this.status){
-        this.initMines(40,row,col);
+        this.initMines(this.mines,row,col);
         this.status='running';
       }
 

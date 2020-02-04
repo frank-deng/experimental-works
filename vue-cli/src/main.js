@@ -69,6 +69,19 @@ Vue.prototype.$alert = MessageBox.alert;
 Vue.prototype.$prompt = MessageBox.prompt;
 Vue.prototype.$confirm = MessageBox.confirm;
 
+//Load font-awesome
+import { library } from '@fortawesome/fontawesome-svg-core'
+import {
+  faFlag,
+  faBomb,
+  faTimes,
+} from '@fortawesome/free-solid-svg-icons'
+import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
+library.add(faFlag);
+library.add(faBomb);
+library.add(faTimes);
+Vue.component('font-awesome-icon',FontAwesomeIcon);
+
 new Vue({
   router,
   render: h => h(App)
