@@ -6,7 +6,8 @@
         <div class='steps'>步数：{{steps}}</div>
         <div class='mines'>{{minesMarked}}/{{mines}}</div>
         <div class='success' v-if='"success"==status'>成功了</div>
-        <div class='failed' v-if='"failed"==status'>失败了</div>
+        <div class='failed' v-else-if='"failed"==status'>失败了</div>
+        <div class='statusSpacer' v-else></div>
       </template>
     </div>
     <div class='board-container' v-if='board'>
@@ -25,7 +26,11 @@
   .toolbox{
     text-align:center;
     margin-bottom:10px;
-    .steps,.mines,.success,.failed{
+    .steps,
+    .mines,
+    .success,
+    .failed,
+    .statusSpacer{
       width:60px;
       line-height:28px;
       display:inline-block;

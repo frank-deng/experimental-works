@@ -5,8 +5,10 @@
     title='新游戏'
     :center='true'
     :close-on-click-modal='false'
+    custom-class='dialogMinesweeperNewGame'
+    width='320px'
     :append-to-body='true'>
-    <el-form size='mini'>
+    <el-form size='mini' label-width='40px'>
       <el-form-item label='难度'>
         <el-radio-group v-model='formData.level'>
           <el-radio label='novice'>初级</el-radio>
@@ -32,5 +34,17 @@
     </template>
   </el-dialog>
 </template>
+<style lang='less'>
+.dialogMinesweeperNewGame{
+  .el-dialog__body{
+    padding-top:0;
+    padding-bottom:0;
+  }
+  .el-radio{
+    line-height:28px;
+    margin-right:20px;
+  }
+}
+</style>
 <script src='./newLevel.js'></script>
 
