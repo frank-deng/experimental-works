@@ -19,6 +19,7 @@
         </div>
       </div>
     </div>
+    <div class='hint'>本页面使用LocalStorage存储您的游戏记录，包括开始时间、结束时间、步数、是否成功。</div>
     <newLevel ref='newLevel'></newLevel>
   </div>
 </template>
@@ -63,6 +64,12 @@
       display:inline-block;
       vertical-align:top;
     }
+  }
+  .hint{
+    text-align:center;
+    font-size:12px;
+    line-height:16px;
+    color:#aaaaaa;
   }
 }
 </style>

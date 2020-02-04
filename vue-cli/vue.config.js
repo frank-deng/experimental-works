@@ -2,7 +2,7 @@ module.exports = {
   publicPath: './',
   outputDir: "dist",
   assetsDir: "assets",
-  filenameHashing: false,
+  filenameHashing: true,
   lintOnSave: true,
   runtimeCompiler: false,
   productionSourceMap: false,
