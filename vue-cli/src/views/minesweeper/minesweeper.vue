@@ -2,7 +2,7 @@
   <div class='minesweeper' oncontextmenu='return false'>
     <div class='toolbox'><!--
       --><el-button type='primary' size='mini' @click='restart'>新游戏</el-button><!--
-      --><el-button size='mini' @click='exportLog'>游戏记录</el-button><!--
+      --><el-button size='mini' @click='openGameReport'>游戏记录</el-button><!--
       --><template v-if='board'><!--
         --><div class='steps'>步数：{{steps}}</div><!--
         --><div class='mines'>{{minesMarked}}/{{mines}}</div><!--
@@ -21,6 +21,7 @@
     </div>
     <div class='hint'>本页面使用LocalStorage存储您的游戏记录，包括开始时间、结束时间、步数、是否成功。</div>
     <newLevel ref='newLevel'></newLevel>
+    <gameReport ref='gameReport'></gameReport>
   </div>
 </template>
 <style scoped lang='less'>

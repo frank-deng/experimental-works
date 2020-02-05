@@ -1,11 +1,11 @@
 import BoardCell from './cell.vue';
 import newLevel from './newLevel.vue';
-import fecha from 'fecha';
-import {saveAs} from 'file-saver';
+import gameReport from './gameReport.vue';
 export default{
   components:{
     BoardCell,
-    newLevel
+    newLevel,
+    gameReport
   },
   data(){
     return{
@@ -40,7 +40,6 @@ export default{
   watch:{
     status(status){
       if('running'==status){
-        this.startTime=new Date().getTime();
       }else if('failed'==status || 'success'==status){
         this.endTime=new Date().getTime();
         this.writeLog();
@@ -75,21 +74,11 @@ export default{
       });
       localStorage.setItem('minesweeper_log',JSON.stringify(this.log));
     },
-    exportLog(){
-      let lines=[
-        '"Level","Start Time","Time Elapsed","Steps","Success"'
-      ]
-      for(let line of this.log){
-        if('custom'==line.level){
-          continue;
-        }
-        let startTime=fecha.format(line.startTime,'YYYY-MM-DD HH:mm:ss'),
-          elapsedSeconds=Math.round((line.endTime-line.startTime)/1000),
-          statusText=('success'==line.status ? 'Y' : 'N');
-        lines.push(`"${line.level}","${startTime}",${elapsedSeconds},${line.steps},${statusText}`);
-      }
-      saveAs(new Blob([lines.join('\r\n')]),'minesweeper.csv');
+    openGameReport(){
+      this.$refs.gameReport.open(this.log);
     },
+    /*
+    */
     restart(){
       this.$refs.newLevel.open().then(resp=>{
         Object.assign(this,{
@@ -207,6 +196,10 @@ export default{
         return;
       }
       let cell=this.board[row][col];
+
+      if(!this.startTime){
+        this.startTime=new Date().getTime();
+      }
 
       //不可挖开的方块
       if(cell.mark || cell.dig){
