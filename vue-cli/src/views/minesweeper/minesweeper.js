@@ -77,8 +77,6 @@ export default{
     openGameReport(){
       this.$refs.gameReport.open(this.log);
     },
-    /*
-    */
     restart(){
       this.$refs.newLevel.open().then(resp=>{
         Object.assign(this,{
@@ -323,6 +321,11 @@ export default{
               this.dig(row,col);
             }
           });
+
+          //挖到雷了
+          if('failed'==this.status){
+            return false;
+          }
         }
       }
 

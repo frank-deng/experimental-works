@@ -1,15 +1,9 @@
 <template>
   <div class='minesweeper-cell' :class='cellClass'>
-    <template v-if='"failed"==status'>
-      <font-awesome-icon icon='times' class='wrong-mark' v-if='cell.mark && !cell.mine'>X</font-awesome-icon>
-      <font-awesome-icon icon='flag' v-else-if='cell.mark && cell.mine'></font-awesome-icon>
-      <font-awesome-icon icon='bomb' class='mine' v-else-if='cell.mine'></font-awesome-icon>
-      <span v-else-if='cell.dig'>{{cell.counter || ''}}</span>
-    </template>
-    <template v-else>
-      <font-awesome-icon icon='flag' v-if='cell.mark'></font-awesome-icon>
-      <span v-else-if='cell.dig'>{{cell.counter || ''}}</span>
-    </template>
+    <span v-show='!value.mine && value.dig'>{{value.counter || ''}}</span>
+    <font-awesome-icon icon='times' class='wrong-mark' v-show='wrongMark'></font-awesome-icon>
+    <font-awesome-icon icon='flag' v-show='showMark'></font-awesome-icon>
+    <font-awesome-icon icon='bomb' class='mine' v-show='showMine && value.mine && !value.mark'></font-awesome-icon>
   </div>
 </template>
 <style scoped lang='less'>
@@ -55,14 +49,20 @@ export default{
     status:null
   },
   computed:{
-    cell(){
-      return this.value;
-    },
     cellClass(){
       return{
         active:('start'==this.status||'running'==this.status),
         undig:!this.value.dig
       }
+    },
+    showMine(){
+      return 'failed'==this.status;
+    },
+    showMark(){
+      return !this.value.dig && this.value.mark && !this.wrongMark;
+    },
+    wrongMark(){
+      return !this.value.dig && this.showMine && this.value.mark && !this.value.mine;
     }
   }
 }
