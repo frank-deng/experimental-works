@@ -45,10 +45,42 @@ let router = new Router({
 			component:()=>import(/* webpackChunkName: "dithering" */'@/views/dithering/index.vue')
 		},
 		{
-			path:'/ncov',
-			name:'肺炎疫情',
-			component:()=>import(/* webpackChunkName: "ncov" */'@/views/ncov/ncov.vue')
-		},
+			path:'/routerGuard',
+			name:'子页面处理-框框',
+			component:()=>import(/* webpackChunkName: "routerGuardFrame" */'@/views/routerGuard/frame.vue'),
+      children:[
+        {
+          path:'/routerGuard',
+          name:'子页面处理',
+          component:()=>import(/* webpackChunkName: "routerGuard" */'@/views/routerGuard/master.vue'),
+          children:[
+            {
+              path:'slave1',
+              name:'1号子页面',
+              component:()=>import(/* webpackChunkName: "routerGuardSlave1" */'@/views/routerGuard/slave1.vue'),
+              meta:{
+                permission:1
+              }
+            },
+            {
+              path:'slave2',
+              name:'2号子页面',
+              component:()=>import(/* webpackChunkName: "routerGuardSlave2" */'@/views/routerGuard/slave2.vue'),
+              meta:{
+                permission:2
+              }
+            },
+            {
+              path:'slave3',
+              component:()=>import(/* webpackChunkName: "routerGuardSlave3" */'@/views/routerGuard/slave3.vue'),
+              meta:{
+                permission:3
+              }
+            }
+          ]
+        }
+      ]
+    },
 		{
 			path:'/minesweeper',
 			name:'扫雷',
@@ -61,9 +93,14 @@ let router = new Router({
 		}
 	],
 });
-router.beforeEach((to, from, next)=>{
-	document.title = to.name;
-	next();
+router.afterEach((to, from)=>{
+  let title='';
+  for(let item of to.matched){
+    if(item.name){
+      title=item.name;
+    }
+  }
+	document.title = title;
 });
 export default router;
 
