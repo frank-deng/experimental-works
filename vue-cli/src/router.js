@@ -4,50 +4,50 @@ import Router from 'vue-router'
 Vue.use(Router);
 let router = new Router({
   routes: [
-		{
-			path:'/',
-			name:'首页',
-			component:require('@/views/IndexPage/IndexPage.vue').default,
-		},
-		{
-			path:'/zrender',
-			name:'ZRender Try',
-			component:()=>import(/* webpackChunkName: "zrender-try" */'@/views/ZRenderTry/main.vue')
-		},
-		{
-			path:'/dtmf',
-			name:'DTMF音效',
-			component:()=>import(/* webpackChunkName: "dtmf" */'@/views/DTMFEffect/index.vue')
-		},
-		{
-			path:'/WebAudioAPI',
-			name:'WebAudioAPI实验',
-			component:()=>import(/* webpackChunkName: "WebAudioAPI" */'@/views/WebAudioAPI/WebAudioAPI.vue')
-		},
-		{
-			path:'/MusicBox',
-			name:'音乐盒',
-			component:()=>import(/* webpackChunkName: "MusicBox" */'@/views/MusicBox/index.vue')
-		},
-		{
-			path:'/WebGLTry',
-			name:'WebGL实验',
-			component:()=>import(/* webpackChunkName: "WebGLTry" */'@/views/WebGLTry/index.vue')
-		},
-		{
-			path:'/DrawPad',
-			name:'画画板',
-			component:()=>import(/* webpackChunkName: "DrawPad" */'@/views/DrawPad/main.vue')
-		},
-		{
-			path:'/dithering',
-			name:'图像抖动处理',
-			component:()=>import(/* webpackChunkName: "dithering" */'@/views/dithering/index.vue')
-		},
-		{
-			path:'/routerGuard',
-			name:'子页面处理-框框',
-			component:()=>import(/* webpackChunkName: "routerGuardFrame" */'@/views/routerGuard/frame.vue'),
+    {
+      path:'/',
+      name:'首页',
+      component:require('@/views/IndexPage/IndexPage.vue').default,
+    },
+    {
+      path:'/zrender',
+      name:'ZRender Try',
+      component:()=>import(/* webpackChunkName: "zrender-try" */'@/views/ZRenderTry/main.vue')
+    },
+    {
+      path:'/dtmf',
+      name:'DTMF音效',
+      component:()=>import(/* webpackChunkName: "dtmf" */'@/views/DTMFEffect/index.vue')
+    },
+    {
+      path:'/WebAudioAPI',
+      name:'WebAudioAPI实验',
+      component:()=>import(/* webpackChunkName: "WebAudioAPI" */'@/views/WebAudioAPI/WebAudioAPI.vue')
+    },
+    {
+      path:'/MusicBox',
+      name:'音乐盒',
+      component:()=>import(/* webpackChunkName: "MusicBox" */'@/views/MusicBox/index.vue')
+    },
+    {
+      path:'/WebGLTry',
+      name:'WebGL实验',
+      component:()=>import(/* webpackChunkName: "WebGLTry" */'@/views/WebGLTry/index.vue')
+    },
+    {
+      path:'/DrawPad',
+      name:'画画板',
+      component:()=>import(/* webpackChunkName: "DrawPad" */'@/views/DrawPad/main.vue')
+    },
+    {
+      path:'/dithering',
+      name:'图像抖动处理',
+      component:()=>import(/* webpackChunkName: "dithering" */'@/views/dithering/index.vue')
+    },
+    {
+      path:'/routerGuard',
+      name:'子页面处理-框框',
+      component:()=>import(/* webpackChunkName: "routerGuardFrame" */'@/views/routerGuard/frame.vue'),
       children:[
         {
           path:'/routerGuard',
@@ -81,17 +81,22 @@ let router = new Router({
         }
       ]
     },
-		{
-			path:'/minesweeper',
-			name:'扫雷',
-			component:()=>import(/* webpackChunkName: "minesweeper" */'@/views/minesweeper/minesweeper.vue')
-		},
-		{
-			path:'/testPage',
-			name:'测试页面',
-			component:()=>import(/* webpackChunkName: "testPage" */'@/views/TestPage/testPage.vue')
-		}
-	],
+    {
+      path:'/minesweeper',
+      name:'扫雷',
+      component:()=>import(/* webpackChunkName: "minesweeper" */'@/views/minesweeper/minesweeper.vue')
+    },
+    {
+      path:'/zonePlate',
+      name:'Zone Plate',
+      component:()=>import(/* webpackChunkName: "zonePlate" */'@/views/zonePlate/zonePlate.vue')
+    },
+    {
+      path:'/testPage',
+      name:'测试页面',
+      component:()=>import(/* webpackChunkName: "testPage" */'@/views/TestPage/testPage.vue')
+    }
+  ],
 });
 router.afterEach((to, from)=>{
   let title='';
@@ -100,7 +105,7 @@ router.afterEach((to, from)=>{
       title=item.name;
     }
   }
-	document.title = title;
+  document.title = title;
 });
 export default router;
 
