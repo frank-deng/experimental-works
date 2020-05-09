@@ -1,0 +1,1 @@
+(window["webpackJsonp"]=window["webpackJsonp"]||[]).push([["routerGuardSlave2"],{"828b":function(e,n,t){"use strict";t.r(n);var a=function(){var e=this,n=e.$createElement,t=e._self._c||n;return t("div",{staticClass:"slave2"},[e._v("\n  二号子页面\n")])},l=[],s=t("2877"),r={},u=Object(s["a"])(r,a,l,!1,null,null,null);n["default"]=u.exports}}]);
