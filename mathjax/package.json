@@ -1,0 +1,16 @@
+{
+  "name": "try-mathjax",
+  "version": "0.1.0",
+  "description": "Testing MathJAX",
+  "main": "index.js",
+  "scripts": {
+    "test": "node ./index.js"
+  },
+  "author": "frank-deng",
+  "license": "ISC",
+  "dependencies": {
+    "jsdom": "^16.3.0",
+    "markdown": "^0.5.0",
+    "mathjax-full": "^3.0.5"
+  }
+}
