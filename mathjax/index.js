@@ -31,7 +31,7 @@ for(let item of containers){
   let svg=item.querySelector('svg');
   let width=parseFloat(svg.getAttribute('width'));
   let height=parseFloat(svg.getAttribute('height'));
-  width*=10; height*=10;
+  width*=16; height*=16;
   svg.setAttribute('width',`${width}px`);
   svg.setAttribute('height',`${height}px`);
   fs.writeFileSync(`${idx}.svg`, '<?xml version="1.0" encoding="UTF-8" standalone="no"?>\n'+item.innerHTML);
