@@ -1,6 +1,8 @@
 const processDocument=require('./processor');
 const fs=require('fs');
 const rimraf=require('rimraf');
+const ejs=require('ejs');
+const iconv=require('iconv-lite');
 
 let config={
   "source":"_posts",
@@ -45,11 +47,13 @@ async function processPost(name){
     })
   ]);
 
+  //Get template
   let template=(localConfig.layout || config.layout);
   if(template){
     template=__dirname+'/'+template;
   }
 
+  //Process document
   let result=await processDocument(content,{
     imagePrefix:config.equationDir+'/',
     targetEncoding:config.targetEncoding,
@@ -71,7 +75,8 @@ async function processPost(name){
 
   //Output title
   return {
-    title:(localConfig.title || name)
+    title:(localConfig.title || name),
+    link:`${name}.htm`
   };
 }
 async function main(){
@@ -112,7 +117,23 @@ async function main(){
   });
 
   //Process all the posts
-  await Promise.all(posts.map(postName=>processPost(postName)));
+  let postList=await Promise.all(posts.map(postName=>processPost(postName)));
+
+  //Generate index page
+  let indexPage = await new Promise((resolve,reject)=>{
+    ejs.renderFile(__dirname+'/'+config.index,{
+      encoding:config.targetEncoding,
+      postList
+    },(e,data)=>(e?reject(e):resolve(data)));
+  });
+  if(config.targetEncoding){
+    indexPage=iconv.encode(indexPage,config.targetEncoding);
+  }
+  await new Promise((resolve,reject)=>{
+    fs.writeFile(target+`/index.htm`,
+      indexPage,
+      'binary',(e)=>(e?reject(e):resolve(e)));
+  });
 }
 
 try{
