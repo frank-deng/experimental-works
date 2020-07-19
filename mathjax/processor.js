@@ -21,7 +21,7 @@ const svg = new SVG({fontCache:'none', internalSpeechTitles:false});
 
 function svg2gif(svgData){
   return new Promise((resolve,reject)=>{
-    let convert=spawn('convert',['-background','none','SVG:-','GIF:-']);
+    let convert=spawn('convert',['-background','none','-','GIF:-']);
     let errorMsg='', result=Buffer.alloc(0,0,'binary');
     convert.stderr.on('data', function(data){
       errorMsg+=data;
@@ -53,7 +53,7 @@ function processHTML(content,params={}){
     let svg=item.querySelector('svg');
     let width=parseFloat(svg.getAttribute('width'));
     let height=parseFloat(svg.getAttribute('height'));
-    let scale=params.scale || 8;
+    let scale=params.scale || 16;
     svg.setAttribute('width',`${width*scale}px`);
     svg.setAttribute('height',`${height*scale}px`);
     let svgContent='<?xml version="1.0" encoding="UTF-8" standalone="no"?>\n'+item.innerHTML;
@@ -72,11 +72,19 @@ function processHTML(content,params={}){
   }
 
   return Promise.all(svgList.map(data=>svg2gif(data.data))).then((resp)=>{
-    let len=resp.length;
+    let len=resp.length, imgList=[];
     for(let i=0; i<len; i++){
-      svgList[i].data=resp[i];
+      imgList.push({
+        ...svgList[i],
+        data:resp[i]
+      });
     }
-    return svgList;
+    return imgList;
+  }).then((imgList)=>{
+    return {
+      html:document.body.innerHTML,
+      image:imgList
+    };
   });
 }
 module.exports=async function(content,params={}){
@@ -88,4 +96,3 @@ module.exports=async function(content,params={}){
   });
 }
 
-//convert -background none input.svg output.gif
