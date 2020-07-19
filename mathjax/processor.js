@@ -1,5 +1,8 @@
+const uuid=require('uuid').v4;
 const Markdown=require('markdown-it')();
 const JSDOM=require('jsdom').JSDOM;
+const ejs=require('ejs');
+const iconv=require('iconv-lite');
 
 //Tools for calling imagemagick convert
 const util = require('util');
@@ -41,7 +44,7 @@ function svg2gif(svgData){
     convert.stdin.end();
   });
 }
-function processHTML(content,params={}){
+async function processHTML(content,params={}){
   //Replace equations with corresponding images
   var dom=new JSDOM(content);
   var document=dom.window.document;
@@ -60,7 +63,7 @@ function processHTML(content,params={}){
     
     //Replace svg with image tag
     let img=document.createElement('img');
-    let imgPath=`${params.imagePrefix||''}equation${svgList.length}.gif`;
+    let imgPath=`${params.imagePrefix||''}equation-${uuid()}.gif`;
     img.setAttribute('src',imgPath);
     item.parentNode.replaceChild(img,item);
 
@@ -71,27 +74,36 @@ function processHTML(content,params={}){
     });
   }
 
-  return Promise.all(svgList.map(data=>svg2gif(data.data))).then((resp)=>{
-    let len=resp.length, imgList=[];
-    for(let i=0; i<len; i++){
-      imgList.push({
-        ...svgList[i],
-        data:resp[i]
-      });
-    }
-    return imgList;
-  }).then((imgList)=>{
-    return {
-      html:document.body.innerHTML,
-      image:imgList
-    };
-  });
+  let resp=await Promise.all(svgList.map(item=>svg2gif(item.data)));
+  let len=resp.length, imgList=[];
+  for(let i=0; i<len; i++){
+    imgList.push({
+      ...svgList[i],
+      data:resp[i]
+    });
+  }
+
+  //Add template
+  let html=document.body.innerHTML;
+  if(params.template){
+    html=await new Promise((resolve,reject)=>{
+      ejs.renderFile(params.template,{
+        encoding:params.targetEncoding,
+        title:params.title,
+        content:html
+      },(e,data)=>(e?reject(e):resolve(data)));
+    });
+  }
+  return {
+    html:params.targetEncoding ? iconv.encode(html,params.targetEncoding) : html,
+    image:imgList
+  };
 }
 module.exports=async function(content,params={}){
   var contentHTML=Markdown.render(content);
   var html = mathjax.document(contentHTML, {InputJax: tex, OutputJax: svg});
   html.render();
-  return processHTML(adaptor.outerHTML(adaptor.root(html.document)),{
+  return await processHTML(adaptor.outerHTML(adaptor.root(html.document)),{
     ...params
   });
 }
