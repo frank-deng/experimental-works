@@ -1,21 +1,17 @@
 <template>
 	<div class='mainFrame'>
-		<ul>
-			<li v-for='(route, $index) of routeInfo'>
-				<el-button type='primary' @click='navigate($index)'>{{route.name}}</el-button>
-			</li>
-		</ul>
+    <el-button
+      v-for='(route, $index) of routeInfo' :key='route.name'
+      type='primary'
+      @click='navigate($index)'>{{route.name}}</el-button>
 	</div>
 </template>
 <script src='./IndexPage.js'></script>
-<style scoped>
-.mainFrame {
+<style scoped lang='less'>
+.mainFrame{
 	padding: 8px;
-}
-.el-button {
-	width: 100%;
-}
-li {
-	margin: 0 0 10px 0;
+  .el-button{
+    margin: 0 4px 10px 4px;
+  }
 }
 </style>

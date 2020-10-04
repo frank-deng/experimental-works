@@ -46,12 +46,12 @@ let router = new Router({
     },
     {
       path:'/routerGuard',
-      name:'子页面处理-框框',
+      name:'子页面处理',
       component:()=>import(/* webpackChunkName: "routerGuardFrame" */'@/views/routerGuard/frame.vue'),
       children:[
         {
           path:'/routerGuard',
-          name:'子页面处理',
+          name:'子页面处理-正式页面',
           component:()=>import(/* webpackChunkName: "routerGuard" */'@/views/routerGuard/master.vue'),
           children:[
             {
@@ -90,6 +90,11 @@ let router = new Router({
       path:'/zonePlate',
       name:'Zone Plate',
       component:()=>import(/* webpackChunkName: "zonePlate" */'@/views/zonePlate/zonePlate.vue')
+    },
+    {
+      path:'/arranger',
+      name:'排班表',
+      component:()=>import(/* webpackChunkName: "zonePlate" */'@/views/arranger/arranger.vue')
     },
     {
       path:'/testPage',

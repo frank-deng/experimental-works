@@ -61,7 +61,9 @@ export default{
 		},
 	},
 	mounted(){
-		this.audioCtx = new AudioContext();
+		this.audioCtx = new AudioContext({
+      sampleRate:8000
+    });
 
 		this.gainMaster = this.audioCtx.createGain();
 		this.gainMaster.gain.setValueAtTime(this.volume / 2, this.audioCtx.currentTime);
