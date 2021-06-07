@@ -82,11 +82,6 @@ let router = new Router({
       ]
     },
     {
-      path:'/minesweeper',
-      name:'扫雷',
-      component:()=>import(/* webpackChunkName: "minesweeper" */'@/views/minesweeper/minesweeper.vue')
-    },
-    {
       path:'/zonePlate',
       name:'Zone Plate',
       component:()=>import(/* webpackChunkName: "zonePlate" */'@/views/zonePlate/zonePlate.vue')
