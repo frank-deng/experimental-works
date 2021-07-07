@@ -1,8 +1,10 @@
 <template>
   <div class='testPage'>
-    <div class='graphContainerOuter'>
-      <div class='graphContainer' ref='graphContainer'></div>
-    </div>
+    <el-button @click='openDialog'>开对话框了</el-button>
+    <Dialog :visible='dialogVisible'>
+      <p>哈哈哈哈</p>
+      <el-button @click='closeDialog'>关闭</el-button>
+    </Dialog>
   </div>
 </template>
 <style scoped>
@@ -22,4 +24,26 @@
   border:1px solid #000000;
 }
 </style>
-<script src='./testPage.js'></script>
+<script>
+import Dialog from '@/components/dialog';
+export default{
+  components:{
+    Dialog
+  },
+  data(){
+    return{
+      dialogVisible:false
+    };
+  },
+  mounted(){
+  },
+  methods:{
+    openDialog(){
+      this.dialogVisible=true;
+    },
+    closeDialog(){
+      this.dialogVisible=false;
+    }
+  }
+}
+</script>
