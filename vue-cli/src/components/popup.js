@@ -1,25 +1,50 @@
 import Vue from 'vue';
-import popupContainer from './popupContainer.vue';
 export default{
     render(){
         return null;
     },
     props:{
-        ref:null
+        reference:null,
+        visible:{
+            type:Boolean,
+            default:false
+        },
+        destroyOnClose:{
+            type:Boolean,
+            default:false
+        }
     },
     data(){
         return{
             instance:null
         };
     },
+    watch:{
+        visible(visible){
+            if(!visible){
+                if(this.destroyOnClose){
+                    this.destroyInstance();
+                }else{
+                    this.instance.visible=visible;
+                }
+            }else{
+                if(!this.instance){
+                    this.createInstance(visible);
+                }else{
+                    this.instance.visible=visible;
+                }
+            }
+        }
+    },
     beforeDestroy(){
-        this.destroyPopup();
+        this.destroyInstance();
     },
     methods:{
-        createPopup(){
+        createInstance(visible){
             let instance=new (Vue.extend(popupContainer))({
                 propsData:{
-                    visible
+                    visible,
+                    reference:this.reference
                 }
             });
             instance.$slots=this.$slots;
@@ -27,8 +52,9 @@ export default{
             instance.$mount();
             this.instance=instance;
             document.body.appendChild(instance.$el);
+            this.doLayout();
         },
-        destroyPopup(){
+        destroyInstance(){
             if(!this.instance){
                 return;
             }
@@ -36,6 +62,12 @@ export default{
             this.instance.$destroy();
             this.instance=null;
             document.body.removeChild(element);
+        },
+        doLayout(){
+            if(!this.instance){
+                return;
+            }
+            this.instance.doLayout();
         }
     }
 }

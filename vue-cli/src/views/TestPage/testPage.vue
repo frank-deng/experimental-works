@@ -1,8 +1,10 @@
 <template>
   <div class='testPage'>
     <el-button @click='openDialog'>开对话框了</el-button>
-    <Dialog :visible='dialogVisible'>
+    <Dialog :visible='dialogVisible' destroyOnClose>
       <p>哈哈哈哈</p>
+      <input v-model='inputContent'/>
+      <p>{{inputContent}}</p>
       <el-button @click='closeDialog'>关闭</el-button>
     </Dialog>
   </div>
@@ -32,8 +34,15 @@ export default{
   },
   data(){
     return{
-      dialogVisible:false
+      dialogVisible:false,
+      showPopup:false,
+      inputContent:'inputContent'
     };
+  },
+  watch:{
+    inputContent(){
+      console.log(this.inputContent);
+    }
   },
   mounted(){
   },
