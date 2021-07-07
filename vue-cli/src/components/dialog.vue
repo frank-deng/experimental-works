@@ -1,19 +1,12 @@
+<template>
+    <div class='dialog-container'
+        ref='dialogContainer'
+        v-show='this.visible'>
+        <slot v-if='this.visible || !this.destroyOnClose'></slot>
+    </div>
+</template>
 <script>
 export default {
-    render(h){
-        if(!this.initialized){
-            return null;
-        }
-        return h('div',{
-            ref:'dialogContainer',
-            class:{
-                'dialog-container':true
-            },
-            style:{
-                display:this.visible ? 'block' : 'none'
-            }
-        }, !this.visible && this.destroyOnClose ? null : this.$slots.default);
-    },
     props:{
         visible:{
             type:Boolean,
@@ -26,22 +19,23 @@ export default {
     },
     data(){
         return{
-            initialized:false
+            container:null
         };
     },
     watch:{
         visible(visible){
-            if(visible && !this.initialized){
-                this.initialized=true;
+            if(visible && !this.container){
                 this.$nextTick().then(()=>{
-                    document.body.appendChild(this.$refs.dialogContainer);
+                    this.container=this.$refs.dialogContainer;
+                    document.body.appendChild(this.container);
                 });
             }
         }
     },
     beforeDestroy(){
-        if(this.initialized){
-            document.body.removeChild(this.$refs.dialogContainer);
+        if(this.container){
+            document.body.removeChild(this.container);
+            this.container=null;
         }
     }
 }
