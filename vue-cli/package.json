@@ -21,6 +21,7 @@
     "fecha": "^3.0.3",
     "file-saver": "^2.0.2",
     "image-dither": "^1.0.1",
+    "linefold": "^1.0.4",
     "rgbquant": "^1.1.2",
     "select-files": "^1.0.0",
     "three": "^0.107.0",

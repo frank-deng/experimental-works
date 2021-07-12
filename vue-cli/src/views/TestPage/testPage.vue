@@ -27,6 +27,7 @@
 }
 </style>
 <script>
+import linefold from 'linefold';
 import Dialog from '@/components/dialog';
 export default{
   components:{
@@ -45,6 +46,18 @@ export default{
     }
   },
   mounted(){
+    var text1='根据给定的文本、最大宽度、字体等条件，对一段文本进行换行操作。然后渲染到一些不支持自动换行的环境上，比如HTML5 Canvas。';
+    var text='Convert given text into folded lines with given font and maximum width before rendering, so as to render paragraphs onto platforms without line-folding support, e.g. HTML5 Canvas.';
+	  var lines=linefold(text,320,'16px Times New Roman');
+    var lines2=linefold(text,36,(text)=>{
+      let len=0;
+      for(let char of text){
+        len += (/[\u4E00-\u9FA5\u3000-\u303f\uFF01-\uFF5E]+/.test(char) ? 2 : 1);
+      }
+      return len;
+    });
+    //console.log(lines);
+    console.log(JSON.stringify(lines2,null,2));
   },
   methods:{
     openDialog(){
