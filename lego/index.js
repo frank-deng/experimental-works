@@ -1,8 +1,8 @@
 const PoweredUP=require('node-poweredup');
-const Joystick=require('joystick');
+const EvdevReader=require('evdev');
 
 const poweredUp=new PoweredUP.PoweredUP();
-const joystick=new Joystick(1,3500,0);
+const reader=new EvdevReader();
 
 let masterHub=null;
 poweredUp.on('discover',async function(hub){
@@ -52,45 +52,57 @@ poweredUp.on('discover',async function(hub){
   motorC.setAccelerationTime(1);
   motorC.setDecelerationTime(1);
 
-  joystick.on('axis',(e)=>{
-    console.log(e);
-    if(0==e.number){
-      let angle=Math.round(range*e.value/32767);
-      console.log('Angle',angle);
-      motorC.gotoAngle(angle,50);
-    }
-    if(3==e.number){
-      if(Math.abs(e.value)<10){
-        motorA.brake();
-        motorB.brake();
-      }else{
-        motorA.setPower(Math.round(100*e.value/32767));
-        motorB.setPower(Math.round(100*e.value/32767));
-      }
-    }
-  });
-  joystick.on('button',(e)=>{
-    if(0==e.number && 1==e.value){
+  reader.on("EV_KEY",function(data){
+    if('BTN_A'==data.code && data.value){
       motorA.brake();
       motorB.brake();
       motorC.brake();
     }
+  }).on("EV_ABS",function(data){
+    if('ABS_X'==data.code){
+      let angle=Math.round(range*(data.value-128)/128);
+      motorC.gotoAngle(angle,50);
+    }
+    if('ABS_RZ'==data.code){
+      let value=data.value-128;
+      if(Math.abs(value)<1){
+        motorA.brake();
+        motorB.brake();
+      }else{
+        motorA.setPower(Math.round(100*value/128));
+        motorB.setPower(Math.round(100*value/128));
+      }
+    }
   });
 });
 
-//Handle exit function
 function exitFunction(){
-  console.log('Start exit');
+  console.log('Exit.');
+  reader.close();
   //process.exit();
   process.kill(process.pid,'SIGKILL');
 }
 
 //Load joystick
-joystick.on('ready',()=>{
-  poweredUp.scan();
-  console.log('Start discovering');
-  process.on('SIGINT',exitFunction);
-  process.on('exit',exitFunction);
-});
 console.log('Loading Joystick');
+reader.search('/dev/input/by-id','event-joystick',(err,files)=>{
+  if(err){
+    console.error(err);
+    return;
+  }
+  if(!files.length){
+    console.log('No joystick found');
+    return;
+  }
+
+  let device=reader.open(files[0]);
+  device.on('open',()=>{
+    console.log(device);
+    console.log('Start discovering');
+    poweredUp.scan();
+    console.log('Start discovering');
+    process.on('SIGINT',exitFunction);
+    process.on('exit',exitFunction);
+  });
+})
 
