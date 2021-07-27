@@ -5,7 +5,8 @@
   "main": "index.js",
   "scripts": {
     "start": "node ./index.js",
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "detect-hubs": "node ./detect-hubs.js",
+    "test-joystick": "node ./test-joystick.js"
   },
   "author": "",
   "license": "ISC",

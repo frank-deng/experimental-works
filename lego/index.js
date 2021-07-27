@@ -1,17 +1,21 @@
 const PoweredUP=require('node-poweredup');
 const EvdevReader=require('evdev');
+const $CONFIG=require('./config.json');
 
 const poweredUp=new PoweredUP.PoweredUP();
 const reader=new EvdevReader();
 
 let running=true;
 async function onDiscover(hub){
+  if($CONFIG.hubId && hub.uuid!=$CONFIG.hubId){
+    return;
+  }
+
   poweredUp.stop();
   poweredUp.off('discover',onDiscover);
-
-  console.log('Discovered: '+hub.name);
   await hub.connect();
-  console.log('connected',hub.uuid);
+
+  console.log('Hub connected, uuid: ',hub.uuid);
   const [motorA,motorB,motorC] = await Promise.all([
     hub.waitForDeviceAtPort("A"),
     hub.waitForDeviceAtPort("B"),
@@ -63,12 +67,12 @@ async function onDiscover(hub){
     currentAngle=Number(e.degrees);
   });
   reader.on("EV_ABS",(data)=>{
-    if('ABS_X'==data.code){
+    if($CONFIG.steerAxis==data.code){
       let requestAngle=Math.round(90*(data.value-128)/128);
       speed=Math.abs(currentAngle-requestAngle)/180*100;
       speed=Math.min(Math.max(speed,1),100);
       motorC.gotoAngle(requestAngle,speed);
-    }else if('ABS_RZ'==data.code){
+    }else if($CONFIG.throttleAxis==data.code){
       let value=Math.round((data.value-128)*100/128);
       motorA.setPower(value);
       motorB.setPower(value);
@@ -76,7 +80,7 @@ async function onDiscover(hub){
   });
 
   reader.on("EV_KEY",(data)=>{
-    if('BTN_A'==data.code && data.value){
+    if($CONFIG.brakeButton==data.code && data.value){
       motorA.brake();
       motorB.brake();
       motorC.brake();
@@ -105,21 +109,30 @@ process.on('SIGINT',function exitFunction(){
 });
 
 //Load joystick
-console.log('Loading Joystick');
 reader.search('/dev/input/by-id','event-joystick',(err,files)=>{
   if(err){
     console.error(err);
     return;
   }
   if(!files.length){
-    console.log('No joystick found');
+    console.error('No joystick found.');
     return;
   }
 
-  let device=reader.open(files[0]);
+  //Find the joystick to use
+  let file=files[0];
+  if($CONFIG.joystick){
+    for(let item of files){
+      if(-1!=item.indexOf($CONFIG.joystick)){
+        file=item;
+        break;
+      }
+    }
+  }
+
+  let device=reader.open(file);
   device.on('open',()=>{
-    console.log(device.id);
-    console.log('Start discovering');
+    console.log('Joystick loaded, start scanning.');
     poweredUp.scan();
   });
 });
