@@ -4,8 +4,10 @@ const Joystick=require('joystick');
 const poweredUp=new PoweredUP.PoweredUP();
 const joystick=new Joystick(2,3500,0);
 
+let masterHub=null;
 poweredUp.on('discover',async function(hub){
   console.log('Discovered: '+hub.name);
+  masterHub=hub;
   await hub.connect();
   console.log('connected',hub.uuid);
   const [motorA,motorB,motorC] = await Promise.all([
@@ -25,11 +27,9 @@ poweredUp.on('discover',async function(hub){
   let minAngle=maxAngle=null;
   let calibrateFunc=(e)=>{
     let angle=Number(e.degrees);
-    console.log('calibrateFunc',angle);
     if(isNaN(angle)){
       return;
     }
-    console.log(angle);
     if(null==minAngle || angle<minAngle){
       minAngle=angle;
     }
@@ -44,28 +44,29 @@ poweredUp.on('discover',async function(hub){
   await hub.sleep(2000);
   motorC.off('rotate',calibrateFunc);
 
-  let mediumAngle=(maxAngle+minAngle)/2;
+  let mediumAngle=Math.round((maxAngle+minAngle)/2);
   let range=(maxAngle-minAngle)/2;
+  console.log(minAngle, maxAngle, mediumAngle, range);
   motorC.gotoAngle(mediumAngle,100);
-  await hub.sleep(1000);
+  await hub.sleep(2000);
   motorC.resetZero();
   motorC.gotoAngle(0,100);
 
   joystick.on('axis',(e)=>{
     console.log(e);
     if(0==e.number){
-      motorC.gotoAngle(range*e.value/32767,100);
+      let angle=Math.round(range*e.value/32767);
+      console.log('Angle',angle);
+      motorC.gotoAngle(angle,50);
     }
     if(3==e.number){
-      /*
-      if(Math.abs(e.value)<100){
+      if(Math.abs(e.value)<10){
         motorA.brake();
         motorB.brake();
       }else{
-      */
-        motorA.setSpeed(100*e.value/32767);
-        motorB.setSpeed(100*e.value/32767);
-      //}
+        motorA.setPower(Math.round(100*e.value/32767));
+        motorB.setPower(Math.round(100*e.value/32767));
+      }
     }
   });
   joystick.on('button',(e)=>{
@@ -76,10 +77,20 @@ poweredUp.on('discover',async function(hub){
     }
   });
 });
+
+//Handle exit function
+function exitFunction(){
+  console.log('Start exit');
+  //process.exit();
+  process.kill(process.pid,'SIGKILL');
+}
+
 //Load joystick
 joystick.on('ready',()=>{
   poweredUp.scan();
   console.log('Start discovering');
+  process.on('SIGINT',exitFunction);
+  process.on('exit',exitFunction);
 });
 console.log('Loading Joystick');
 
