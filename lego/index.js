@@ -2,7 +2,7 @@ const PoweredUP=require('node-poweredup');
 const Joystick=require('joystick');
 
 const poweredUp=new PoweredUP.PoweredUP();
-const joystick=new Joystick(2,3500,0);
+const joystick=new Joystick(1,3500,0);
 
 let masterHub=null;
 poweredUp.on('discover',async function(hub){
@@ -15,13 +15,6 @@ poweredUp.on('discover',async function(hub){
     hub.waitForDeviceAtPort("B"),
     hub.waitForDeviceAtPort("C")
   ]);
-
-  motorA.setAccelerationTime(1);
-  motorB.setAccelerationTime(1);
-  motorC.setAccelerationTime(1);
-  motorA.setDecelerationTime(1);
-  motorB.setDecelerationTime(1);
-  motorC.setDecelerationTime(1);
 
   //Calibrate
   let minAngle=maxAngle=null;
@@ -47,10 +40,17 @@ poweredUp.on('discover',async function(hub){
   let mediumAngle=Math.round((maxAngle+minAngle)/2);
   let range=(maxAngle-minAngle)/2;
   console.log(minAngle, maxAngle, mediumAngle, range);
-  motorC.gotoAngle(mediumAngle,100);
+  motorC.gotoAngle(mediumAngle,30);
   await hub.sleep(2000);
   motorC.resetZero();
   motorC.gotoAngle(0,100);
+
+  motorA.setAccelerationTime(1);
+  motorA.setDecelerationTime(1);
+  motorB.setAccelerationTime(1);
+  motorB.setDecelerationTime(1);
+  motorC.setAccelerationTime(1);
+  motorC.setDecelerationTime(1);
 
   joystick.on('axis',(e)=>{
     console.log(e);
