@@ -1,29 +1,24 @@
+const $CONFIG=require('./config.json');
+
 const PoweredUP=require('node-poweredup');
 const EvdevReader=require('evdev');
-const $CONFIG=require('./config.json');
+
+//Parse args
+let doCalibrate=false;
+const yargs=require('yargs/yargs');
+const { hideBin } = require('yargs/helpers')
+const argv=yargs(hideBin(process.argv)).option('calibrate',{
+  type: 'boolean',
+  description: 'Calibrate steering mechanism during initialization.'
+}).argv;
+if(argv.calibrate){
+  doCalibrate=true;
+}
 
 const poweredUp=new PoweredUP.PoweredUP();
 const reader=new EvdevReader();
 
-let running=true;
-async function onDiscover(hub){
-  if($CONFIG.hubId && hub.uuid!=$CONFIG.hubId){
-    return;
-  }
-
-  poweredUp.stop();
-  poweredUp.off('discover',onDiscover);
-  await hub.connect();
-
-  console.log('Hub connected, uuid: ',hub.uuid);
-  const [motorA,motorB,motorC] = await Promise.all([
-    hub.waitForDeviceAtPort("A"),
-    hub.waitForDeviceAtPort("B"),
-    hub.waitForDeviceAtPort("C")
-  ]);
-
-  //Calibrate
-  /*
+async function calibrate(hub, motorC){
   let minAngle=maxAngle=null;
   let calibrateFunc=(e)=>{
     let angle=Number(e.degrees);
@@ -48,8 +43,36 @@ async function onDiscover(hub){
   motorC.gotoAngle(mediumAngle,30);
   await hub.sleep(2000);
   await motorC.resetZero();
-  await motorC.gotoAngle(0,100);
-  */
+  await hub.sleep(100);
+  await motorC.gotoAngle(0,10);
+  await hub.sleep(1000);
+}
+
+let running=true, masterHub=null;
+async function onDiscover(hub){
+  if($CONFIG.hubId && hub.uuid!=$CONFIG.hubId){
+    return;
+  }
+
+  //Stop further detection and start connect the corresponding hub
+  poweredUp.stop();
+  poweredUp.off('discover',onDiscover);
+  masterHub=hub;
+  await hub.connect();
+
+  console.log(`Hub connected, ID: ${hub.uuid}, name: ${hub.name}`);
+  const [motorA,motorB,motorC] = await Promise.all([
+    hub.waitForDeviceAtPort("A"),
+    hub.waitForDeviceAtPort("B"),
+    hub.waitForDeviceAtPort("C")
+  ]);
+
+  //Calibrate
+  if(doCalibrate){
+    console.log(`Start calibration.`);
+    await calibrate(hub,motorC);
+    console.log(`Calibration complete.`);
+  }
 
   await Promise.all([
     motorA.setAccelerationTime(1),
@@ -67,43 +90,45 @@ async function onDiscover(hub){
     currentAngle=Number(e.degrees);
   });
   reader.on("EV_ABS",(data)=>{
-    if($CONFIG.steerAxis==data.code){
+    if($CONFIG.steer.axis==data.code){
       let requestAngle=Math.round(90*(data.value-128)/128);
+      if($CONFIG.steer.reverse){
+        requestAngle=-requestAngle;
+      }
       speed=Math.abs(currentAngle-requestAngle)/180*100;
       speed=Math.min(Math.max(speed,1),100);
       motorC.gotoAngle(requestAngle,speed);
-    }else if($CONFIG.throttleAxis==data.code){
+    }else if($CONFIG.throttle.axis==data.code){
       let value=Math.round((data.value-128)*100/128);
+      if($CONFIG.throttle.reverse){
+        value=-value;
+      }
       motorA.setPower(value);
       motorB.setPower(value);
     }
   });
-
-  reader.on("EV_KEY",(data)=>{
+  reader.on("EV_KEY",async(data)=>{
     if($CONFIG.brakeButton==data.code && data.value){
       motorA.brake();
       motorB.brake();
-      motorC.brake();
+      await motorC.brake();
+      await motorC.gotoAngle(0,10);
     }
   });
-
-  while(running){
-    await hub.sleep(10);
-  }
 }
 
-poweredUp.on('discover',onDiscover);
-
-process.on('SIGINT',function exitFunction(){
+process.on('exit',function exitFunction(){
   try{
     running=false;
     poweredUp.stop();
+    if(masterHub){
+      masterHub.disconnect();
+    }
     reader.close();
     console.log('Exit.');
   }catch(e){
     console.error(e);
   }finally{
-    //process.exit();
     process.kill(process.pid,'SIGKILL');
   }
 });
@@ -119,7 +144,7 @@ reader.search('/dev/input/by-id','event-joystick',(err,files)=>{
     return;
   }
 
-  //Find the joystick to use
+  //Find the joystick to use, if not found, use the first one
   let file=files[0];
   if($CONFIG.joystick){
     for(let item of files){
@@ -133,7 +158,7 @@ reader.search('/dev/input/by-id','event-joystick',(err,files)=>{
   let device=reader.open(file);
   device.on('open',()=>{
     console.log('Joystick loaded, start scanning.');
-    poweredUp.scan();
+    poweredUp.on('discover',onDiscover).scan();
   });
 });
 
