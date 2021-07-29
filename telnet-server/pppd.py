@@ -36,15 +36,19 @@ class PppdHandler:
         self.__closed=True;
 
     def read(self, data):
-        os.write(self.__master, data);
-        return True;
+        try:
+            os.write(self.__master, data);
+            return True;
+        except Exception as e:
+            return None;
 
     def write(self):
         try:
             return os.read(self.__master, 65536);
         except BlockingIOError:
-            pass;
-        return b'';
+            return b'';
+        except Exception as e:
+            return None;
 
 if '__main__'==__name__:
     socketServer=SocketServer(args.host,args.port,PppdHandler,(args.pppd_options,));
