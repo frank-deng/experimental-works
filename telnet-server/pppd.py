@@ -25,7 +25,7 @@ class PppdHandler:
     def __init__(self,pppd_options):
         self.__master, self.__slave = pty.openpty();
         fcntl.fcntl(self.__master, fcntl.F_SETFL, fcntl.fcntl(self.__master, fcntl.F_GETFL) | os.O_NONBLOCK);
-        ptyPath="/proc/"+str(os.getpid())+'/fd/'+str(self.__slave);
+        ptyPath="/proc/%d/fd/%d"%(os.getpid(),self.__slave);
         subprocess.Popen(['/usr/sbin/pppd', ptyPath]+pppd_options);
 
     def close(self):
@@ -43,7 +43,8 @@ class PppdHandler:
         try:
             return os.read(self.__master, 65536);
         except BlockingIOError:
-            return b'';
+            pass;
+        return b'';
 
 if '__main__'==__name__:
     socketServer=SocketServer(args.host,args.port,PppdHandler,(args.pppd_options,));

@@ -87,4 +87,4 @@ class SocketServer:
 
             for s in exceptional:
                 self.__closeConnection(s);
-            time.sleep(0);
+            time.sleep(0.1);
