@@ -1,9 +1,12 @@
-from queue import Full, Empty, Queue;
 from serverLib import SocketServer;
 
 class LoginHandler:
+    __inputTimeout=10;
+    __retryTimeout=2;
+    __retryTimestamp=None;
+    __inputTimestamp=None;
     __running=True;
-    __queue=Queue();
+    __queue=b'';
     __action='showLogin';
     __inputContent=b'';
     __username=b'';
@@ -11,25 +14,37 @@ class LoginHandler:
     __app=None;
     def __init__(self):
         pass;
+
+    def __readLine(self,content,maxLength=60,echo=True):
+        for val in content:
+            if 0x08==val and len(self.__inputContent)>0: #Backspace
+                if(echo):
+                    self.__queue+=b'\x08 \x08';
+                self.__inputContent=self.__inputContent[0:-1];
+            elif 0x0d==val or 0x0a==val: #Continue
+                return True;
+            elif val>=0x20 and val<=0x7e and len(self.__inputContent)<maxLength:
+                self.__inputContent+=val.to_bytes(1,'little');
+                if(echo):
+                    self.__queue+=val.to_bytes(1,'little');
+        return None;
+
+    def __processLogin(self,username,password):
+        self.__username=b'';
+        self.__password=b'';
+        return b'\r\n  u:'+self.__username+b'\r\n  p:'+self.__password;
     
     def read(self,content):
         if not self.__running:
             return None;
         action=self.__action;
         if 'inputUserName'==action:
-            self.__inputContent+=content;
-            try:
-                self.__queue.put(content.replace(b'\r',b'').replace(b'\n',b''),False);
-            except Full:
-                pass;
-            print(self.__inputContent);
-            if -1!=self.__inputContent.find(b'\r'):
+            if self.__readLine(content):
                 self.__username=self.__inputContent;
                 self.__inputContent=b'';
                 self.__action='showPassword';
         elif 'inputPassword'==action:
-            self.__inputContent+=content;
-            if -1!=self.__inputContent.find(b'\r'):
+            if self.__readLine(content,False):
                 self.__password=self.__inputContent;
                 self.__inputContent=b'';
                 self.__action='processLogin';
@@ -38,25 +53,18 @@ class LoginHandler:
     def write(self):
         if not self.__running:
             return None;
+        output=self.__queue;
+        self.__queue=b'';
         action=self.__action;
-        output=b'';
         if 'showLogin'==action:
             self.__action='inputUserName';
-            self.__queue.queue.clear();
             output+=b'\r\nLogin:';
         elif 'showPassword'==action:
             self.__action='inputPassword';
-            self.__queue.queue.clear();
             output+=b'\r\nPassword:';
         elif 'processLogin'==action:
-            self.__queue.queue.clear();
             self.__action='showLogin';
-            output+=b'\r\n  u:'+self.__username+b'\r\n  p:'+self.__password;
-        else:
-            try:
-                output+=self.__queue.get(False);
-            except Empty:
-                pass;
+            output+=self.__processLogin(self.__username,self.__password);
         return output;
 
     def close(self):
