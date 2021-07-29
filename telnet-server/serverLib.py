@@ -1,21 +1,15 @@
 import sys,time,socket,select;
 
-def __defaultErrorHandler(self,e):
-    sys.stderr.write(str(e)+"\n");
-
 class SocketServer:
     __addr=('0,0,0,0',8080);
     __inputs=[];
     __outputs=[];
     __instances={};
-    def __init__(self,host,port,handler,args=(),errorHandler=None):
+    __running=True;
+    def __init__(self,host,port,handler,args=()):
         self.__addr=(host,port);
         self.__handler=handler;
         self.__handlerArgs=args;
-        if errorHandler:
-            self.__errorHandler=errorHandler;
-        else:
-            self.__errorHandler=__defaultErrorHandler;
     
     def __closeConnection(self,socket):
         try:
@@ -31,12 +25,10 @@ class SocketServer:
             self.__error(e);
 
     def __error(self,e):
-        try:
-            self.__errorHandler(e);
-        except Exception as e:
-            pass;
+        sys.stderr.write(str(e)+"\n");
     
     def close(self):
+        self.__running=False;
         for key, instance in self.__instances.items():
             try:
                 instance.close();
@@ -50,7 +42,7 @@ class SocketServer:
         server.bind(self.__addr);
         server.listen(5);
         self.__inputs.append(server);
-        while True:
+        while self.__running:
             readable, writable, exceptional = select.select(self.__inputs,self.__outputs,self.__inputs);
             for s in readable:
                 if s is server:
@@ -60,11 +52,17 @@ class SocketServer:
                         self.__inputs.append(conn);
                         self.__instances[str(conn.fileno())] = self.__handler(*self.__handlerArgs);
                     except Exception as e:
-                        sys.stderr.write(str(e)+"\n");
+                        self.__error(e);
                 else:
                     try:
-                        result=self.__instances[str(s.fileno())].write(s.recv(1024));
-                        if None==result:
+                        result=True;
+                        try:
+                            result=self.__instances[str(s.fileno())].read(s.recv(1024));
+                        except Exception as e:
+                            self.__error(e);
+                        print('readable',result);
+                        if result is None:
+                            print('readable close');
                             self.__closeConnection(s);
                         elif s not in self.__outputs:
                             self.__outputs.append(s);
@@ -74,8 +72,13 @@ class SocketServer:
 
             for s in writable:
                 try:
-                    content=self.__instances[str(s.fileno())].read();
-                    if None==content:
+                    content=b'';
+                    try:
+                        content=self.__instances[str(s.fileno())].write();
+                    except Exception as e:
+                        self.__error(e);
+                    print('writable',content);
+                    if content is None:
                         self.__closeConnection(s);
                     else:
                         s.sendall(content);
