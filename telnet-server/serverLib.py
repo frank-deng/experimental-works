@@ -60,9 +60,7 @@ class SocketServer:
                             result=self.__instances[str(s.fileno())].read(s.recv(1024));
                         except Exception as e:
                             self.__error(e);
-                        print('readable',result);
                         if result is None:
-                            print('readable close');
                             self.__closeConnection(s);
                         elif s not in self.__outputs:
                             self.__outputs.append(s);
@@ -77,7 +75,6 @@ class SocketServer:
                         content=self.__instances[str(s.fileno())].write();
                     except Exception as e:
                         self.__error(e);
-                    print('writable',content);
                     if content is None:
                         self.__closeConnection(s);
                     else:
