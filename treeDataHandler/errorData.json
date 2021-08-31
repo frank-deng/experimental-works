@@ -1,0 +1,22 @@
+[
+  {
+    "id": "root",
+    "parent": null,
+    "name": "Root"
+  },
+  {
+    "id": "a",
+    "parent": "c",
+    "name": "A"
+  },
+  {
+    "id": "b",
+    "parent": "a",
+    "name": "B"
+  },
+  {
+    "id": "c",
+    "parent": "root",
+    "name": "C"
+  }
+]

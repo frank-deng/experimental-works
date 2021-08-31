@@ -1,3 +1,5 @@
+//把目录结构保存成JSON，像数据库一样存储
+
 const uuid=require('uuid').v4;
 const {readdir}=require('fs').promises;
 const path=require('path');
@@ -30,7 +32,7 @@ class TreeDataGen{
 async function main(){
     let treeDataGen=new TreeDataGen(dir);
     await treeDataGen.readSubDir();
-    console.log(treeDataGen.get());
+    process.stdout.write(JSON.stringify(treeDataGen.get(),null,2));
     return 0;
 }
 main().then((ret)=>{
