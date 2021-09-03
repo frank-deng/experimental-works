@@ -11,8 +11,7 @@ function createNew(){
   let targetObj={};
   targetObj.__proto__=constructor.prototype;
   let result=apply(constructor,targetObj,args);
-  if('object'===typeof(result)
-    || 'function'===typeof(result)){
+  if('object'===typeof(result)){
     return result;
   }
   return targetObj;
