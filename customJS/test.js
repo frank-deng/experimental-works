@@ -92,10 +92,14 @@ describe('bind()',function(){
     }
     let sum0=createNew(Sum,1);
     let sum1=createNew(Sum,2);
-    func0=sum0.getValue.bind(sum0);
-    func1=bind(sum1.getValue,sum1);
-    assert.strictEqual(func0(),1);
-    assert.strictEqual(func1(),2);
+    let add0=Sum.prototype.add.bind(sum0);
+    let add1=Sum.prototype.add.bind(sum1);
+    let func0=Sum.prototype.getValue.bind(sum0);
+    let func1=bind(Sum.prototype.getValue,sum1);
+    add0(10);
+    add1(20);
+    assert.strictEqual(func0(),11);
+    assert.strictEqual(func1(),22);
     assert.strictEqual(Sum.prototype.getValue(),undefined);
   });
   it('Create object with bind()',function(){

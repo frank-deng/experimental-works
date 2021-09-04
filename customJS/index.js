@@ -73,6 +73,7 @@ function bind(){
   for(let i=2; i<arguments.length; i++){
     args.push(arguments[i]);
   }
+  //这边出现闭包了
   return function F(){
     if(!instanceOf(this,F)){
       return apply(func,target,args);
@@ -81,6 +82,12 @@ function bind(){
   }
 }
 function instanceOf(left,right){
+  if('object'!==typeof(left) && 'function'!==typeof(left)){
+    throw TypeError('left hand object required');
+  }
+  if('object'!==typeof(right) && 'function'!==typeof(right)){
+    throw TypeError('right hand object required');
+  }
   let target=right.prototype;
   left=left.__proto__;
   while(left){
