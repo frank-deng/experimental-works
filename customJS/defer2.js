@@ -73,7 +73,7 @@ Defer.prototype={
       }
     });
   },
-  error(handler){
+  catch(handler){
     return this.then(null,handler);
   }
 }

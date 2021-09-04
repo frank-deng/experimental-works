@@ -8,14 +8,12 @@ function Defer(handler){
   }
   this.state=null;
   this.ret=null;
-  this.thenHandler=null;
-  this.errorHandler=null;
-  this.thenResolve=null;
-  this.errorReject=null;
+  this.thenHandler=[];
+  this.errorHandler=[];
+  let _this=this;
   let nextFunc=bind(function(){
     this._next();
   },this);
-  let _this=this;
   try{
     handler(function(ret){
       _this.state=Defer.STAT_RESOLVED;
@@ -40,40 +38,51 @@ Object.assign(Defer,{
 Defer.prototype={
   constructor:Defer,
   _next(){
-    try{
-      if(Defer.STAT_RESOLVED==this.state && this.thenHandler){
-        let handlerRet=this.thenHandler(this.ret);
-        if('object'==typeof(handlerRet) && instanceOf(handlerRet,Defer)){
-          handlerRet.then(this.thenResolve,this.errorHandler);
-        }else{
-          this.thenResolve(handlerRet);
-        }
-      }else if(Defer.STAT_ERROR==this.state){
-        if(this.errorHandler){
-          this.errorHandler(this.ret);
-        }
-        this.errorReject(this.ret);
+    let nextHandler=null;
+    while(true){
+      let hander=null;
+      if(Defer.STAT_RESOLVED===this.state){
+        handler=this.thenHandler.shift();
+      } else if(Defer.STAT_ERROR===this.state){
+        handler=this.errorHandler.shift();
       }
-    }catch(e){
-      console.error(e);
-      if(this.errorReject){
-        this.errorReject(e);
+      if(!handler){
+        return this;
+      }
+      try{
+        this.ret=handler(this.ret);
+      }catch(e){
+        console.error(e);
+        this.state=Defer.STAT_ERROR;
+        this.ret=e;
+        continue;
+      }
+      if('object'==typeof(this.ret) && instanceOf(this.ret,Defer)){
+        nextHandler=this.ret;
+        break;
       }
     }
+    if(!nextHandler){
+      return this;
+    }
+    while(this.thenHandler.length || this.errorHandler.length){
+      nextHandler=nextHandler.then(
+        this.thenHandler.shift(),
+        this.errorHandler.shift()
+      );
+    }
+    return nextHandler;
   },
   then(handler,errorHandler){
-    let _this=this;
-    return new Defer(function(resolve,reject){
-      _this.thenHandler=handler;
-      _this.thenResolve=resolve;
-      _this.errorHandler=errorHandler;
-      _this.errorReject=reject;
-      if(_this.state){
-        _this._next();
-      }
-    });
+    if('function'==typeof(handler)){
+      this.thenHandler.push(handler);
+    }
+    if('function'==typeof(errorHandler)){
+      this.errorHandler.push(handler);
+    }
+    return this.state ? this._next() : this;
   },
-  error(handler){
+  catch(handler){
     return this.then(null,handler);
   }
 }

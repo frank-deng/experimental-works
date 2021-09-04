@@ -5,7 +5,7 @@ function looper(i=0){
   }).then((n)=>{
     console.log(n);
     return looper(n);
-  }).error(e=>{
+  }).catch(e=>{
     console.error(e);
   });
 }
