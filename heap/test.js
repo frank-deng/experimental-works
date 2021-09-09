@@ -77,8 +77,17 @@ describe('堆数据结构',function(){
   });
 }); 
 describe('中位数测试',function(){
-  it('测试1',function(){
+  it('正序数字奇数个',function(){
     assert.strictEqual(new Median([1,2,3,4,5,6,7,8,9,10,11]).get(),6);
+  });
+  it('倒序数字奇数个',function(){
+    assert.strictEqual(new Median([11,10,9,8,7,6,5,4,3,2,1]).get(),6);
+  });
+  it('正序数字偶数个',function(){
+    assert.deepStrictEqual(new Median([1,2,3,4,5,6,7,8,9,10]).get(),[5,6]);
+  });
+  it('倒序数字偶数个',function(){
+    assert.deepStrictEqual(new Median([10,9,8,7,6,5,4,3,2,1]).get(),[5,6]);
   });
 });
 
