@@ -23,12 +23,26 @@ class Heap{
     return idx<=0 ? undefined : (idx-1)>>1;
   }
   __leftChildAddr(idx){
-    return (idx<<1)+1;
+    let result=(idx<<1)+1;
+    if(result>=this.data.length){
+      return undefined;
+    }
+    return result;
   }
   __rightChildAddr(idx){
-    return (idx<<1)+2;
+    let result=(idx<<1)+2;
+    if(result>=this.data.length){
+      return undefined;
+    }
+    return result;
+  }
+  reset(){
+    this.data=[];
   }
   peek(){
+    if(!this.data.length){
+      return undefined;
+    }
     return this.data[0];
   }
   push(value){
@@ -74,15 +88,31 @@ class Heap{
       let leftChildAddr=this.__leftChildAddr(addr),
         rightChildAddr=this.__rightChildAddr(addr),
         currValue=arr[addr],
-        leftValue=arr[leftChildAddr],
-        rightValue=arr[rightChildAddr],
         target=null;
-      if(Heap.MIN_HEAP===this.type
-        && (currValue>leftValue || currValue>rightValue)){
-        target=leftValue<rightValue ? leftChildAddr : rightChildAddr;
-      }else if(Heap.MAX_HEAP===this.type
-        && (currValue<leftValue || currValue<rightValue)){
-        target=leftValue>rightValue ? leftChildAddr : rightChildAddr;
+      if(Heap.MIN_HEAP===this.type){
+        if(undefined===leftChildAddr){
+          target=(currValue > arr[rightChildAddr]) ? rightChildAddr : null;
+        }else if(undefined===rightChildAddr){
+          target=(currValue > arr[leftChildAddr]) ? leftChildAddr : null;
+        }else{
+          let leftValue=arr[leftChildAddr],
+            rightValue=arr[rightChildAddr];
+          if(currValue>leftValue || currValue>rightValue){
+            target=leftValue<rightValue ? leftChildAddr : rightChildAddr;
+          }
+        }
+      }else if(Heap.MAX_HEAP===this.type){
+        if(undefined===leftChildAddr){
+          target=(currValue < arr[rightChildAddr]) ? rightChildAddr : null;
+        }else if(undefined===rightChildAddr){
+          target=(currValue < arr[leftChildAddr]) ? leftChildAddr : null;
+        }else{
+          let leftValue=arr[leftChildAddr],
+            rightValue=arr[rightChildAddr];
+          if(currValue<leftValue || currValue<rightValue){
+            target=leftValue>rightValue ? leftChildAddr : rightChildAddr;
+          }
+        }
       }
       if(null===target){
         break;
