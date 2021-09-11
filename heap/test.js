@@ -77,6 +77,16 @@ describe('堆数据结构',function(){
   });
 }); 
 describe('中位数测试',function(){
+  it('0-3个数字',function(){
+    let median=new Median();
+    assert.strictEqual(median.get(),undefined);
+    median.write(2);
+    assert.strictEqual(median.get(),2);
+    median.write(1);
+    assert.deepStrictEqual(median.get(),[1,2]);
+    median.write(1);
+    assert.strictEqual(median.get(),1);
+  });
   it('正序数字奇数个',function(){
     assert.strictEqual(new Median([1,2,3,4,5,6,7,8,9,10,11]).get(),6);
   });
