@@ -19,4 +19,13 @@ describe('组合',function(){
             [0,1],[0,2],[0,3],[1,2],[1,3],[2,3]
         ]);
     });
+    it('测试3',function(){
+        let result=[];
+        for(let item of new Combination(4,3)){
+            result.push(item);
+        }
+        assert.deepStrictEqual(result,[
+            [0,1,2],[0,1,3],[0,2,3],[1,2,3]
+        ]);
+    });
 });

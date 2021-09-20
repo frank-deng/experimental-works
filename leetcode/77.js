@@ -29,6 +29,7 @@ module.exports=class{
             for(let j=i+1;j<len;j++){
                 arr[j]=++newVal;
             }
+            break;
         }
         return {
             done:false,
