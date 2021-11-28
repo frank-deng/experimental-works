@@ -32,6 +32,54 @@ inline static int __compare(int a, int b)
     unsigned long valB = b * digitsVal[mydigits(a)] + a;
     return valB - valA;
 }
+typedef struct{
+    int *start;
+    size_t length;
+}qsortQueueItem_t;
+typedef struct{
+    unsigned long front;
+    unsigned long rear;
+    size_t size;
+    qsortQueueItem_t *data;
+}qsortQueue_t;
+static inline bool __queueInit(qsortQueue_t *queue, size_t size){
+    queue->front = queue->rear = 0;
+    queue->size = size;
+    queue->data = NULL;
+    if(size <= 0) {
+        return false;
+    }
+    queue->data = (qsortQueueItem_t*)malloc(sizeof(qsortQueueItem_t) * size);
+    return (queue->data == NULL);
+}
+static inline void __queueClose(qsortQueue_t *queue){
+    if(queue->data == NULL){
+        return;
+    }
+    free(queue->data);
+    queue->front = queue->rear = queue->size = 0;
+    queue->data = NULL;
+}
+static bool __queueIn(qsortQueue_t *queue, qsortQueueItem_t *item){
+    if (queue->rear - queue->front >= queue->size) {
+        return false;
+    }
+    qsortQueueItem_t *target = queue->data + (queue->rear % queue->size);
+    target->start = item->start;
+    target->length = item->length;
+    queue->rear++;
+    return true;
+}
+static bool __queueOut(qsortQueue_t *queue, qsortQueueItem_t *target){
+    if (queue->rear == queue->front) {
+        return false;
+    }
+    qsortQueueItem_t *item = queue->data + (queue->front % queue->size);
+    target->start = item->start;
+    target->length = item->length;
+    queue->front++;
+    return true;
+}
 inline static void __insertSort(int *arr, size_t size)
 {
     for (size_t i = 0; i < size; i++) {
@@ -42,50 +90,64 @@ inline static void __insertSort(int *arr, size_t size)
         }
     }
 }
-static void __qsortPart(int *arr, size_t size)
+static void __qsort(int *arr0, size_t length)
 {
-    if (size <= 16) {
-        __insertSort(arr, size);
-        return;
-    }
+    qsortQueue_t queue;
+    qsortQueueItem_t queueItem = {
+        arr0,
+        length
+    };
+    __queueInit(&queue, length + 1);
+    __queueIn(&queue, &queueItem);
+    while(__queueOut(&queue, &queueItem)){
+        int *arr = queueItem.start;
+        size_t size = queueItem.length;
 
-    size_t midIdx = (size >> 1);
-    int a = *arr, c = arr[size-1], b = arr[midIdx];
-    {
-        int temp = *arr;
-        if ((a <= b && b <= c) || (c <= b && b <= a)){
-            *arr = arr[midIdx];
-            arr[midIdx] = temp;
-        } else if ((a <= c && c <= b) || (b <= c && c <= a)) {
-            *arr = arr[size-1];
-            arr[size-1] = temp;
+        if (size <= 16) {
+            __insertSort(arr, size);
+            continue;
         }
-    }
 
-    int pivotVal = *arr;
-    int *left = arr;
-    int *right = arr + size - 1;
-    while (left < right) {
-        while (left < right && __compare(*left, pivotVal) <= 0) {
-            left++;
+        size_t midIdx = (size >> 1);
+        int a = *arr, c = arr[size-1], b = arr[midIdx];
+        {
+            int temp = *arr;
+            if ((a <= b && b <= c) || (c <= b && b <= a)){
+                *arr = arr[midIdx];
+                arr[midIdx] = temp;
+            } else if ((a <= c && c <= b) || (b <= c && c <= a)) {
+                *arr = arr[size-1];
+                arr[size-1] = temp;
+            }
         }
-        while (right > arr && __compare(pivotVal, *right) <= 0) {
-            right--;
+
+        int pivotVal = *arr;
+        int *left = arr;
+        int *right = arr + size - 1;
+        while (left < right) {
+            while (left < right && __compare(*left, pivotVal) <= 0) {
+                left++;
+            }
+            while (right > arr && __compare(pivotVal, *right) <= 0) {
+                right--;
+            }
+            if (left < right) {
+                int temp = *left;
+                *left = *right;
+                *right = temp;
+            }
         }
-        if (left < right) {
-            int temp = *left;
-            *left = *right;
-            *right = temp;
-        }
+        *arr = *right;
+        *right = pivotVal;
+
+        queueItem.start = arr;
+        queueItem.length = right - arr;
+        __queueIn(&queue, &queueItem);
+        queueItem.start = right + 1;
+        queueItem.length = size - (right - arr)  - 1;
+        __queueIn(&queue, &queueItem);
     }
-    *arr = *right;
-    *right = pivotVal;
-    __qsortPart(arr, right - arr);
-    __qsortPart(right + 1, size - (right - arr)  - 1);
-}
-static void __qsort(int *arr, size_t length)
-{
-    __qsortPart(arr, length);
+    __queueClose(&queue);
 }
 char *largestNumber(int *nums, int size)
 {
@@ -93,7 +155,6 @@ char *largestNumber(int *nums, int size)
     if (result == NULL) {
         return NULL;
     }
-    //qsort(nums, size, sizeof(int), __compare);
     __qsort(nums, size);
     char *p = result;
     for (int i = 0; i < size; i++){

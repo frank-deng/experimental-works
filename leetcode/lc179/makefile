@@ -10,6 +10,9 @@ test: ${TARGET}
 	./${TARGET} 1
 	./${TARGET} 10
 	./${TARGET} 34323 3432
+	./${TARGET} 0 0 0
+	./${TARGET} 0 0
+	./${TARGET} 999999998 999999997 999999999
 
 .PHONY:debug
 debug: ${TARGET}
