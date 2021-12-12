@@ -1,4 +1,4 @@
-TARGET=lc1477
+TARGET=lc1477.out
 
 ${TARGET}: lc1477.c
 	gcc -std=c99 -g -o $@ $<
