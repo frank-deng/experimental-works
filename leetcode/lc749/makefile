@@ -3,16 +3,18 @@ OBJS=lc749.o main.o
 LIBS=-lgtest -lpthread
 CFLAGS=-std=c99 -I/usr/include/gtest -g -Wall
 
-.PHONY:clean test memleak run 
+.PHONY:clean debug build valgrind
 
-test: ${TARGET}
+debug: ${TARGET}
 	gdb ./${TARGET} -ex 'b lc749.c:280' -ex 'r'
 
-memleak: ${TARGET}
+valgrind: ${TARGET}
 	valgrind --leak-check=full ./${TARGET}
 
-run: ${TARGET}
-	./${TARGET}
+build: ${TARGET}
+
+copy: ${TARGET}
+	xclip -display :0 -selection c lc749.c
 
 ${TARGET}: ${OBJS}
 	g++ ${CFLAGS} -o $@ $^ ${LIBS}

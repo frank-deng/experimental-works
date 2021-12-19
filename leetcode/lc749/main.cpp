@@ -41,6 +41,25 @@ TEST(containVirus, test1)
 #undef MAP_WIDTH
 #undef MAP_HEIGHT
 }
+TEST(containVirus, test2)
+{
+#define MAP_WIDTH 9
+#define MAP_HEIGHT 3
+    int mapData[MAP_HEIGHT][MAP_WIDTH] = {
+        {1,1,1,0,0,0,0,0,0},
+        {1,0,1,0,1,1,1,1,1},
+        {1,1,1,0,0,0,0,0,0}
+    };
+    int* map[MAP_HEIGHT];
+    int widthArr[MAP_HEIGHT];
+    for (int i = 0; i < MAP_HEIGHT; i++) {
+        map[i] = mapData[i];
+        widthArr[i] = MAP_WIDTH;
+    }
+    EXPECT_EQ(containVirus(map, MAP_HEIGHT, widthArr), 13);
+#undef MAP_WIDTH
+#undef MAP_HEIGHT
+}
 int main(int argc, char *argv[])
 {
     InitGoogleTest(&argc, argv);

@@ -24,7 +24,7 @@ int getRegionQueueInit(getRegionQueue_t *queue, size_t size)
     }
     return 1;
 }
-int getRegionQueueFree(getRegionQueue_t *queue)
+void getRegionQueueFree(getRegionQueue_t *queue)
 {
     queue->start = 0;
     queue->end = 0;
