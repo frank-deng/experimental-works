@@ -65,6 +65,7 @@ typedef struct {
     uint16_t height;
     uint8_t *data;
 } map_t;
+void mapClear(const map_t *map);
 int mapCreate(map_t *target, int width, int height)
 {
     target->width = width;
@@ -73,7 +74,18 @@ int mapCreate(map_t *target, int width, int height)
     if (target->data == NULL) {
         return 0;
     }
-    memset(target->data, 0, sizeof(uint8_t) * width * height);
+    mapClear(target);
+    return 1;
+}
+void mapClear(const map_t *map)
+{
+    memset(map->data, 0, sizeof(uint8_t) * map->width * map->height);
+}
+int mapCopy(const map_t *dest, const map_t* const src){
+    if (dest->width != src->width || dest->height != src->height) {
+        return 0;
+    }
+    memcpy(dest->data, src->data, sizeof(uint8_t) * src->width * src->height);
     return 1;
 }
 int mapClone(map_t *dest, const map_t* const src)
@@ -81,8 +93,7 @@ int mapClone(map_t *dest, const map_t* const src)
     if (!mapCreate(dest, src->width, src->height)) {
         return 0;
     }
-    memcpy(dest->data, src->data, sizeof(uint8_t) * src->width * src->height);
-    return 1;
+    return mapCopy(dest, src);
 }
 void mapFree(map_t *map)
 {
@@ -183,23 +194,31 @@ void freeRegion(region_t *region)
     mapFree(&(region->map));
     free(region);
 }
-uint32_t countWalls(const map_t* const map)
+uint32_t countWalls(const map_t* const map, const map_t* const ref)
 {
     uint32_t result = 0;
     for (uint16_t y = 0; y < map->height; y++) {
         for (uint16_t x = 0; x < map->width; x++) {
-            uint8_t block = map->data[map->width * y + x];
+            size_t offset = map->width * y + x;
+            if (ref->data[offset] & BIT_PROCESSED) {
+                continue;
+            }
+            uint8_t block = map->data[offset];
             //左边的墙
             if (x > 0) {
-                uint8_t blockLeft = map->data[map->width * y + (x - 1)];
-                if ((blockLeft & BIT_INFECTED) != (block & BIT_INFECTED)) {
+                size_t offsetLeft = map->width * y + (x - 1);
+                uint8_t blockLeft = map->data[offsetLeft];
+                if (!(ref->data[offsetLeft] & BIT_PROCESSED) &&
+                    (blockLeft & BIT_INFECTED) != (block & BIT_INFECTED)) {
                     result++;
                 }
             }
             //上边的墙
             if (y > 0) {
-                uint8_t blockTop = map->data[map->width * (y - 1) + x];
-                if ((blockTop & BIT_INFECTED) != (block & BIT_INFECTED)) {
+                size_t offsetTop = map->width * (y - 1) + x;
+                uint8_t blockTop = map->data[offsetTop];
+                if (!(ref->data[offsetTop] & BIT_PROCESSED) &&
+                    (blockTop & BIT_INFECTED) != (block & BIT_INFECTED)) {
                     result++;
                 }
             }
@@ -276,7 +295,7 @@ int processMap(const map_t* mapSrc, uint32_t *wallsAdded)
         return 0;
     }
 
-    *wallsAdded = countWalls(&(regionUse->map));
+    *wallsAdded = countWalls(&(regionUse->map), mapSrc);
     freezeMap(mapSrc, &(regionUse->map));
     infectMapNext(mapSrc);
 
