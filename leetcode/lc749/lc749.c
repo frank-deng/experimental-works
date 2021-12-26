@@ -162,11 +162,13 @@ region_t *getNextRegion(map_t *map, uint16_t *x0, uint16_t *y0)
         }
         map->data[offset] |= BIT_PROCESSED;
         if (!(cell & BIT_INFECTED)) {
-            region->map.data[offset] |= BIT_INFECT_NEXT;
-            (region->infectNextCount)++;
+            if (!(region->map.data[offset] & BIT_INFECT_NEXT)) {
+                region->map.data[offset] |= BIT_INFECT_NEXT;
+                (region->infectNextCount)++;
+            }
             continue;
         }
-        region->map.data[offset] = 1;
+        region->map.data[offset] |= BIT_INFECTED;
 
         // Left cell
         if (x > 0) {

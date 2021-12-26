@@ -6,7 +6,7 @@ CFLAGS=-std=c99 -I/usr/include/gtest -g -Wall
 .PHONY:clean debug build valgrind
 
 debug: ${TARGET}
-	gdb ./${TARGET} -ex 'b lc749.c:283' -ex 'r'
+	gdb -ex 'b lc749.c:304' -ex 'r' --args ./${TARGET} --gtest_filter=*.test3
 
 valgrind: ${TARGET}
 	valgrind --leak-check=full ./${TARGET}
