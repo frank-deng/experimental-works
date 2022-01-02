@@ -19,6 +19,8 @@ typedef struct {
     btree_leaf_t *root;
 } btree_t;
 
+typedef void (*btree_walk_callback_t)(const btree_leaf_t* const, void*);
+
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -27,6 +29,8 @@ bool btreeInit(btree_t *btree, size_t dataSize);
 void btreeFree(btree_t *btree);
 btree_leaf_t* btreeInsertLeaf(btree_t *btree, btree_leaf_t *leaf,
     btree_pos_t pos);
+void btreeWalkByLayer(btree_t *btree, btree_walk_callback_t callback,
+    void *data);
 
 #ifdef __cplusplus
 }

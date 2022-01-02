@@ -1,5 +1,5 @@
-#ifndef QUEUE_BTREE_H
-#define QUEUE_BTREE_H
+#ifndef QUEUE_H
+#define QUEUE_H
 
 #include <stdlib.h>
 #include <stdbool.h>
@@ -24,8 +24,8 @@ extern "C" {
 
 bool queueInit(queue_t *queue, size_t itemSize, size_t blockSize);
 void queueFree(queue_t *queue);
-bool queueIn(queue_t *queue, void *data);
-bool queueOut(queue_t *queue, void *data);
+bool queuePush(queue_t *queue, void *data);
+bool queuePop(queue_t *queue, void *data);
 
 #ifdef __cplusplus
 }

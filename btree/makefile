@@ -1,12 +1,12 @@
 TARGET=btree-test
-OBJS=queue.o btree.o main.o
+OBJS=queue.o stack.o btree.o main.o
 LIBS=-lgtest -lpthread
 CFLAGS=-std=c99 -I/usr/include/gtest -g -Wall
 
 .PHONY:clean debug build valgrind
 
 debug: ${TARGET}
-	gdb ./${TARGET} -ex 'b main.cpp:19' -ex r
+	gdb ./${TARGET} -ex 'b main.cpp:79' -ex r
 
 valgrind: ${TARGET}
 	valgrind --leak-check=full ./${TARGET}
@@ -19,13 +19,13 @@ copy: ${TARGET}
 ${TARGET}: ${OBJS}
 	g++ ${CFLAGS} -o $@ $^ ${LIBS}
 
-main.o: main.cpp btree.h queue.h
+main.o: main.cpp btree.h queue.h stack.h
 	g++ ${CFLAGS} -c -o $@ $<
-
-btree.o: btree.c btree.h
-	gcc ${CFLAGS} -c -o $@ $<
-
 queue.o: queue.c queue.h
+	gcc ${CFLAGS} -c -o $@ $<
+stack.o: stack.c stack.h
+	gcc ${CFLAGS} -c -o $@ $<
+btree.o: btree.c btree.h
 	gcc ${CFLAGS} -c -o $@ $<
 
 clean:

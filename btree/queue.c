@@ -1,11 +1,17 @@
+#include <malloc.h>
 #include <string.h>
 #include "queue.h"
+
+#define INITIAL_SIZE_DEFAULT 128
 
 static queue_block_t *queueCreateBlock(queue_t *queue);
 bool queueInit(queue_t *queue, size_t itemSize, size_t blockSize)
 {
-    if (itemSize <= 0 || blockSize <= 0) {
+    if (itemSize <= 0) {
         return false;
+    }
+    if (blockSize <= 0) {
+        blockSize = INITIAL_SIZE_DEFAULT;
     }
     queue->itemSize = itemSize;
     queue->blockSize = blockSize;
@@ -43,9 +49,9 @@ static queue_block_t *queueCreateBlock(queue_t *queue)
     newBlock->end = 0;
     return newBlock;
 }
-bool queueIn(queue_t *queue, void *data)
+bool queuePush(queue_t *queue, void *data)
 {
-    if (queue == NULL) {
+    if (queue == NULL || data == NULL) {
         return false;
     }
     queue_block_t *block = queue->end;
@@ -61,23 +67,18 @@ bool queueIn(queue_t *queue, void *data)
         if (newBlock == NULL) {
             return false;
         }
-        queue->end = newBlock;
-        if (block == NULL) {
-            queue->start = newBlock;
-        } else {
-            block->next = newBlock;
-        }
+        block->next = queue->end = newBlock;
         block = newBlock;
     }
 
     // Insert data into queue
     size_t offset = (block->end % queue->blockSize) * queue->itemSize;
-    void *target = (void*)((char*)(queue->data) + offset);
+    void *target = (void*)((char*)(block->data) + offset);
     memcpy(target, data, queue->itemSize);
     (block->end)++;
     return true;
 }
-bool queueOut(queue_t *queue, void *data)
+bool queuePop(queue_t *queue, void *data)
 {
     if (queue == NULL) {
         return false;
@@ -91,9 +92,11 @@ bool queueOut(queue_t *queue, void *data)
     }
 
     // Export data from queue
-    size_t offset = (block->start % size) * queue->itemSize;
-    void *target = (void*)((char*)(queue->data) + offset);
-    memcpy(data, target, queue->itemSize);
+    size_t offset = (block->start % queue->blockSize) * queue->itemSize;
+    void *target = (void*)((char*)(block->data) + offset);
+    if (data != NULL) {
+        memcpy(data, target, queue->itemSize);
+    }
     (block->start)++;
 
     // Need to free current block

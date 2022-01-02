@@ -1,5 +1,6 @@
 #include <malloc.h>
-#include "test.h"
+#include "btree.h"
+#include "queue.h"
 
 bool btreeInit(btree_t *btree, size_t dataSize)
 {
@@ -62,5 +63,32 @@ void btreeFree(btree_t *btree)
     }
     btreeFreeLeaf(btree->root);
     btree->root = NULL;
+}
+void btreeWalkByLayer(btree_t *btree, btree_walk_callback_t callback,
+    void *data)
+{
+    if (btree == NULL) {
+        return;
+    }
+    if (btree->root == NULL) {
+        return;
+    }
+    queue_t queue;
+    queueInit(&queue, sizeof(btree_leaf_t*), 0);
+    btree_leaf_t* item = btree->root;
+    do {
+        if (callback != NULL) {
+            (*callback)(item, data);
+        }
+        if (item == NULL) {
+            continue;
+        }
+        if (item->left == NULL && item->right == NULL) {
+            continue;
+        }
+        queuePush(&queue, &(item->left));
+        queuePush(&queue, &(item->right));
+    } while (queuePop(&queue, &item));
+    queueFree(&queue);
 }
 
