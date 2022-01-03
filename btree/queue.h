@@ -26,6 +26,7 @@ bool queueInit(queue_t *queue, size_t itemSize, size_t blockSize);
 void queueFree(queue_t *queue);
 bool queuePush(queue_t *queue, void *data);
 bool queuePop(queue_t *queue, void *data);
+bool queueHasData(queue_t *queue);
 
 #ifdef __cplusplus
 }

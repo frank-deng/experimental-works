@@ -107,4 +107,18 @@ bool queuePop(queue_t *queue, void *data)
 
     return true;
 }
+bool queueHasData(queue_t *queue)
+{
+    if (queue == NULL) {
+        return false;
+    }
+    if (queue->start == queue->end) {
+        queue_block_t *block = queue->start;
+        if (block == NULL) {
+            return false;
+        }
+        return block->start < block->end;
+    }
+    return true;
+}
 

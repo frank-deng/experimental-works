@@ -53,13 +53,11 @@ TEST(stack, test)
 
 void btreeWalkCB(const btree_leaf_t* const leaf, void* data)
 {
-    char buf[16] = "";
-    if (leaf == NULL) {
-        sprintf(buf, "-1\t");
-    } else {
-        sprintf(buf, "%u\t", *(uint16_t*)(leaf->data));
+    int value = -1;
+    if (leaf != NULL) {
+        value = (int)(*(uint16_t*)(leaf->data));
     }
-    strcat((char*)data, buf);
+    queuePush((queue_t*)data, &value);
 }
 TEST(btree, stringify)
 {
@@ -76,10 +74,52 @@ TEST(btree, stringify)
     leaf = btreeInsertLeaf(&btree, btree.root->left, BTREE_RIGHT);
     *((uint16_t*)(leaf->data)) = 12;
 
-    char buf[2048] = "";
-    btreeWalkByLayer(&btree, btreeWalkCB, buf);
-    puts(buf);
+    queue_t result;
+    int value;
+    queueInit(&result, sizeof(int), 0);
 
+    queue_t walker;
+    btreeLayerWalkerInit(&walker, &btree);
+    leaf = NULL;
+    while (btreeLayerWalkerIter(&walker, &leaf)) {
+        value = (leaf == NULL ? -1 : (int)(*(uint16_t*)(leaf->data)));
+        queuePush(&result, &value);
+    }
+    btreeLayerWalkerFree(&walker);
+
+    btree_t btree2;
+    btreeInit(&btree2, sizeof(uint16_t));
+
+    btree_creator_t creator;
+    btreeCreatorInit(&creator, &btree2);
+    leaf = NULL;
+    while (queuePop(&result, &value)) {
+        bool pass = (value == -1);
+        if (!btreeCreatorIter(&creator, pass, &leaf)) {
+            break;
+        }
+        if (leaf != NULL) {
+            *((uint16_t*)(leaf->data)) = (uint16_t)value;
+        }
+    }
+    btreeCreatorFree(&creator);
+
+    btreeLayerWalkerInit(&walker, &btree2);
+    leaf = NULL;
+    EXPECT_EQ(true, btreeLayerWalkerIter(&walker, &leaf));
+    EXPECT_EQ(16, *(uint16_t*)(leaf->data));
+    EXPECT_EQ(true, btreeLayerWalkerIter(&walker, &leaf));
+    EXPECT_EQ(8, *(uint16_t*)(leaf->data));
+    EXPECT_EQ(true, btreeLayerWalkerIter(&walker, &leaf));
+    EXPECT_EQ(24, *(uint16_t*)(leaf->data));
+    EXPECT_EQ(true, btreeLayerWalkerIter(&walker, &leaf));
+    EXPECT_EQ(NULL, leaf);
+    EXPECT_EQ(true, btreeLayerWalkerIter(&walker, &leaf));
+    EXPECT_EQ(12, *(uint16_t*)(leaf->data));
+    btreeLayerWalkerFree(&walker);
+
+    queueFree(&result);
+    btreeFree(&btree2);
     btreeFree(&btree);
 }
 int main(int argc, char *argv[])
