@@ -10,7 +10,7 @@ CFLAGS=-std=c99 -I/usr/include/gtest -g -Wall
 
 # Use argument gtest_filter=filter_rule after `make` command to specify the test to run
 run: ${TARGET}
-	./${TARGET} $(if ${gtest_filter}, --gtest_filter=${gtest_filter})
+	./${TARGET} $(if ${filter}, --gtest_filter=${filter})
 
 debug: ${TARGET}
 	gdb ./${TARGET}
