@@ -14,6 +14,7 @@ extern "C" {
 
 int searchRotatedArr(int*, int, int);
 char *largestNumber(int*, int);
+int *maxSlidingWindow(int*, int, int, int*);
 
 #ifdef __cplusplus
 }

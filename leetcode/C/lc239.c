@@ -1,6 +1,4 @@
-#include <stdio.h>
-#include <stdbool.h>
-#include <malloc.h>
+#include "test.h"
 
 typedef struct {
     int value;
@@ -170,42 +168,5 @@ int *maxSlidingWindow(int *nums, int numsSize, int k, int *returnSize)
     heapFree(heap);
     heap = NULL;
     return result;
-}
-int main()
-{
-    size_t width = 0;
-    size_t length = 0;
-    if (scanf("%lu%lu", &width, &length) == EOF) {
-        fputs("Invalid input.\n", stderr);
-        return -1;
-    }
-    if (width > length) {
-        fputs("Invalid input.\n", stderr);
-        return -1;
-    }
-    int *data = (int*)malloc(sizeof(int) * length);
-    if (data == NULL) {
-        fputs("Memory allocation error.\n", stderr);
-        return -1;
-    }
-    for (size_t i = 0; i < length; i++) { 
-        if (scanf("%d", data + i) == EOF) {
-            fputs("Invalid input.\n", stderr);
-            return -1;
-        }
-    }
-    int returnSize = 0;
-    int *result = maxSlidingWindow(data, (int)length, (int)width, &returnSize);
-    if (result == NULL) {
-        fputs("Calculation failed.\n", stderr);
-        return -1;
-    }
-    for (int i = 0; i < returnSize; i++) {
-        printf("%d\t", result[i]);
-    }
-    putchar('\n');
-    free(result);
-    result = NULL;
-    return 0;
 }
 

@@ -4,7 +4,7 @@ OBJS=$(patsubst %.c,%.o,$(wildcard *.c))\
 HEADERS=test.h
 TARGET=leetcode_test.out
 LIBS=-lgtest -lpthread
-CFLAGS=-std=c99 -I/usr/include/gtest -g -Wall
+CFLAGS=-I/usr/include/gtest -g -Wall
 
 .PHONY:clean debug build valgrind
 
@@ -25,7 +25,7 @@ main.o: main.cpp
 	g++ ${CFLAGS} -c -o $@ $<
 
 %.o: %.c ${HEADERS}
-	gcc ${CFLAGS} -c -o $@ $<
+	gcc -std=c99 ${CFLAGS} -c -o $@ $<
 
 %.test.o: %.test.cpp ${HEADERS}
 	g++ ${CFLAGS} -c -o $@ $<
