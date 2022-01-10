@@ -1,6 +1,4 @@
-#include <stdio.h>
-#include <string.h>
-#include <malloc.h>
+#include "test.h"
 
 #define MATCH_LEN 10
 #define DNA_HASH_MAX ((1 << (MATCH_LEN * 2)) - 1)
@@ -133,32 +131,5 @@ char **findRepeatedDnaSequences(char *s, int *returnSize)
     }while(*end);
     dna_hash_close(&hashTable);
     return result;
-}
-int main(int argc, char *argv[]){
-    int returnSize = 0, i;
-    char **result = NULL;
-
-    if (argc < 2){
-        fputs("DNA sequence required.", stderr);
-        return 1;
-    }
-    result = findRepeatedDnaSequences(argv[1], &returnSize);
-    if(result == NULL){
-        return 0;
-    }
-
-    //Print data
-    for(i = 0; i < returnSize; i++){
-        printf("%s\n", result[i]);
-    }
-
-    //Free data
-    for(i = 0; i < returnSize; i++){
-        free(result[i]);
-        result[i] = NULL;
-    }
-    free(result);
-    result = NULL;
-    return 0;
 }
 

@@ -15,6 +15,7 @@ extern "C" {
 int searchRotatedArr(int*, int, int);
 char *largestNumber(int*, int);
 int *maxSlidingWindow(int*, int, int, int*);
+char **findRepeatedDnaSequences(char*, int*);
 
 #ifdef __cplusplus
 }
