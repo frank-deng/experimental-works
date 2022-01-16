@@ -8,6 +8,12 @@ TEST(LeetCode_33, test0)
     EXPECT_EQ(4, searchRotatedArr(nums,
         sizeof(nums) / sizeof(nums[0]), target));
 }
+TEST(LeetCode_33, test01)
+{
+    int nums[] = {7,0,1,2,3,4,5,6}, target = 5;
+    EXPECT_EQ(6, searchRotatedArr(nums,
+        sizeof(nums) / sizeof(nums[0]), target));
+}
 TEST(LeetCode_33, test1)
 {
     int nums[] = {4,5,6,7,0,1,2}, target = 3;
