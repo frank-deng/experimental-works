@@ -95,7 +95,7 @@ void addValue(char **target, int *length, dna_t dna){
     target[*length] = buf;
     (*length)++;
 }
-char **findRepeatedDnaSequences(char *s, int *returnSize)
+char **findRepeatedDnaSequences(const char *s, int *returnSize)
 {
     dna_hash_t hashTable;
     dna_t dna = 0;

@@ -1,5 +1,4 @@
-#include <stdio.h>
-#include <malloc.h>
+#include "test.h"
 
 #define min(x,y) (x < y ? x : y)
 
@@ -25,16 +24,5 @@ int minSumOfLengths(int* arr, int length, int target)
     }
     free(dpTable);
     return result > length ? -1 : result;
-}
-int main(){
-    int *arr=NULL, length, target;
-    scanf("%d%d",&length,&target);
-    arr=(int*)malloc(sizeof(int)*length);
-    for(int i=0; i<length; i++){
-        scanf("%d",arr+i);
-    }
-    printf("%d\n",minSumOfLengths(arr,length,target));
-    free(arr);arr=NULL;
-    return 0;
 }
 
