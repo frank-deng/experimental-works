@@ -1,8 +1,8 @@
 #include <gtest.h>
-#include "lc749.h"
+#include "test.h"
 using namespace testing;
 
-TEST(containVirus, test0)
+TEST(LeetCode_749, test0)
 {
 #define MAP_WIDTH 8
 #define MAP_HEIGHT 4
@@ -22,7 +22,7 @@ TEST(containVirus, test0)
 #undef MAP_WIDTH
 #undef MAP_HEIGHT
 }
-TEST(containVirus, test1)
+TEST(LeetCode_749, test1)
 {
 #define MAP_WIDTH 3
 #define MAP_HEIGHT 3
@@ -41,7 +41,7 @@ TEST(containVirus, test1)
 #undef MAP_WIDTH
 #undef MAP_HEIGHT
 }
-TEST(containVirus, test2)
+TEST(LeetCode_749, test2)
 {
 #define MAP_WIDTH 9
 #define MAP_HEIGHT 3
@@ -60,7 +60,7 @@ TEST(containVirus, test2)
 #undef MAP_WIDTH
 #undef MAP_HEIGHT
 }
-TEST(containVirus, test3)
+TEST(LeetCode_749, test3)
 {
 #define MAP_WIDTH 10
 #define MAP_HEIGHT 10
@@ -85,10 +85,5 @@ TEST(containVirus, test3)
     EXPECT_EQ(containVirus(map, MAP_HEIGHT, widthArr), 56);
 #undef MAP_WIDTH
 #undef MAP_HEIGHT
-}
-int main(int argc, char *argv[])
-{
-    InitGoogleTest(&argc, argv);
-    return RUN_ALL_TESTS();
 }
 

@@ -1,7 +1,4 @@
-#include <stdint.h>
-#include <string.h>
-#include <malloc.h>
-#include "lc749.h"
+#include "test.h"
 
 typedef struct {
     uint16_t x;
