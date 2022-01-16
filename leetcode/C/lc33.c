@@ -28,22 +28,22 @@ int searchRotatedArr(int* nums, int numSize, int target)
         size_t mid = start + ((end - start) >> 1);
         if (nums[mid] == target) {
             return mid;
-        } else if (mid <= start) {
-            start = mid + 1;
+        } else if (start >= mid) {
+            start++;
         } else if ((mid + 1) >= end) {
-            end = mid;
+            end--;
         } else if (nums[start] < nums[mid - 1]) {
             if (nums[start] <= target && target <= nums[mid - 1]) {
-                return _bsearch(nums + start, mid - start, target);
+                int result = _bsearch(nums + start, mid - start, target);
+                return result == -1 ? -1 : start + result;
             }
-            start = mid + 1;
-        } else if (nums[mid + 1] < nums[end - 1]) {
+            start = mid;
+        } else if (nums[mid] < nums[end - 1]) {
             if (nums[mid] <= target && target <= nums[end - 1]) {
-                return _bsearch(nums + mid + 1, end - mid, target);
+                int result = _bsearch(nums + mid, end - mid, target);
+                return result == -1 ? -1 : mid + result;
             }
             end = mid;
-        } else {
-            break;
         }
     }
     return -1;

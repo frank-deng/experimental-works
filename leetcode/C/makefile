@@ -13,7 +13,7 @@ run: ${TARGET}
 	./${TARGET} $(if ${filter}, --gtest_filter=${filter})
 
 debug: ${TARGET}
-	gdb ./${TARGET}
+	gdb -x 'debug.txt' ./${TARGET}
 
 valgrind: ${TARGET}
 	valgrind --leak-check=full ./${TARGET}
