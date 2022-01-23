@@ -4,7 +4,7 @@ OBJS=$(patsubst %.c,%.o,$(wildcard *.c))\
 HEADERS=test.h
 TARGET=leetcode_test.out
 LIBS=-lgtest -lpthread
-CFLAGS=-I/usr/include/gtest -g -Wall
+CFLAGS=-g -Wall
 
 .PHONY:clean debug build valgrind
 
