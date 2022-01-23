@@ -18,6 +18,7 @@ int *maxSlidingWindow(int*, int, int, int*);
 char **findRepeatedDnaSequences(const char*, int*);
 int containVirus(int**, int, int*);
 int minSumOfLengths(int*, int, int);
+int **subsets(int*, int, int*, int**);
 
 #ifdef __cplusplus
 }
