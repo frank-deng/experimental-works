@@ -61,7 +61,7 @@ int **subsets(int *nums, int length, int *returnSize, int** colSize)
     int **result = (int**)malloc(sizeof(int*) * (resultLen));
     itemSizeArr[0] = 0;
     result[0] = NULL;
-    size_t resultIdx = 0;
+    size_t resultIdx = 1;
     handler_data_t __handler_data = {
         nums,
         &resultIdx,

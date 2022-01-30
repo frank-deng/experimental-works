@@ -10,6 +10,30 @@ typedef struct {
 TEST(LeetCode_78, test1)
 {
     int nums[] = {1,2,3};
-    //int *
+    answer_item_t answersAll[8] = {
+        {0, NULL},
+        {1, {1}},
+        {1, {2}},
+        {1, {3}},
+        {2, {1,2}},
+        {2, {1,3}},
+        {2, {2,3}},
+        {3, {1,2,3}}
+    };
+    int returnSize = 0;
+    int *colSize = NULL;
+    int **result = subsets(nums, sizeof(nums)/sizeof(nums[0]),
+        &returnSize, &colSize);
+    EXPECT_EQ(1 << (sizeof(nums)/sizeof(nums[0])), returnSize);
+    for (int i = 0; i < returnSize; i++) {
+        EXPECT_EQ(answersAll[i].length, colSize[i]);
+        if (colSize[i]) {
+            EXPECT_EQ(0, memcmp(result[i], answersAll[i].data,
+                sizeof(int) * colSize[i]));
+            free(result[i]);
+        }
+    }
+    free(result);
+    free(colSize);
 }
 
