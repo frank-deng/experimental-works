@@ -1,5 +1,6 @@
 TARGET=subprocess_demo
 OBJS=subprocess.o main.o
+HEADERS=subprocess.h
 TARGET_TEST=test_prog
 OBJS_TEST=test.o
 CFLAGS=-g -Wall
