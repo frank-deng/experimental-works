@@ -8,6 +8,7 @@ int main(int argc, char *argv[])
     fgets(buf, 1024, stdin);
     printf("input: %s\n", buf);
     fputs("666666aaa\n", stderr);
+    puts("THE END");
     return 0;
 }
 

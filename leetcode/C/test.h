@@ -19,6 +19,7 @@ char **findRepeatedDnaSequences(const char*, int*);
 int containVirus(int**, int, int*);
 int minSumOfLengths(int*, int, int);
 int **subsets(int*, int, int*, int**);
+int myAtoi(const char *s);
 
 #ifdef __cplusplus
 }
