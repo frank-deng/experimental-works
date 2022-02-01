@@ -20,6 +20,7 @@ int containVirus(int**, int, int*);
 int minSumOfLengths(int*, int, int);
 int **subsets(int*, int, int*, int**);
 int myAtoi(const char *s);
+double myPow(double x, int n);
 
 #ifdef __cplusplus
 }
