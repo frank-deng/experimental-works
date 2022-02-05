@@ -9,8 +9,9 @@ int main()
     };
 
     subprocess_handle_t handle;
-    if (subprocess_open(&handle, args)) {
-        fputs("subprocess_open() failed.\n", stderr);
+    int retcode = subprocess_open(&handle, args);
+    if (retcode) {
+        fprintf(stderr, "subprocess_open() failed with code %d.\n", retcode);
         return 1;
     }
 
