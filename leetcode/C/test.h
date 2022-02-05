@@ -8,6 +8,12 @@
 #include <string.h>
 #include <malloc.h>
 
+struct TreeNode {
+    int val;
+    struct TreeNode *left;
+    struct TreeNode *right;
+};
+
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -21,6 +27,7 @@ int minSumOfLengths(int*, int, int);
 int **subsets(int*, int, int*, int**);
 int myAtoi(const char *s);
 double myPow(double x, int n);
+int* getAllElements(struct TreeNode*, struct TreeNode*, int*);
 
 #ifdef __cplusplus
 }
