@@ -28,6 +28,7 @@ int **subsets(int*, int, int*, int**);
 int myAtoi(const char *s);
 double myPow(double x, int n);
 int* getAllElements(struct TreeNode*, struct TreeNode*, int*);
+int compareVersion(const char *ver0, const char *ver1);
 
 #ifdef __cplusplus
 }
