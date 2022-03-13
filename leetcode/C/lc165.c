@@ -2,7 +2,7 @@
 #include "test.h"
 
 #define VERSION_SEG_MAX 500
-int parseVersion(const char *str, size_t segsMax, uint32_t *data)
+static int parseVersion(const char *str, size_t segsMax, uint32_t *data)
 {
     char *p = str, *next = NULL;
     int i = 0;

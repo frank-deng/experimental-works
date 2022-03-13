@@ -29,6 +29,7 @@ int myAtoi(const char *s);
 double myPow(double x, int n);
 int* getAllElements(struct TreeNode*, struct TreeNode*, int*);
 int compareVersion(const char *ver0, const char *ver1);
+bool validUtf8(int *data, int dataSize);
 
 #ifdef __cplusplus
 }
