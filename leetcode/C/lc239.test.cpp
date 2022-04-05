@@ -1,6 +1,4 @@
-#include <gtest/gtest.h>
 #include "test.h"
-using namespace testing;
 
 TEST(LeetCode_239, test0)
 {

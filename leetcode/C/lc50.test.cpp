@@ -1,6 +1,4 @@
-#include <gtest/gtest.h>
 #include "test.h"
-using namespace testing;
 
 TEST(LeetCode_50, test_1)
 {
@@ -14,4 +12,3 @@ TEST(LeetCode_50, test_3)
 {
     EXPECT_DOUBLE_EQ(7.59375, myPow(1.5, 5));
 }
-

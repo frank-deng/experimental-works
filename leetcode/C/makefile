@@ -8,7 +8,7 @@ CFLAGS=-g -Wall
 
 .PHONY:clean debug build valgrind
 
-# Use argument gtest_filter=filter_rule after `make` command to specify the test to run
+# Use argument filter=filter_rule after `make` command to specify the test to run
 run: ${TARGET}
 	./${TARGET} $(if ${filter}, --gtest_filter=${filter})
 
@@ -32,4 +32,3 @@ main.o: main.cpp
 
 clean:
 	-rm ${OBJS} ${TARGET}
-

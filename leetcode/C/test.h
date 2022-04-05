@@ -30,9 +30,15 @@ double myPow(double x, int n);
 int* getAllElements(struct TreeNode*, struct TreeNode*, int*);
 int compareVersion(const char *ver0, const char *ver1);
 bool validUtf8(int *data, int dataSize);
+int minCostConnectPoints(int**, int, int*);
 
 #ifdef __cplusplus
 }
+#endif
+
+#ifdef __cplusplus
+#include <gtest/gtest.h>
+using namespace testing;
 #endif
 
 #endif

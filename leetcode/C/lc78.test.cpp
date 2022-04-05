@@ -1,6 +1,6 @@
-#include <gtest/gtest.h>
+
 #include "test.h"
-using namespace testing;
+
 
 #define MAX_SIZE 32
 typedef struct {

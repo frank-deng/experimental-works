@@ -1,6 +1,4 @@
-#include <gtest/gtest.h>
 #include "test.h"
-using namespace testing;
 
 class TestLeetCode187 : public Test
 {

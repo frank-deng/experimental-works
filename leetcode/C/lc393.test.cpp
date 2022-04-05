@@ -1,6 +1,4 @@
-#include <gtest/gtest.h>
 #include "test.h"
-using namespace testing;
 
 void str2arr(const char *str, int *arr)
 {
@@ -28,4 +26,3 @@ TEST(LeetCode_393, test2)
     str2arr(STRING_2, arr);
     EXPECT_EQ(true, validUtf8(arr, strlen(STRING_2)));
 }
-

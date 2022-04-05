@@ -1,6 +1,4 @@
-#include <gtest/gtest.h>
 #include "test.h"
-using namespace testing;
 
 TEST(LeetCode_33, test0)
 {
@@ -50,4 +48,3 @@ TEST(LeetCode_33, test7)
     EXPECT_EQ(0, searchRotatedArr(nums,
         sizeof(nums) / sizeof(nums[0]), target));
 }
-

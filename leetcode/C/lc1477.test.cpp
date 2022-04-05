@@ -1,6 +1,6 @@
-#include <gtest/gtest.h>
+
 #include "test.h"
-using namespace testing;
+
 
 int* readArr(const char* filename, int *length, int *target)
 {
