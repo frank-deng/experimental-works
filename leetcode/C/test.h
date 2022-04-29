@@ -31,6 +31,7 @@ int* getAllElements(struct TreeNode*, struct TreeNode*, int*);
 int compareVersion(const char *ver0, const char *ver1);
 bool validUtf8(int *data, int dataSize);
 int minCostConnectPoints(int**, int, int*);
+int findBottomLeftValue(struct TreeNode* root);
 
 #ifdef __cplusplus
 }
