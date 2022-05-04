@@ -25,13 +25,14 @@ char **findRepeatedDnaSequences(const char*, int*);
 int containVirus(int**, int, int*);
 int minSumOfLengths(int*, int, int);
 int **subsets(int*, int, int*, int**);
-int myAtoi(const char *s);
-double myPow(double x, int n);
+int myAtoi(const char *);
+double myPow(double, int);
 int* getAllElements(struct TreeNode*, struct TreeNode*, int*);
-int compareVersion(const char *ver0, const char *ver1);
-bool validUtf8(int *data, int dataSize);
+int compareVersion(const char*, const char*);
+bool validUtf8(int *, int);
 int minCostConnectPoints(int**, int, int*);
-int findBottomLeftValue(struct TreeNode* root);
+int findBottomLeftValue(struct TreeNode*);
+int** levelOrder(struct TreeNode*, int*, int**);
 
 #ifdef __cplusplus
 }

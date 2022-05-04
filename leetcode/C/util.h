@@ -1,5 +1,5 @@
-#ifndef __util_h__
-#define __util_h__
+#ifndef util_h
+#define util_h
 
 #include "test.h"
 
