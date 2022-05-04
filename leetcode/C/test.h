@@ -33,6 +33,7 @@ bool validUtf8(int *, int);
 int minCostConnectPoints(int**, int, int*);
 int findBottomLeftValue(struct TreeNode*);
 int** levelOrder(struct TreeNode*, int*, int**);
+int numSubarrayProductLessThanK(int*, int, int);
 
 #ifdef __cplusplus
 }
