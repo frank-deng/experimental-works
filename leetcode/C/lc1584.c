@@ -139,105 +139,45 @@ pointConn_t* getConn(int** points, size_t pointsSize, size_t *size)
 
 typedef struct {
     size_t size;
-    uint8_t* data[0];
+    pointId_t data[0];
 } group_t;
-void groupDel(group_t *group, size_t idx);
 group_t *groupInit(size_t size)
 {
-    group_t* result = (group_t*)calloc(1, sizeof(group_t) + sizeof(uint8_t*) * size);
+    group_t* result = (group_t*)malloc(sizeof(group_t) + sizeof(pointId_t*) * size);
     if (NULL == result) {
         return NULL;
     }
     result->size = size;
+    size_t i;
+    for (i = 0; i < size; i++) {
+        result->data[i] = -1;
+    }
     return result;
 }
 void groupClose(group_t *group)
 {
-    size_t i;
-    for (i = 0; i < group->size; i++) {
-        groupDel(group, i);
-    }
     free(group);
 }
-size_t groupAdd(group_t *group)
+int acceptConn(group_t *group, pointId_t start, pointId_t end)
 {
-    size_t i, target = group->size;
-    for (i = 0; i < group->size; i++) {
-        if (group->data[i] != NULL) {
-            continue;
-        }
-        target = i;
-        break;
-    }
-    if (target >= group->size) {
-        return group->size;
-    }
-    group->data[target] = (uint8_t*)calloc(sizeof(uint8_t), group->size);
-    if (NULL == group->data[target]) {
-        return group->size;
-    }
-    return target;
-}
-void groupDel(group_t *group, size_t idx)
-{
-    if (idx >= group->size || NULL == group->data[idx]) {
-        return;
-    }
-    free(group->data[idx]);
-    group->data[idx] = NULL;
-}
-int groupMerge(group_t *group, size_t idx0, size_t idx1)
-{
-    if (idx0 >= group->size || idx1 >= group->size ||
-        group->data[idx0] == NULL || group->data[idx1] == NULL) {
+    if (group->data[start] < 0 && group->data[end] < 0) {
+        group->data[start] = start;
+        group->data[end] = start;
+    } else if (group->data[start] >= 0 && group->data[end] < 0) {
+        group->data[end] = group->data[start];
+    } else if (group->data[start] < 0 && group->data[end] >= 0) {
+        group->data[start] = group->data[end];
+    } else if (group->data[start] == group->data[end]) {
         return 1;
     }
-    size_t i;
-    uint8_t *dest = group->data[idx0];
-    uint8_t *src = group->data[idx1];
-    for (i = 0; i < group->size; i++) {
-        dest[i] = dest[i] | src[i];
-    }
-    groupDel(group, idx1);
-    return 0;
-}
-int acceptConn(group_t *group, size_t start, size_t end)
-{
-    size_t groupStart = group->size, groupEnd = group->size, i;
-    for (i = 0; i < group->size; i++) {
-        uint8_t *data = group->data[i];
-        if (NULL == data) {
-            continue;
-        }
-        // Both points in the same group, deny this connection
-        if (data[start] != 0 && data[end] != 0) {
-            return 1;
-        }
-        if (data[start] != 0) {
-            groupStart = i;
-        }
-        if (data[end] != 0) {
-            groupEnd = i;
+    size_t size = group->size, i;
+    pointId_t groupStart = group->data[start];
+    pointId_t groupEnd = group->data[end];
+    for (i = 0; i < size; i++) {
+        if (group->data[i] == groupEnd) {
+            group->data[i] = groupStart;
         }
     }
-    if (groupStart < group->size && groupEnd < group->size) {
-        groupMerge(group, groupStart, groupEnd);
-        return 0;
-    }
-    uint8_t *target = NULL;
-    if (groupStart < group->size && groupEnd >= group->size) {
-        target = group->data[groupStart];
-    } else if (groupStart >= group->size && groupEnd < group->size) {
-        target = group->data[groupEnd];
-    } else {
-        i = groupAdd(group);
-        if (i >= group->size) {
-            return 1;
-        }
-        target = group->data[i];
-    }
-    target[start] = 1;
-    target[end] = 1;
     return 0;
 }
 int minCostConnectPoints(int** points, int pointsSize, int* pointsColSize)
