@@ -78,4 +78,17 @@ TEST(LeetCode_1584, test5)
     }
     EXPECT_EQ(53, minCostConnectPoints(data, pointDataCount, NULL));
 }
+TEST(LeetCode_1584, test6)
+{
+    int i;
+    int pointData[][2] = {
+        {2,-3}, {-17,-8}, {13,8}, {-17,-15}
+    };
+    int pointDataCount = sizeof(pointData) / sizeof(pointData[0]);
+    int *data[pointDataCount] = { 0 };
+    for (i = 0; i < pointDataCount; i++) {
+        data[i] = pointData[i];
+    }
+    EXPECT_EQ(53, minCostConnectPoints(data, pointDataCount, NULL));
+}
 

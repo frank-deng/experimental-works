@@ -9,7 +9,7 @@ typedef struct {
     size_t length;
     heapItem_t *data;
 } maxHeap_t;
-maxHeap_t *heapInit(size_t size)
+static maxHeap_t *heapInit(size_t size)
 {
     if (size <= 0) {
         return NULL;
@@ -28,7 +28,7 @@ maxHeap_t *heapInit(size_t size)
     heap->data = data;
     return heap;
 }
-void heapFree(maxHeap_t *heap)
+static void heapFree(maxHeap_t *heap)
 {
     if (heap == NULL) {
         return;
@@ -58,7 +58,7 @@ static inline void __swap(heapItem_t *arr, size_t a, size_t b)
     arr[b].value = temp.value;
     arr[b].idx = temp.idx;
 }
-bool heapTop(maxHeap_t *heap, heapItem_t *target)
+static bool heapTop(maxHeap_t *heap, heapItem_t *target)
 {
     if (heap->length <= 0 || target == NULL) {
         return false;
@@ -67,7 +67,7 @@ bool heapTop(maxHeap_t *heap, heapItem_t *target)
     target->idx = heap->data[0].idx;
     return true;
 }
-bool heapPush(maxHeap_t *heap, int value, size_t idx)
+static bool heapPush(maxHeap_t *heap, int value, size_t idx)
 {
     if (heap->length >= heap->size) {
         return false;
@@ -87,7 +87,7 @@ bool heapPush(maxHeap_t *heap, int value, size_t idx)
     }
     return true;
 }
-bool heapPop(maxHeap_t *heap, heapItem_t *outVal)
+static bool heapPop(maxHeap_t *heap, heapItem_t *outVal)
 {
     if (heap->length <= 0) {
         return false;

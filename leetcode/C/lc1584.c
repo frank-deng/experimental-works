@@ -6,14 +6,13 @@ typedef struct {
     pointId_t end;
     int64_t distance;
 } pointConn_t;
-
 typedef struct{
 	size_t length;
 	size_t itemSize;
 	size_t size;
 	void* data;
 }heap_t;
-int heap_init(heap_t* heap,	size_t itemSize, size_t size)
+static int heapInit(heap_t* heap, size_t itemSize, size_t size)
 {
 	heap->length=0;
 	heap->size=size;
@@ -21,7 +20,7 @@ int heap_init(heap_t* heap,	size_t itemSize, size_t size)
 	heap->data=(void*)malloc(itemSize*size);
 	return heap->data != NULL ? 1 : 0;
 }
-void heap_close(heap_t *heap)
+static void heapClose(heap_t *heap)
 {
 	if (heap->data != NULL) {
 		free(heap->data);
@@ -40,7 +39,7 @@ static inline int __compare(item_t a, item_t b)
 {
     return a->distance - b->distance;
 }
-int heap_push(heap_t *heap, item_t value){
+static int heapPush(heap_t *heap, item_t value){
 	size_t sizeNew;
 	void* dataNew;
 	size_t pos=heap->length, parentPos;
@@ -60,7 +59,7 @@ int heap_push(heap_t *heap, item_t value){
 	}
 	return 1;
 }
-int heap_pop(heap_t *heap, item_t *item)
+static int heapPop(heap_t *heap, item_t *item)
 {
 	item_t *arrData=(item_t*)(heap->data), heapTopOrig,
 		value, leftVal, rightVal, temp;
@@ -137,23 +136,113 @@ pointConn_t* getConn(int** points, size_t pointsSize, size_t *size)
     }
     return result;
 }
-bool isFinished(uint8_t *visited, size_t size) {
+
+typedef struct {
+    size_t size;
+    uint8_t* data[0];
+} group_t;
+void groupDel(group_t *group, size_t idx);
+group_t *groupInit(size_t size)
+{
+    group_t* result = (group_t*)calloc(1, sizeof(group_t) + sizeof(uint8_t*) * size);
+    if (NULL == result) {
+        return NULL;
+    }
+    result->size = size;
+    return result;
+}
+void groupClose(group_t *group)
+{
     size_t i;
-    for (i = 0; i < size; i++) {
-        if (!visited[i]) {
-            return false;
+    for (i = 0; i < group->size; i++) {
+        groupDel(group, i);
+    }
+    free(group);
+}
+size_t groupAdd(group_t *group)
+{
+    size_t i, target = group->size;
+    for (i = 0; i < group->size; i++) {
+        if (group->data[i] != NULL) {
+            continue;
+        }
+        target = i;
+        break;
+    }
+    if (target >= group->size) {
+        return group->size;
+    }
+    group->data[target] = (uint8_t*)calloc(sizeof(uint8_t), group->size);
+    if (NULL == group->data[target]) {
+        return group->size;
+    }
+    return target;
+}
+void groupDel(group_t *group, size_t idx)
+{
+    if (idx >= group->size || NULL == group->data[idx]) {
+        return;
+    }
+    free(group->data[idx]);
+    group->data[idx] = NULL;
+}
+int groupMerge(group_t *group, size_t idx0, size_t idx1)
+{
+    if (idx0 >= group->size || idx1 >= group->size ||
+        group->data[idx0] == NULL || group->data[idx1] == NULL) {
+        return 1;
+    }
+    size_t i;
+    uint8_t *dest = group->data[idx0];
+    uint8_t *src = group->data[idx1];
+    for (i = 0; i < group->size; i++) {
+        dest[i] = dest[i] | src[i];
+    }
+    groupDel(group, idx1);
+    return 0;
+}
+int acceptConn(group_t *group, size_t start, size_t end)
+{
+    size_t groupStart = group->size, groupEnd = group->size, i;
+    for (i = 0; i < group->size; i++) {
+        uint8_t *data = group->data[i];
+        if (NULL == data) {
+            continue;
+        }
+        // Both points in the same group, deny this connection
+        if (data[start] != 0 && data[end] != 0) {
+            return 1;
+        }
+        if (data[start] != 0) {
+            groupStart = i;
+        }
+        if (data[end] != 0) {
+            groupEnd = i;
         }
     }
-    return true;
+    if (groupStart < group->size && groupEnd < group->size) {
+        groupMerge(group, groupStart, groupEnd);
+        return 0;
+    }
+    uint8_t *target = NULL;
+    if (groupStart < group->size && groupEnd >= group->size) {
+        target = group->data[groupStart];
+    } else if (groupStart >= group->size && groupEnd < group->size) {
+        target = group->data[groupEnd];
+    } else {
+        i = groupAdd(group);
+        if (i >= group->size) {
+            return 1;
+        }
+        target = group->data[i];
+    }
+    target[start] = 1;
+    target[end] = 1;
+    return 0;
 }
 int minCostConnectPoints(int** points, int pointsSize, int* pointsColSize)
 {
     size_t i;
-    uint8_t *visited = (uint8_t*)calloc(sizeof(uint8_t), pointsSize);
-    if (visited == NULL) {
-        return -1;
-    }
-
     size_t connLen = 0;
     pointConn_t *connData = getConn(points, (size_t)pointsSize, &connLen);
     if (connData == NULL) {
@@ -161,26 +250,26 @@ int minCostConnectPoints(int** points, int pointsSize, int* pointsColSize)
     }
 
     heap_t heap = { 0 };
-    if (!heap_init(&heap, sizeof(pointConn_t*), connLen)) {
+    if (!heapInit(&heap, sizeof(pointConn_t*), connLen)) {
         return -1;
     }
     for (i = 0; i < connLen; i++) {
-        heap_push(&heap, connData + i);
+        heapPush(&heap, connData + i);
     }
 
     pointConn_t *conn;
-    int result = 0;
-    while (heap_pop(&heap, &conn)) {
-        if (isFinished(visited, (size_t)pointsSize)) {
-            break;
-        }
-        if (visited[conn->start] && visited[conn->end]) {
-            continue;
-        }
-        visited[conn->start] = 1;
-        visited[conn->end] = 1;
-        result += conn->distance;
+    group_t *group = groupInit(pointsSize);
+    if (NULL == group) {
+        return -1;
     }
-    heap_close(&heap);
+    int result = 0;
+    while (heapPop(&heap, &conn)) {
+        if (acceptConn(group, conn->start, conn->end) == 0) {
+            result += conn->distance;
+        }
+    }
+    groupClose(group);
+    heapClose(&heap);
+    free(connData);
     return result;
 }
