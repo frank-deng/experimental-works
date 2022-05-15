@@ -5,15 +5,16 @@
 #include <time.h>
 #include <malloc.h>
 #include <sys/types.h>
+#include <sys/time.h>
 #include <signal.h>
 #include <unistd.h>
+#define max(x, y) ((x) > (y) ? (x) : (y))
 
-#include <sys/sysinfo.h>
 #define GUESS_CHANCES 12
 #define CANDIDATES_COUNT 5040
 
-uint32_t numbers[CANDIDATES_COUNT];
-uint8_t check_table[CANDIDATES_COUNT][CANDIDATES_COUNT];
+static uint32_t numbers[CANDIDATES_COUNT];
+static uint8_t check_table[CANDIDATES_COUNT][CANDIDATES_COUNT];
 typedef union {
 	uint32_t n;
 	uint8_t c[4];
@@ -112,20 +113,7 @@ uint32_t guess(){
 	return times;
 }
 
-typedef unsigned long long stat_t;
-static int running = 1;
-static int writeFile = 0;
-static unsigned int writeFileCounter = 1000;
-static unsigned int writeFileCounterInit = 1000;
-static stat_t mstat[GUESS_CHANCES + 1];
-
-void action_quit(int sig){
-	running = 0;
-}
-void action_write(int sig){
-	writeFile = 1;
-}
-int read_file(char *filename, stat_t *stat){
+int read_file(char *filename, uint64_t *stat){
 	FILE *fp; int i;
 	char num[100] = "\0";
 
@@ -139,7 +127,7 @@ int read_file(char *filename, stat_t *stat){
 	fclose(fp);
 	return 1;
 }
-int write_file(char *filename, stat_t *stat){
+int write_file(char *filename, uint64_t *stat){
 	FILE *fp; int i;
 
 	fp = fopen(filename, "w");
@@ -152,31 +140,54 @@ int write_file(char *filename, stat_t *stat){
 	fclose(fp);
 	return 1;
 }
+int needWriteFile(uint64_t *lastTime, uint64_t interval)
+{
+    struct timeval curTimeVal;
+    gettimeofday(&curTimeVal, NULL);
+    uint64_t curTime = curTimeVal.tv_sec;
+    curTime *= 1000000;
+    curTime += curTimeVal.tv_usec;
+    if (*lastTime == 0) {
+        *lastTime = curTime;
+        return 0;
+    }
+    if ((curTime - (*lastTime)) < max(interval * 1000, 1000)) {
+        return 0;
+    }
+    *lastTime = curTime;
+    return 1;
+}
+
+static int running = 1;
+void action_quit(int sig){
+	running = 0;
+}
 int main(int argc, char *argv[]) {
 	int i;
     char *filename;
+    uint64_t mstat[GUESS_CHANCES + 1] = { 0 };
+    uint64_t interval = 500;
+
 	if (argc < 2) {
-		fprintf(stderr, "Usage: %s FILENAME [rounds]\n", argv[0]);
+		fprintf(stderr, "Usage: %s FILENAME [interval_ms]\n", argv[0]);
 		return 1;
 	}
 	
 	filename = argv[1];
     if (argc > 2) {
-		writeFileCounter = writeFileCounterInit = strtoul(argv[2], NULL, 0);
+		interval = strtoul(argv[2], NULL, 0);
     }
 	init();
 	read_file(filename, mstat);
 	signal(SIGINT, action_quit);
 	signal(SIGQUIT, action_quit);
 	srand(time(NULL));
+    uint64_t lastTime = 0;
 	while (running){
 		mstat[guess()]++;
-		if (writeFileCounter <= 0) {
-			writeFileCounter = writeFileCounterInit;
+		if (needWriteFile(&lastTime, interval) != 0) {
 			write_file(filename, mstat);
-		} else {
-			writeFileCounter--;
-		}
+        }
 	}
 	write_file(filename, mstat);
 	signal(SIGINT, SIG_DFL);
