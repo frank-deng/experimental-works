@@ -8,98 +8,114 @@
 #include <sys/time.h>
 #include <signal.h>
 #include <unistd.h>
+
+#define min(x, y) ((x) < (y) ? (x) : (y))
 #define max(x, y) ((x) > (y) ? (x) : (y))
 
-#define GUESS_CHANCES 12
+#define GUESS_CHANCES 13
 #define CANDIDATES_COUNT 5040
 
-static uint32_t numbers[CANDIDATES_COUNT];
-static uint8_t check_table[CANDIDATES_COUNT][CANDIDATES_COUNT];
-typedef union {
-	uint32_t n;
-	uint8_t c[4];
-} cv_t;
-int isvalidnum(uint32_t n) {
-	cv_t cv; int i, j;
-	cv.n = n;
-	for (i = 0; i < 3; i++) {
-		for (j = i+1; j < 4; j++) {
-			if (cv.c[i] == cv.c[j]) {
-				return 0;
-			}
-		}
+static uint16_t numbers[CANDIDATES_COUNT];
+static uint8_t checkTable[CANDIDATES_COUNT][CANDIDATES_COUNT];
+static inline uint16_t int2bcd(uint32_t n)
+{
+	uint16_t result = 0, map = 0;
+
+	uint8_t digit = (n % 10);
+	if (map & (1 << digit)) {
+		return 0;
 	}
-	return 1;
+	map |= (1 << digit);
+	result |= digit;
+
+	digit = ((n / 10) % 10);
+	if (map & (1 << digit)) {
+		return 0;
+	}
+	map |= (1 << digit);
+	result |= digit << 4;
+
+	digit = ((n / 100) % 10);
+	if (map & (1 << digit)) {
+		return 0;
+	}
+	map |= (1 << digit);
+	result |= digit << 8;
+
+	digit = ((n / 1000) % 10);
+	if (map & (1 << digit)) {
+		return 0;
+	}
+	map |= (1 << digit);
+	result |= digit << 12;
+	return result;
 }
-int32_t int2bcd(int32_t n) {
-	cv_t cv;
-	cv.c[0] = n % 10;
-	cv.c[1] = (n / 10) % 10;
-	cv.c[2] = (n / 100) % 10;
-	cv.c[3] = (n / 1000) % 10;
-	return cv.n;
-}
-uint32_t check(uint32_t ans, uint32_t guess){
-	cv_t cv_a, cv_g;
-	uint32_t i, j, result = 0;
-	cv_a.n = ans; cv_g.n = guess;
-	for (i = 0; i < 4; i++) {
-		if (cv_a.c[i] == cv_g.c[i]) {
+uint8_t check(uint16_t ans, uint16_t guess)
+{
+	uint8_t offset, result = 0;
+    uint8_t existAns[10] = { 0 };
+    uint8_t existGuess[10] = { 0 };
+	for (offset = 0; offset < 16; offset += 4) {
+		uint8_t valAns = (ans >> offset) & 0xf;
+		uint8_t valGuess = (guess >> offset) & 0xf;
+		if (valAns == valGuess) {
 			result += 0x10;
-		} else {
-			for (j = 0; j < 4; j++) {
-				if ((i != j) && (cv_a.c[i] == cv_g.c[j])) {
-					result += 1;
-				}
-			}
+            continue;
 		}
+        existAns[valAns]++;
+        existGuess[valGuess]++;
 	}
+	uint8_t i;
+    for (i = 0; i < 10; i++) {
+        result += min(existAns[i], existGuess[i]);
+    }
 	return result;
 }
 void init(){
 	int cnt = 0;
 	uint32_t i, n;
 	uint16_t x, y;
-	for (i = 123; i <= 9877; i++) {
+	for (i = 123; i <= 9876; i++) {
 		n = int2bcd(i);
-		if (isvalidnum(n)) {
-			numbers[cnt] = n;
-			cnt++;
+		if (n == 0) {
+			continue;
 		}
+		numbers[cnt] = n;
+		cnt++;
 	}
 	for (y = 0; y < CANDIDATES_COUNT; y++) {
 		for (x = 0; x < CANDIDATES_COUNT; x++) {
-			check_table[y][x] = check(numbers[y], numbers[x]);
+			checkTable[y][x] = check(numbers[y], numbers[x]);
 		}
 	}
 }
-
-uint32_t guess(){
+uint8_t guess(){
 	uint32_t ans = rand() % CANDIDATES_COUNT, candidates[CANDIDATES_COUNT], cl = CANDIDATES_COUNT,
-		times = 0, ci, g, i, res;
+		ci, g, i, res;
+	uint8_t times = 0;
 	while (times < GUESS_CHANCES) {
 		if (0 == times) {
 			g = rand() % CANDIDATES_COUNT;
-			res = check_table[ans][g];
+			res = checkTable[ans][g];
 			if (res == 0x40) {
 				return times + 1;
 			}
 			times++;
 			for (i = 0, ci = 0; i < CANDIDATES_COUNT; i++) {
-				if (res == check_table[g][i]) {
+				if (res == checkTable[g][i]) {
 					candidates[ci] = i;
 					ci++;
 				}
 			}
 		} else {
 			g = candidates[rand() % cl];
-			res = check_table[ans][g];
+			res = checkTable[ans][g];
 			if (res == 0x40) {
 				return times + 1;
 			}
 			times++;
 			for (i = 0, ci = 0; i < cl; i++) {
-				if (res == check_table[g][candidates[i]]) {
+				if (res == checkTable[g][candidates[i]]) {
 					candidates[ci] = candidates[i];
 					ci++;
 				}
@@ -109,6 +125,9 @@ uint32_t guess(){
 		if (cl == 0) {
 			return 0;
 		}
+	}
+	if (times > GUESS_CHANCES) {
+		return 0;
 	}
 	return times;
 }
@@ -122,7 +141,11 @@ int read_file(char *filename, uint64_t *stat){
 		return 0;
 	}
 	for (i = 0; i < GUESS_CHANCES + 1; i++) {
-		stat[i] = strtoull(fgets(num, 100, fp), NULL, 0);
+		char *buf = fgets(num, 100, fp);
+		if (buf == NULL) {
+			continue;
+		}
+		stat[i] = strtoull(buf, NULL, 0);
 	}
 	fclose(fp);
 	return 1;
@@ -194,4 +217,3 @@ int main(int argc, char *argv[]) {
 	signal(SIGQUIT, SIG_DFL);
 	return 0;
 }
-
