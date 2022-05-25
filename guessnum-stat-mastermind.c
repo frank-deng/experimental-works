@@ -114,7 +114,7 @@ uint8_t guess(){
 		}
 	}
 	return times;
-}
+}l
 
 int read_file(char *filename, uint64_t *stat){
 	FILE *fp; int i;
@@ -168,9 +168,17 @@ int needWriteFile(uint64_t *lastTime, uint64_t interval)
     return 1;
 }
 
-static int running = 1;
+typedef enum {
+	ACTION_QUIT,
+	ACTION_RUNNING,
+	ACTION_REPORT
+} action_t;
+static action_t action = ACTION_RUNNING;
 void action_quit(int sig){
-	running = 0;
+	action = ACTION_QUIT;
+}
+void guessThread(void *data)
+{
 }
 int main(int argc, char *argv[]) {
 	int i;
@@ -188,6 +196,8 @@ int main(int argc, char *argv[]) {
 		interval = strtoul(argv[2], NULL, 0);
     }
 	init();
+	pthread_t pid;
+	pthread_create(&pid, NULL, guessThread, NULL);
 	read_file(filename, mstat);
 	signal(SIGINT, action_quit);
 	signal(SIGQUIT, action_quit);
