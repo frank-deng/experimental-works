@@ -1,86 +1,118 @@
+#include <stdlib.h>
+#include <time.h>
+#include <malloc.h>
+#include <sys/sysinfo.h>
 #include "worker.h"
-#include "guessnum.h"
 
-static size_t numbersCount = 0
-static uint16_t *numbers = NULL;
-static uint8_t *checkTable = NULL;
-
-bool init(bool mastermind)
+int readFile(char *filename, stat_t *stat)
 {
-    uint16_t i, j;
-    numbersCount = (mastermind ? CANDIDATES_COUNT_MASTERMIND : CANDIDATES_COUNT);
-
-    numbers = (uint16_t*)malloc(sizeof(uint16_t) * numbersCount);
-    if (numbers == NULL) {
-        return false;
-    }
-    checkTable = (uint8_t*)malloc(sizeof(uint8_t) * numbersCount * numbersCount);
-    if (checkTable == NULL) {
-        return false;
-    }
-
-    size_t offset = 0;
-    for (i = 0; i <= 9999; i++) {
-        uint16_t num = int2bcd(i, mastermind);
-        if (BCD_INVALID_NUM == num) {
-            continue;
-        }
-        numbers[offset] = num;
-        offset++;
-    }
-    offset = 0;
-    for (i = 0; i < numbersCount; i++) {
-        for (j = 0; j < numbersCount; j++) {
-            checkTable[offset] = check(numbers[i], numbers[j]);
-            offset++;
-        }
-    }
-    return true;
-}
-bool quit()
-{
-    free(numbers);
-    free(checkTable);
-}
-static inline uint8_t checkById(uint16_t ans, uint16_t guess)
-{
-    return checkTable[ans * numbersCount + guess];
-}
-uint8_t guess(){
-	uint16_t ans = rand() % CANDIDATES_COUNT, candidates[CANDIDATES_COUNT], cl = CANDIDATES_COUNT,
-		times = 0, ci, g, i, res;
-	while (times < GUESS_CHANCES) {
-		if (0 == times) {
-			g = rand() % CANDIDATES_COUNT;
-			res = checkById(ans, g);
-			if (res == 0x40) {
-				return times + 1;
-			}
-			times++;
-			for (i = 0, ci = 0; i < CANDIDATES_COUNT; i++) {
-				if (res == checkById(g, i)) {
-					candidates[ci] = i;
-					ci++;
-				}
-			}
+	int i;
+	char num[100] = "\0";
+	FILE *fp = fopen(filename, "r");
+	if (NULL == fp) {
+		return 0;
+	}
+	for (i = 0; i < GUESS_CHANCES + 1; i++) {
+		char *buf = fgets(num, 100, fp);
+		if (NULL == buf) {
+			stat[i] = 0;
 		} else {
-			g = candidates[rand() % cl];
-			res = checkById(ans, g);
-			if (res == 0x40) {
-				return times + 1;
-			}
-			times++;
-			for (i = 0, ci = 0; i < cl; i++) {
-				if (res == checkById(g, candidates[i])) {
-					candidates[ci] = candidates[i];
-					ci++;
-				}
-			}
-		}
-		cl = ci;
-		if (cl == 0) {
-			return 0;
+			stat[i] = strtoull(buf, NULL, 0);
 		}
 	}
-	return times;
+	fclose(fp);
+	return 1;
+}
+int writeFile(char *filename, stat_t *stat)
+{
+	int i;
+	FILE *fp = fopen(filename, "w");
+	if (NULL == fp) {
+		return 0;
+	}
+	for (i = 0; i < GUESS_CHANCES + 1; i++) {
+		fprintf(fp, "%llu\n", stat[i]);
+	}
+	fclose(fp);
+	return 1;
+}
+
+void* workerMain(void *data){
+	thread_data_t *threadData = (thread_data_t*)data;
+	unsigned int randomSeed = threadData->randomSeed;
+	uint64_t stat[GUESS_CHANCES + 1] = { 0 };
+	uint8_t i;
+	while (threadData->running) {
+		stat[guess(&randomSeed)]++;
+		if (!threadData->report) {
+			continue;
+		}
+		threadData->report = false;
+		pthread_mutex_lock(&threadData->shared->reportMutex);
+		for (i = 0; i < GUESS_CHANCES + 1; i++) {
+			threadData->shared->stat[i] += stat[i];
+		}
+		(threadData->shared->reportCount)++;
+		pthread_mutex_unlock(&threadData->shared->reportMutex);
+		memset(stat, 0, sizeof(stat));
+	}
+	pthread_mutex_lock(&threadData->shared->reportMutex);
+	for (i = 0; i < GUESS_CHANCES + 1; i++) {
+		threadData->shared->stat[i] += stat[i];
+	}
+	pthread_mutex_unlock(&threadData->shared->reportMutex);
+	return NULL;
+}
+int workerInit(worker_t *worker, uint8_t threadCount)
+{
+	if (threadCount <= 0) {
+		threadCount = get_nprocs();
+	}
+	worker->threadData = calloc(threadCount, sizeof(thread_data_t));
+	if (NULL == worker->threadData) {
+		return 1;
+	}
+	worker->threadCount = threadCount;
+	worker->reportThreadCount = 0;
+	memset(worker->stat, 0, sizeof(worker->stat));
+	pthread_mutex_init(&worker->reportMutex, NULL);
+	
+	srand(time(NULL));
+	uint8_t i;
+	for (i = 0; i < threadCount; i++) {
+		worker->threadData[i].running = true;
+		worker->threadData[i].shared = worker;
+		worker->threadData[i].randomSeed = (unsigned int)rand();
+		pthread_create(&(worker->threadData[i].tid), NULL, workerMain, &(worker->threadData[i]));
+	}
+	pthread_mutex_lock(&worker->reportMutex);
+	readFile(worker->filename, worker->stat);
+	pthread_mutex_unlock(&threadData->shared->reportMutex);
+	return 0;
+}
+void workerExit(worker_t *worker)
+{
+	uint8_t i;
+	for (i = 0; i < worker->threadCount; i++) {
+		worker->threadData[i].running = false;
+	}
+	for (i = 0; i < worker->threadCount; i++) {
+		pthread_join(worker->threadData[i].tid, NULL);
+	}
+	writeFile(worker->filename, worker->stat);
+	pthread_mutex_destroy(&worker->reportMutex);
+	free(worker->threadData);
+	worker->threadData = NULL;
+}
+void workerGetReport(worker_t *worker)
+{
+	for (i = 0; i < worker->threadCount; i++) {
+		worker->threadData[i].report = true;
+	}
+	pthread_mutex_lock(&worker->reportMutex);
+	if (worker->reportCount == worker->threadCount) {
+		worker->reportCount = 0;
+		writeFile(worker->filename, worker->stat);
+	}
+	pthread_mutex_unlock(&threadData->shared->reportMutex);
 }
