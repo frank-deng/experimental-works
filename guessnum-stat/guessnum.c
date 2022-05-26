@@ -1,7 +1,8 @@
 #include <stdlib.h>
+#include <stdint.h>
+#include <time.h>
 #include "guessnum.h"
 
-#define min(x, y) ((x) < (y) ? (x) : (y))
 
 uint16_t int2bcd(uint16_t n)
 {
@@ -32,7 +33,7 @@ uint8_t check(uint16_t ans, uint16_t guess)
     uint8_t existGuess[10] = { 0 };
 #endif
 
-	for (i = 0; i < 4; i++;) {
+	for (i = 0; i < 4; i++) {
 		valAns = ans & 0xf;
 		valGuess = guess & 0xf;
         ans >>= 4;
@@ -57,7 +58,6 @@ uint8_t check(uint16_t ans, uint16_t guess)
         existGuess = existGuess & (existGuess - 1);
     }
 #else
-    uint8_t i;
     for (i = 0; i < 10; i++) {
         result += min(existAns[i], existGuess[i]);
     }
@@ -77,7 +77,7 @@ uint8_t check(uint16_t ans, uint16_t guess)
 #endif
 
 static uint16_t numbers[CANDIDATES_COUNT];
-static uint8_t check_table[CANDIDATES_COUNT][CANDIDATES_COUNT];
+static uint8_t checkTable[CANDIDATES_COUNT][CANDIDATES_COUNT];
 void init()
 {
     uint16_t i, j;

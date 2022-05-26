@@ -1,4 +1,10 @@
 #include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <time.h>
+#include <sys/time.h>
+#include <unistd.h>
+#include <signal.h>
 #include "worker.h"
 
 int readFile(char *filename, uint64_t *stat)
@@ -52,6 +58,9 @@ int needWriteFile(uint64_t *lastTime, uint64_t interval)
 }
 
 bool running = true;
+void action_quit(int sig){
+	running = false;
+}
 int main(int argc, char *argv[])
 {
     if (argc < 2) {
@@ -68,17 +77,21 @@ int main(int argc, char *argv[])
         fprintf(stderr, "Initialization failed.");
         return 1;
     }
-	pthread_mutex_lock(worker.reportMutex);
+
+	signal(SIGINT, action_quit);
+	signal(SIGQUIT, action_quit);
+	pthread_mutex_lock(&(worker.reportMutex));
     readFile(filename, worker.stat);
-	pthread_mutex_unlock(worker.reportMutex);
+	pthread_mutex_unlock(&(worker.reportMutex));
 
 	while (running) {
         usleep(interval * 1000);
         workerStartReport(&worker);
         writeFile(filename, worker.stat);
 	}
-
     workerExit(&worker);
     writeFile(filename, worker.stat);
+	signal(SIGINT, SIG_DFL);
+	signal(SIGQUIT, SIG_DFL);
     return 0;
 }

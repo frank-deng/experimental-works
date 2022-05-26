@@ -1,14 +1,9 @@
 #ifndef worker_h
 #define worker_h
 
+#include <stdint.h>
 #include <pthread.h>
 #include "guessnum.h"
-
-#ifndef MASTERMIND
-#define GUESS_CHANCES 12
-#else
-#define GUESS_CHANCES 15
-#endif
 
 struct worker_s;
 struct thread_data_s {

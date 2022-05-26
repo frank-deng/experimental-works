@@ -1,9 +1,12 @@
 OBJS=$(patsubst %.c,%.o,$(wildcard *.c))
-CC=/data/gcc/gcc
-HEADERS=guessnum.h
+HEADERS=$(wildcard *.h)
 TARGET=guessnum-stat
 LIBS=
-CFLAGS=
+CFLAGS=-pthread
+ifdef MASTERMIND
+CFLAGS+=-DMASTERMIND
+TARGET=guessnum-stat-mastermind
+endif
 
 .PHONY:clean
 

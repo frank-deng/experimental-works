@@ -1,7 +1,9 @@
 #include <stdlib.h>
+#include <string.h>
 #include <time.h>
 #include <malloc.h>
 #include <sys/sysinfo.h>
+#include <unistd.h>
 #include "worker.h"
 
 void* workerMain(void *data){
@@ -32,6 +34,7 @@ void* workerMain(void *data){
 }
 int workerInit(worker_t *worker, uint8_t threadCount)
 {
+	init();
 	if (threadCount <= 0) {
 		threadCount = get_nprocs();
 	}
@@ -40,7 +43,7 @@ int workerInit(worker_t *worker, uint8_t threadCount)
 		return 1;
 	}
 	worker->threadCount = threadCount;
-	worker->reportThreadCount = 0;
+	worker->reportCount = 0;
 	memset(worker->stat, 0, sizeof(worker->stat));
 	pthread_mutex_init(&worker->reportMutex, NULL);
 	
@@ -69,6 +72,7 @@ void workerExit(worker_t *worker)
 }
 void workerStartReport(worker_t *worker)
 {
+	uint8_t i;
 	for (i = 0; i < worker->threadCount; i++) {
 		worker->threadData[i].report = true;
 	}
@@ -80,6 +84,6 @@ void workerStartReport(worker_t *worker)
 			worker->reportCount = 0;
 			waiting = false;
 		}
-		pthread_mutex_unlock(&threadData->shared->reportMutex);
+		pthread_mutex_unlock(&worker->reportMutex);
 	}
 }
