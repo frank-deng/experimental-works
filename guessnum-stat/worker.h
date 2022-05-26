@@ -19,7 +19,7 @@ struct thread_data_s {
     struct worker_s *shared;
 };
 struct worker_s{
-    char *filename;
+    bool running;
     uint8_t threadCount;
     uint8_t reportCount;
     pthread_mutex_t reportMutex;
@@ -36,7 +36,7 @@ extern "C" {
 
 int workerInit(worker_t *worker, uint8_t threadCount);
 void workerExit(worker_t *worker);
-void workerGetReport(worker_t *worker);
+void workerStartReport(worker_t *worker);
 
 #ifdef __cplusplus
 }
