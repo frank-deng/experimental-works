@@ -79,7 +79,7 @@ void workerStartReport(worker_t *worker)
 	}
 	bool waiting = true;
 	while (waiting) {
-		usleep(1000);
+		usleep(0);
 		pthread_mutex_lock(&worker->reportMutex);
 		if (worker->reportCount == worker->threadCount) {
 			worker->reportCount = 0;
