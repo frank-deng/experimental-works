@@ -12,7 +12,8 @@ void* workerMain(void *data){
 	uint64_t stat[GUESS_CHANCES + 1] = { 0 };
 	uint8_t i;
 	while (threadData->running) {
-		stat[guess(&randomSeed)]++;
+        uint8_t g = guess(&randomSeed);
+		stat[g]++;
 		if (!threadData->report) {
 			continue;
 		}

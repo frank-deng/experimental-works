@@ -39,7 +39,7 @@ int writeFile(char *filename, uint64_t *stat)
 	fclose(fp);
 	return 1;
 }
-int needWriteFile(uint64_t *lastTime, uint64_t interval)
+bool needWriteFile(uint64_t *lastTime, uint64_t interval)
 {
     struct timeval curTimeVal;
     gettimeofday(&curTimeVal, NULL);
@@ -48,17 +48,18 @@ int needWriteFile(uint64_t *lastTime, uint64_t interval)
     curTime += curTimeVal.tv_usec;
     if (*lastTime == 0) {
         *lastTime = curTime;
-        return 0;
+        return false;
     }
     if ((curTime - (*lastTime)) < max(interval * 1000, 1000)) {
-        return 0;
+        return false;
     }
     *lastTime = curTime;
-    return 1;
+    return true;
 }
 
 bool running = true;
-void action_quit(int sig){
+void action_quit(int sig)
+{
 	running = false;
 }
 int main(int argc, char *argv[])
@@ -83,11 +84,16 @@ int main(int argc, char *argv[])
 	pthread_mutex_lock(&(worker.reportMutex));
     readFile(filename, worker.stat);
 	pthread_mutex_unlock(&(worker.reportMutex));
-
+    uint64_t lastTime = 0;
 	while (running) {
-        usleep(interval * 1000);
+        usleep(1000);
+        if (!needWriteFile(&lastTime, interval)) {
+            continue;
+        }
         workerStartReport(&worker);
+        pthread_mutex_lock(&(worker.reportMutex));
         writeFile(filename, worker.stat);
+        pthread_mutex_unlock(&(worker.reportMutex));
 	}
     workerExit(&worker);
     writeFile(filename, worker.stat);

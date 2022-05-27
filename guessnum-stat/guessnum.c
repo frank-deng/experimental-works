@@ -3,7 +3,6 @@
 #include <time.h>
 #include "guessnum.h"
 
-
 uint16_t int2bcd(uint16_t n)
 {
     uint16_t result = 0, map = 0;
@@ -96,16 +95,23 @@ void init()
         }
     }
 }
+static inline uint16_t pickNum(unsigned int *seed, uint16_t max)
+{
+    uint64_t n = rand_r(seed);
+    n *= max;
+    n /= RAND_MAX;
+    return (uint16_t)(n % max);
+}
 static inline uint8_t checkById(uint16_t ans, uint16_t guess)
 {
     return checkTable[ans][guess];
 }
 uint8_t guess(unsigned int *seed){
-	uint16_t ans = rand_r(seed) % CANDIDATES_COUNT, candidates[CANDIDATES_COUNT], cl = CANDIDATES_COUNT,
+	uint16_t ans = pickNum(seed, CANDIDATES_COUNT), candidates[CANDIDATES_COUNT], cl = CANDIDATES_COUNT,
 		times = 0, ci, g, i, res;
 	while (times < GUESS_CHANCES) {
 		if (0 == times) {
-			g = rand_r(seed) % CANDIDATES_COUNT;
+            g = pickNum(seed, CANDIDATES_COUNT);
 			res = checkById(ans, g);
 			if (res == 0x40) {
 				return times + 1;
@@ -118,7 +124,7 @@ uint8_t guess(unsigned int *seed){
 				}
 			}
 		} else {
-			g = candidates[rand_r(seed) % cl];
+			g = candidates[pickNum(seed, cl)];
 			res = checkById(ans, g);
 			if (res == 0x40) {
 				return times + 1;
