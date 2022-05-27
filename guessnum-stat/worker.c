@@ -2,7 +2,6 @@
 #include <string.h>
 #include <time.h>
 #include <malloc.h>
-#include <sys/sysinfo.h>
 #include <unistd.h>
 #include "worker.h"
 
@@ -37,7 +36,7 @@ int workerInit(worker_t *worker, uint8_t threadCount)
 {
 	init();
 	if (threadCount <= 0) {
-		threadCount = get_nprocs();
+		threadCount = 1;
 	}
 	worker->threadData = calloc(threadCount, sizeof(thread_data_t));
 	if (NULL == worker->threadData) {

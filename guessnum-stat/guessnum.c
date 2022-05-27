@@ -1,6 +1,7 @@
 #include <stdlib.h>
 #include <stdint.h>
 #include <time.h>
+#include <pthread.h>
 #include "guessnum.h"
 
 uint16_t int2bcd(uint16_t n)
@@ -95,16 +96,20 @@ void init()
         }
     }
 }
-static inline uint16_t pickNum(unsigned int *seed, uint16_t max)
-{
-    uint64_t n = rand_r(seed);
-    n *= max;
-    n /= RAND_MAX;
-    return (uint16_t)(n % max);
-}
 static inline uint8_t checkById(uint16_t ans, uint16_t guess)
 {
     return checkTable[ans][guess];
+}
+
+static pthread_mutex_t randMutex = PTHREAD_MUTEX_INITIALIZER;
+static inline uint16_t pickNum(unsigned int *seed, uint16_t max)
+{
+    pthread_mutex_lock(&randMutex);
+    uint64_t n = rand();
+    pthread_mutex_unlock(&randMutex);
+    n *= max;
+    n /= RAND_MAX;
+    return (uint16_t)(n % max);
 }
 uint8_t guess(unsigned int *seed){
 	uint16_t ans = pickNum(seed, CANDIDATES_COUNT), candidates[CANDIDATES_COUNT], cl = CANDIDATES_COUNT,
