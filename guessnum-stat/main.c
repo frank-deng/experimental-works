@@ -4,6 +4,7 @@
 #include <time.h>
 #include <sys/time.h>
 #include <unistd.h>
+#include <getopt.h>
 #include <signal.h>
 #include "worker.h"
 
@@ -64,17 +65,26 @@ void action_quit(int sig)
 }
 int main(int argc, char *argv[])
 {
-    if (argc < 2) {
-		fprintf(stderr, "Usage: %s FILENAME [interval_ms]\n", argv[0]);
+    int ch;
+    uint32_t interval = 500;
+    uint8_t threadCount = 0;
+    while (-1 != (ch = getopt(argc, argv, "i:t:"))) {
+        switch (ch) {
+            case 'i':
+                interval = strtoul(optarg, NULL, 0);
+            break;
+            case 't':
+                threadCount = strtoul(optarg, NULL, 0);
+            break;
+        }
+    }
+    if (optind >= argc) {
+		fprintf(stderr, "Usage: %s [-i interval_ms] [-t thread_count] FILENAME\n", argv[0]);
 		return 1;
 	}
-    char *filename = argv[1];
-    uint32_t interval = 500;
-    if (argc > 2) {
-		interval = strtoul(argv[2], NULL, 0);
-    }
+    char *filename = argv[optind];
     worker_t worker;
-    if (workerInit(&worker, 0) != 0) {
+    if (workerInit(&worker, threadCount) != 0) {
         fprintf(stderr, "Initialization failed.");
         return 1;
     }

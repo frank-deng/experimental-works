@@ -2,13 +2,14 @@ OBJS=$(patsubst %.c,%.o,$(wildcard *.c))
 HEADERS=$(wildcard *.h)
 TARGET=guessnum-stat
 LIBS=
+ifndef android
 CFLAGS=-pthread
-ifdef MASTERMIND
+endif
+
+ifdef mastermind
 CFLAGS+=-DMASTERMIND
 TARGET=guessnum-stat-mastermind
 endif
-
-.PHONY:clean
 
 ${TARGET}: ${OBJS}
 	gcc ${CFLAGS} -o $@ $^ ${LIBS}
@@ -16,5 +17,6 @@ ${TARGET}: ${OBJS}
 %.o: %.c ${HEADERS}
 	gcc -std=c99 ${CFLAGS} -c -o $@ $<
 
+.PHONY:clean
 clean:
 	-rm ${OBJS} ${TARGET}
