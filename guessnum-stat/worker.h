@@ -1,6 +1,7 @@
 #ifndef worker_h
 #define worker_h
 
+#include <stdbool.h>
 #include <stdint.h>
 #include <pthread.h>
 #include "guessnum.h"
@@ -8,6 +9,7 @@
 struct worker_s;
 struct thread_data_s {
     pthread_t tid;
+    uint32_t randomSeed;
     bool running;
     bool report;
     struct worker_s *shared;

@@ -1,7 +1,7 @@
 #ifndef guessnum_h
 #define guessnum_h
 
-#include <stdbool.h>
+#include "random.h"
 
 #define max(x, y) ((x) > (y) ? (x) : (y))
 #define min(x, y) ((x) < (y) ? (x) : (y))
@@ -21,7 +21,7 @@ extern "C" {
 uint8_t check(uint16_t, uint16_t);
 uint16_t int2bcd(uint16_t);
 void init();
-uint8_t guess();
+uint8_t guess(rand_t*);
 
 #ifdef __cplusplus
 }

@@ -17,7 +17,7 @@ ${TARGET}: ${OBJS}
 	${CC} ${CFLAGS} -o $@ $^ ${LIBS}
 
 %.o: %.c ${HEADERS}
-	${CC} -std=c99 ${CFLAGS} -c -o $@ $<
+	${CC} ${CFLAGS} -c -o $@ $<
 
 .PHONY:clean
 clean:
