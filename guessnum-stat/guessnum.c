@@ -95,6 +95,7 @@ void init()
             checkTable[i][j] = check(numbers[i], numbers[j]);
         }
     }
+    srand(time(NULL));
 }
 static inline uint8_t checkById(uint16_t ans, uint16_t guess)
 {
@@ -102,8 +103,11 @@ static inline uint8_t checkById(uint16_t ans, uint16_t guess)
 }
 
 static pthread_mutex_t randMutex = PTHREAD_MUTEX_INITIALIZER;
-static inline uint16_t pickNum(unsigned int *seed, uint16_t max)
+static inline uint16_t pickNum(uint16_t max)
 {
+    if (max <= 1) {
+        return 0;
+    }
     pthread_mutex_lock(&randMutex);
     uint64_t n = rand();
     pthread_mutex_unlock(&randMutex);
@@ -111,12 +115,12 @@ static inline uint16_t pickNum(unsigned int *seed, uint16_t max)
     n /= RAND_MAX;
     return (uint16_t)(n % max);
 }
-uint8_t guess(unsigned int *seed){
-	uint16_t ans = pickNum(seed, CANDIDATES_COUNT), candidates[CANDIDATES_COUNT], cl = CANDIDATES_COUNT,
+uint8_t guess(){
+	uint16_t ans = pickNum(CANDIDATES_COUNT), candidates[CANDIDATES_COUNT], cl = CANDIDATES_COUNT,
 		times = 0, ci, g, i, res;
 	while (times < GUESS_CHANCES) {
 		if (0 == times) {
-            g = pickNum(seed, CANDIDATES_COUNT);
+            g = pickNum(CANDIDATES_COUNT);
 			res = checkById(ans, g);
 			if (res == 0x40) {
 				return times + 1;
@@ -129,7 +133,7 @@ uint8_t guess(unsigned int *seed){
 				}
 			}
 		} else {
-			g = candidates[pickNum(seed, cl)];
+			g = candidates[pickNum(cl)];
 			res = checkById(ans, g);
 			if (res == 0x40) {
 				return times + 1;

@@ -1,17 +1,15 @@
 #include <stdlib.h>
 #include <string.h>
-#include <time.h>
 #include <malloc.h>
 #include <unistd.h>
 #include "worker.h"
 
 void* workerMain(void *data){
 	thread_data_t *threadData = (thread_data_t*)data;
-	unsigned int randomSeed = threadData->randomSeed;
 	uint64_t stat[GUESS_CHANCES + 1] = { 0 };
 	uint8_t i;
 	while (threadData->running) {
-        uint8_t g = guess(&randomSeed);
+        uint8_t g = guess();
 		stat[g]++;
 		if (!threadData->report) {
 			continue;
@@ -47,12 +45,11 @@ int workerInit(worker_t *worker, uint8_t threadCount)
 	memset(worker->stat, 0, sizeof(worker->stat));
 	pthread_mutex_init(&worker->reportMutex, NULL);
 	
-	srand(time(NULL));
+	
 	uint8_t i;
 	for (i = 0; i < threadCount; i++) {
 		worker->threadData[i].running = true;
 		worker->threadData[i].shared = worker;
-		worker->threadData[i].randomSeed = (unsigned int)rand();
 		pthread_create(&(worker->threadData[i].tid), NULL, workerMain, &(worker->threadData[i]));
 	}
 	return 0;

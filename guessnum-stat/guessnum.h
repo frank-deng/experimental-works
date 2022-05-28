@@ -21,7 +21,7 @@ extern "C" {
 uint8_t check(uint16_t, uint16_t);
 uint16_t int2bcd(uint16_t);
 void init();
-uint8_t guess(unsigned int *);
+uint8_t guess();
 
 #ifdef __cplusplus
 }

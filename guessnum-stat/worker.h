@@ -8,7 +8,6 @@
 struct worker_s;
 struct thread_data_s {
     pthread_t tid;
-    unsigned int randomSeed;
     bool running;
     bool report;
     struct worker_s *shared;
