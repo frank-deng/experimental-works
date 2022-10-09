@@ -10,6 +10,14 @@ config.py
 *.ppm
 *.pgm
 *.pbm
+*.obj
+*.OBJ
+*.err
+*.ERR
+*.com
+*.COM
+*.exe
+*.EXE
 images/
 resume/resume.html
 .~lock.
