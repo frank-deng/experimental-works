@@ -1,6 +1,8 @@
 #ifndef __vga_h__
 #define __vga_h__
 
+#include <stdint.h>
+
 #define SCREEN_WIDTH 320
 #define SCREEN_HEIGHT 400
 
@@ -35,42 +37,39 @@ __inline void initDisp();
     "inc dx"\
     "mov al,0x06"\
     "out dx,al"\
-    INSTR(mov dx, GC_INDEX)\
-    INSTR(mov al, GRAPHICS_MODE)\
+    INSTR(mov dx, CRTC_INDEX)\
+    INSTR(mov al, UNDERLINE)\
     "out dx,al"\
     "inc dx"\
-    "in al,dx"\
-    "and al,not 0x10"\
+    "mov al,0"\
     "out dx,al"\
-    "dec dx"\
-    INSTR(mov al, MISC)\
+    INSTR(mov dx, CRTC_INDEX)\
+    INSTR(mov al, MODE_CTRL)\
     "out dx,al"\
     "inc dx"\
-    "in al,dx"\
-    "and al,not 0x02"\
+    "mov al,0xe3"\
     "out dx,al"\
     INSTR(mov dx, CRTC_INDEX)\
     INSTR(mov al, MAX_SCANLINE)\
     "out dx,al"\
     "inc dx"\
-    "in al,dx"\
-    "and al,not 0x1f"\
+    "mov al,0x40"\
     "out dx,al"\
-    "dec dx"\
-    INSTR(mov al, UNDERLINE)\
-    "out dx,al"\
-    "inc dx"\
-    "in al,dx"\
-    "and al,not 0x40"\
-    "out dx,al"\
-    "dec dx"\
-    INSTR(mov al, MODE_CTRL)\
+    modify [ax dx]
+
+__inline void selectPlane(uint8_t val);
+#pragma aux selectPlane = \
+    "and ah,0xf" \
+    INSTR(mov dx, SC_INDEX)\
+    INSTR(mov al, MAP_MASK)\
     "out dx,al"\
     "inc dx"\
     "in al,dx"\
-    "or al,0x40"\
+    "and al,0xf0"\
+    "or al,ah"\
     "out dx,al"\
-    modify [ax bx cx dx es si di]
+    modify [al dx]\
+    parm [ah]
 
 __inline void closeDisp();
 #pragma aux closeDisp = \
