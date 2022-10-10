@@ -18,6 +18,8 @@ config.py
 *.COM
 *.exe
 *.EXE
+*.bmp
+*.BMP
 images/
 resume/resume.html
 .~lock.

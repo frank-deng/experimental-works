@@ -7,7 +7,7 @@
 extern "C" {
 #endif
 
-__inline void waitkey();
+static __inline void waitkey();
 #pragma aux waitkey = \
     "mov ah, 0" \
     "int 0x16" \
@@ -18,4 +18,3 @@ __inline void waitkey();
 #endif
 
 #endif
-
