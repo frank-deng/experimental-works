@@ -1,7 +1,7 @@
-TARGET=vga.com
+TARGET=vga.exe
 OBJS=main.obj bmp.obj
 HEADERS=util.h vga.h
-CFLAGS=-ms -0 -q
+CFLAGS=-mh -3 -q
 
 $(TARGET): $(OBJS)
 	wcl $(CFLAGS) -fe=$@ $<
