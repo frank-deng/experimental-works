@@ -7,17 +7,17 @@ static __inline void setPalette(uint8_t entry, uint8_t r, uint8_t g, uint8_t b);
     "mov al,0xff"\
     "out dx,al"\
     "mov dx,0x3c8"\
-    "mov al,cl"\
+    "mov al,ah"\
     "out dx,al"\
     "inc dx"\
-    "mov al,ah"\
+    "mov al,bh"\
     "out dx,al"\
     "mov al,bl"\
     "out dx,al"\
-    "mov al,bh"\
+    "mov al,ch"\
     "out dx,al"\
-    modify [ax bx dx]\
-    parm [cl] [ah] [bl] [bh]
+    modify [ax bx cx dx]\
+    parm [ah] [bh] [bl] [ch]
 
 int drawBMP(char *path, uint16_t x, uint16_t y)
 {
@@ -30,10 +30,11 @@ int drawBMP(char *path, uint16_t x, uint16_t y)
 
     fp = fopen(path, "rb");
     fread(&header, sizeof(bmpHeader_t), 1, fp);
-    fseek(fp, sizeof(header), SEEK_SET);
+    fseek(fp, header.headerSize + 14, SEEK_SET);
     fread(palette, sizeof(bmpPaletteItem_t), (1 << header.bpp), fp);
     for (i = 0; i < (1 << header.bpp); i++) {
-        setPalette(i, palette[i].r, palette[i].g, palette[i].b);
+        setPalette(i, palette[i].r >> 2,
+	    palette[i].g >> 2, palette[i].b >> 2);
     }
     rowSize = ((header.width + 0x1f) >> 5) << 5;
     for (row = header.height; row > 0; row--) {
