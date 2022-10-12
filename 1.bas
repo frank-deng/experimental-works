@@ -2,6 +2,7 @@ DECLARE SUB InitEnv ()
 DEFINT A-Z
 
 DIM SHARED BITMASK(8)
+DIM SHARED SCALEMAP(256)
 DIM SHARED ASMINT7E(31)
 TYPE FontDataT
     CH0 AS STRING * 1
@@ -14,15 +15,55 @@ TYPE FontDataT
     ATTR AS INTEGER
     BUFLEN AS INTEGER
 END TYPE
+DIM SHARED BITMAP(8194) AS INTEGER
+TYPE BMPHeaderT
+    id AS STRING * 2      'Should be "BM"
+    size AS LONG          'Size of the data
+    rr1 AS INTEGER        '
+    rr2 AS INTEGER        '
+    offset AS LONG        'Position of start of pixel data
+    horz AS LONG          '
+    wid AS LONG           'Image width
+    hei AS LONG           'Image height
+    planes AS INTEGER     '
+    bpp AS INTEGER        'Should read 8 for a 256 colour image
+        pakbyte AS LONG       '
+        imagebytes AS LONG    'Width*Height
+        xres AS LONG          '
+        yres AS LONG          '
+        colch AS LONG         '
+        ic AS LONG            '
+        pal AS STRING * 8  'Stored as &amp;lt;Blue, Green, Red, 0&amp;gt;
+END TYPE
 
 CALL InitEnv
 LOCATE 1, 1, 0: SCREEN 1: CLS
 
+CALL DrawBMP
 CALL DrawStr("Moon River",7,20,2,56,70,1)
 CALL DrawStr("Audrey Hepburn",49,148,10,32,32,2)
 
 WHILE INPUT$(1) = "": WEND
 SCREEN 0: WIDTH 80: LOCATE ,,1: CLS : END
+
+SUB DrawBMP
+    STATIC header AS BMPHeaderT
+    STATIC Row AS STRING*40
+    BITMAP(0)=640: BITMAP(1)=200
+    OPEN "MOONRIVR.BMP" FOR BINARY AS #1
+    GET #1,,header
+    IF header.bpp<>1 OR header.wid<>320 OR header.hei<> 200 THEN
+        PRINT "Unsupported BMP": EXIT SUB
+    END IF
+    FOR Y=0 TO header.hei-1
+      GET #1,header.offset+(header.hei-1-Y)*40+1,Row
+      FOR X=0 TO 39
+        BITMAP(Y*40+X+2)=SCALEMAP(ASC(MID$(Row,X+1,1)))
+      NEXT X
+    NEXT Y
+    CLOSE #1
+    PUT (0,0),BITMAP,PSET
+END SUB
 
 SUB DrawStr(STR AS STRING, X1 AS INTEGER, Y1 AS INTEGER, FONT AS INTEGER, W0 AS INTEGER, H AS INTEGER, C AS INTEGER)
     I=0: L=LEN(STR): WA=W0: XA=X1
@@ -38,7 +79,6 @@ END SUB
 
 SUB DrawChar(STR AS STRING, X0 AS INTEGER, Y0 AS INTEGER, FONT AS INTEGER, W AS INTEGER, H AS INTEGER, C AS INTEGER)
     STATIC Param AS FontDataT
-    DIM BITMAP(8192) AS INTEGER
     IF ASC(MID$(STR,1,1)) < &H80 THEN
         Param.CH0=STR: Param.CH1=CHR$(0)
         Param.W=W\2
@@ -55,21 +95,16 @@ SUB DrawChar(STR AS STRING, X0 AS INTEGER, Y0 AS INTEGER, FONT AS INTEGER, W AS 
     DEF SEG=VARSEG(DI): DI0=PEEK(VARPTR(DI)): DI1=PEEK(VARPTR(DI)+1)
     DEF SEG=VARSEG(DS): DS0=PEEK(VARPTR(DS)): DS1=PEEK(VARPTR(DS)+1)
     DEF SEG=VARSEG(ES): ES0=PEEK(VARPTR(ES)): ES1=PEEK(VARPTR(ES)+1)
-    REM PRINT "": PRINT HEX$(SI);",";HEX$(DI);",";HEX$(DS);",";HEX$(ES);",";HEX$(VARSEG(ASMINT7E(0)))
     DEF SEG=VARSEG(ASMINT7E(0))
     OFFSET=VARPTR(ASMINT7E(0))
     POKE OFFSET+7, SI0: POKE OFFSET+8, SI1
     POKE OFFSET+10, DI0: POKE OFFSET+11, DI1
     POKE OFFSET+13, DS0: POKE OFFSET+14, DS1
     POKE OFFSET+16, ES0: POKE OFFSET+17, ES1
-    REM FOR I=0 TO 30: PRINT HEX$(PEEK(VARPTR(ASMINT7E(0))+I));",";: NEXT I
-    REM DEF SEG=VARSEG(Param): PRINT "": FOR I=0 TO 15: PRINT HEX$(PEEK(VARPTR(Param)+I));",";: NEXT I: DEF SEG
     DEF SEG=VARSEG(ASMINT7E(0)): CALL ABSOLUTE(VARPTR(ASMINT7E(0))): DEF SEG
-    REM PRINT HEX$(SI0);",";HEX$(SI1);" - ";HEX$(DI0);",";HEX$(DI1);" - ";HEX$(DS0);",";HEX$(DS1);" - ";HEX$(ES0);",";HEX$(ES1)
     W=Param.W
     DEF SEG=VARSEG(BITMAP(0)): ROWBYTES=(W+7)\8: PX=VARPTR(BITMAP(0)): P=PEEK(PX)
     FOR Y=0 TO (H-1): FOR X=0 TO (W-1)
-        
         IF P AND BITMASK(X AND 7) THEN PSET (X0+X,Y0+Y),C
         IF (X AND 7)=7 OR X=(W-1) THEN PX=PX+1: P=PEEK(PX)
     NEXT X: NEXT Y: DEF SEG
@@ -101,4 +136,17 @@ DEF SEG = VARSEG(ASMINT7E(0))
 FOR I% = 0 TO 30
     READ D%: POKE VARPTR(ASMINT7E(0)) + I%, D%
 NEXT I%
+
+FOR I=0 TO 255
+  V=0
+  IF I AND BITMASK(4) THEN V=V OR &HC000
+  IF I AND BITMASK(5) THEN V=V OR &H3000
+  IF I AND BITMASK(6) THEN V=V OR &H0C00
+  IF I AND BITMASK(7) THEN V=V OR &H0300
+  IF I AND BITMASK(0) THEN V=V OR &H00C0
+  IF I AND BITMASK(1) THEN V=V OR &H0030
+  IF I AND BITMASK(2) THEN V=V OR &H000C
+  IF I AND BITMASK(3) THEN V=V OR &H0003
+  SCALEMAP(I)=V
+NEXT I
 END SUB
