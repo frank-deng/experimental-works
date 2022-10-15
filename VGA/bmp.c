@@ -25,8 +25,7 @@ int drawBMP(char *path, uint16_t x, uint16_t y)
     bmpHeader_t header;
     bmpPaletteItem_t palette[256];
     uint8_t lineBuf[SCREEN_WIDTH], plane;
-    uint16_t i, j, row, rowSize;
-    uint32_t offset;
+    uint16_t i, j, row, rowSize, offset;
 
     fp = fopen(path, "rb");
     if (NULL == fp) {
@@ -52,3 +51,4 @@ int drawBMP(char *path, uint16_t x, uint16_t y)
     fclose(fp);
     return 0;
 }
+

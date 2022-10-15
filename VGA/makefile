@@ -17,3 +17,4 @@ clean:
 	-del *.obj
 	-del *.err
 	-del $(TARGET)
+

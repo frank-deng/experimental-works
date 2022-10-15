@@ -25,6 +25,8 @@ static uint8_t far *vmem=(uint8_t far *)(0xa0000000);
 #define MODE_CTRL 0x17
 #define GRAPHICS_MODE 5
 #define MISC 6
+#define START_ADDR_HIGH 0x0c
+#define START_ADDR_LOW 0x0d
 
 #define PLANE_0 0x1
 #define PLANE_1 0x2
@@ -34,12 +36,6 @@ static uint8_t far *vmem=(uint8_t far *)(0xa0000000);
 #ifdef __cplusplus
 extern "C" {
 #endif
-
-__inline void initDisp0();
-#pragma aux initDisp0 = \
-    "mov ax,0x0013"\
-    "int 0x10"\
-    modify [ax]
 
 __inline void initDisp();
 #pragma aux initDisp = \
@@ -102,6 +98,23 @@ __inline void selectPlane(uint8_t val);
     modify [ax dx]\
     parm [ah]
 
+__inline void setVramOffset(uint16_t offset);
+#pragma aux setVramOffset = \
+    INSTR(mov dx, CRTC_INDEX)\
+    INSTR(mov al, START_ADDR_HIGH)\
+    "out dx,al"\
+    "inc dx"\
+    "mov al,bh"\
+    "out dx,al"\
+    "dec dx"\
+    INSTR(mov al, START_ADDR_LOW)\
+    "out dx,al"\
+    "inc dx"\
+    "mov al,bl"\
+    "out dx,al"\
+    modify [al dx]\
+    parm [bx]
+
 __inline void clearScreen()
 {
     selectPlane(PLANE_0|PLANE_1|PLANE_2|PLANE_3);
@@ -119,3 +132,4 @@ __inline void closeDisp();
 #endif
 
 #endif
+
