@@ -29,6 +29,9 @@ int drawBMP(char *path, uint16_t x, uint16_t y)
     uint32_t offset;
 
     fp = fopen(path, "rb");
+    if (NULL == fp) {
+        return 1;
+    }
     fread(&header, sizeof(bmpHeader_t), 1, fp);
     fseek(fp, header.headerSize + 14, SEEK_SET);
     fread(palette, sizeof(bmpPaletteItem_t), (1 << header.bpp), fp);
