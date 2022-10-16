@@ -44,7 +44,18 @@ int main(int argc, char *argv[])
         return 1;
     }
     wildcard = (1UL << (32 - data.netmask)) - 1;
-    printf("Wildcard: %u\n", 32 - data.netmask);
+    printf("Wildcard: %s = %u\n", ipv4_ntop(wildcard, ipstrbuf), 32 - data.netmask);
     printf("Netmask: %s = %u\n", ipv4_ntop(~wildcard, ipstrbuf), data.netmask);
+    if (data.netmask == 32) {
+        printf("First IP: %s\n", ipv4_ntop(data.ipaddr, ipstrbuf));
+    } else if (data.netmask == 31) {
+        printf("First IP: %s\n", ipv4_ntop((data.ipaddr & (~wildcard)), ipstrbuf));
+        printf("Last IP: %s\n", ipv4_ntop((data.ipaddr | wildcard), ipstrbuf));
+    } else {
+        printf("Network IP: %s\n", ipv4_ntop((data.ipaddr & (~wildcard)), ipstrbuf));
+        printf("First IP: %s\n", ipv4_ntop((data.ipaddr & (~wildcard)) + 1, ipstrbuf));
+        printf("Last IP: %s\n", ipv4_ntop((data.ipaddr | wildcard) - 1, ipstrbuf));
+        printf("Broadcast IP: %s\n", ipv4_ntop((data.ipaddr | wildcard), ipstrbuf));
+    }
     return 0;
 }
