@@ -1,16 +1,17 @@
 TARGET=ipcalc.com test.com
 OBJS=ipv4.obj
-HEADERS=common.h
-CFLAGS=-ms -0 -q
+HEADERS=ipv4.h
+CFLAGS=-ms -0 -q -d0 -os
+LDFLAGS=-mt -0 -q -d0 -os
 
 .NOCHECK
 compilework: $(TARGET)
 
 ipcalc.com: $(OBJS) main.obj
-	wcl $(CFLAGS) -fe=$@ $<
+	wcl $(LDFLAGS) -fe=$@ $<
 
 test.com: $(OBJS) test.obj
-	wcl $(CFLAGS) -fe=$@ $<
+	wcl $(LDFLAGS) -fe=$@ $<
 
 main.obj: main.c $(HEADERS)
 	wcc $(CFLAGS) -fo=$@ $[.
