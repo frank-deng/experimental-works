@@ -1,6 +1,6 @@
 TARGET=ipcalc.com test.com
 OBJS=ipv4.obj
-HEADERS=common.h test.h
+HEADERS=common.h
 CFLAGS=-ms -0 -q
 
 .NOCHECK
@@ -15,8 +15,8 @@ test.com: $(OBJS) test.obj
 main.obj: main.c $(HEADERS)
 	wcc $(CFLAGS) -fo=$@ $[.
 
-test.obj: test.c $(HEADERS)
-	wcc $(CFLAGS) -fo=$@ $[.
+test.obj: test.cpp test.hpp $(HEADERS)
+	wpp $(CFLAGS) -fo=$@ $[.
 
 ipv4.obj: ipv4.c $(HEADERS)
 	wcc $(CFLAGS) -fo=$@ $[.
@@ -26,4 +26,3 @@ clean:
 	-del *.obj
 	-del *.err
 	-del $(TARGET)
-

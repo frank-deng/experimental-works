@@ -115,6 +115,41 @@ int8_t ipv4_get_netmask(uint32_t input)
     }
     return (int8_t)count_leading_zero(n);
 }
+int8_t ipv4_ptonm(char *input)
+{
+    bool parseAsNumberSucc = true;
+    uint32_t n = 0;
+    char *p = NULL;
+    // Empty string not allowed
+    if ('\0' == *input) {
+        return -1;
+    }
+    // First try to parse input as dec number
+    for (p = input; *p != '\0'; p++) {
+         if (!isdigit(*p)) {
+             parseAsNumberSucc = false;
+             break;
+         }
+         n *= 10;
+         n += *p - '0';
+         if (n > 32) {
+             parseAsNumberSucc = false;
+             break;
+         }
+    }
+    if (parseAsNumberSucc) {
+        return (int8_t)n;
+    }
+    // Try to parse input as ip
+    if (!ipv4_pton(input, &n)) {
+         return -1;
+    }
+    n = ~n;
+    if ((n & (n + 1)) != 0) {
+        return -1;
+    }
+    return (int8_t)count_leading_zero(n);
+}
 char *ipv4_ntop(uint32_t input, char *buf)
 {
     uint8_t i;
