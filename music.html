@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width" />
+
+    <title>Jitter Effect</title>
+  </head>
+
+  <body>
+    <button id="do_play">Play</button>
+    <button id="do_stop">Stop</button>
+  </body>
+  <script>
+    // define variables
+    const audioCtx = new AudioContext();
+    let source=null;
+    let buffer=null;
+
+    window.addEventListener("DOMContentLoaded", function(){
+        request = new XMLHttpRequest();
+      request.open("GET", `music.mp3`, true);
+      request.responseType = "arraybuffer";
+      request.onload = () => {
+        let audioData = request.response;
+        audioCtx.decodeAudioData(
+          audioData,
+          (buf) => {
+            // executes when buffer has been decoded
+            buffer=buf;
+          },
+          (err) => {
+            console.error(
+              `Unable to get the audio file: ${name} Error: ${err.message}`
+            );
+          }
+        );
+      };
+      request.send();
+    }, false);
+    function doJitter(){
+      if(!source){
+        return;
+      }
+      source.preservesPitch=false;
+      source.playbackRate.value = 1+(Math.random()-0.5)*0.1;
+      //console.log(source.playbackRate.value);
+      setTimeout(doJitter,0);
+    }
+    document.querySelector('#do_play').addEventListener('click',()=>{
+      if (source){
+        return;
+      }
+      source = audioCtx.createBufferSource();
+      source.buffer = buffer;
+      source.connect(audioCtx.destination);
+      source.loop = true;
+      source.preservesPitch=false;
+      source.start();
+      doJitter();
+    })
+    document.querySelector('#do_stop').addEventListener('click',()=>{
+      if (!source){
+        return;
+      }
+      source.stop();
+      source=null;
+    })
+  </script>
+</html>
