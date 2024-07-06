@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 
-import asyncio,signal,json,hashlib,subprocess,os,time
+import asyncio,signal,json,hashlib,subprocess,os,time,re
 from traceback import print_exc
 
 login_timeout = 60
@@ -18,6 +18,24 @@ async def read_data(reader):
         elif val>=0x20 and val<=0x7e and len(res)<max_len:
             res+=val.to_bytes(1,'little')
     return res
+
+msg="""Received: from aldkfmwakd ( [60.215.174.212] ) by\r
+aldwkcoaiwdfoaiwdjfoiaw ; Tue, 25 Jul 2023 22:09:28 +0800 (GMT+08:00)\r
+Date: Mon, 14 May 2012 00:56:10 +0900\r
+From: erine@ai.com\r
+Subject: Test\r
+Content-Transfer-Encoding: Quoted-Printable\r
+Content-Disposition: inline\r
+Mime-Version: 1.0\r
+X-Priority: 3\r
+To: frank@10.0.2.2\r
+Content-Type: text/plain; charset="iso-8859-1"\r
+\r
+=B9=FE=B9=FE=B9=FE
+\r
+\r
+.\r
+"""
 
 async def service_main(reader,writer):
     global loginInfo
@@ -39,17 +57,28 @@ async def service_main(reader,writer):
     running=True
     while running:
         content=await asyncio.wait_for(reader.read(1000), timeout=60)
-        if b'QUIT\r\n' == content:
+        if b'' == content:
             running=False
-        elif b'STAT\r\n' == content:
-            writer.write(b'+OK 2 666\r\n')
+        elif re.search(rb'^QUIT', content) is not None:
+            running=False
+        elif re.search(rb'^STAT', content) is not None:
+            writer.write(b'+OK 1 333\r\n')
             await writer.drain()
-        elif b'LIST\r\n' == content:
-            writer.write(b'+OK\r\n1 333\r\n2 333\r\n')
+        elif re.search(rb'^LIST', content) is not None:
+            writer.write(b'+OK\r\n')
+            writer.write(b'1 333\r\n')
+            await writer.drain()
+        elif re.search(rb'^RETR', content) is not None:
+            writer.write(b'+OK\r\n')
+            writer.write(msg.encode('gbk'))
+            await writer.drain()
+        else:
+            print(content)
+            writer.write(b'+OK\r\n')
             await writer.drain()
 
     print('Finished')
-    return True
+    return running
 
 async def service_handler(reader,writer):
     try:
