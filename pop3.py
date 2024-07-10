@@ -3,22 +3,6 @@
 import asyncio,signal,json,hashlib,subprocess,os,time,re
 from traceback import print_exc
 
-login_timeout = 60
-
-async def read_data(reader):
-    res=b''
-    running=True
-    while running:
-        char=await asyncio.wait_for(reader.read(1), timeout=login_timeout)
-        val=int.from_bytes(char,'little')
-        if 0==val: #Connection closed
-            raise BrokenPipeError
-        elif 0x0d==val or 0x0a==val or 0==val: #Finished
-            running=False
-        elif val>=0x20 and val<=0x7e and len(res)<max_len:
-            res+=val.to_bytes(1,'little')
-    return res
-
 msg="""Received: from aldkfmwakd ( [60.215.174.212] ) by\r
 aldwkcoaiwdfoaiwdjfoiaw ; Tue, 25 Jul 2023 22:09:28 +0800 (GMT+08:00)\r
 Date: Mon, 14 May 2012 00:56:10 +0900\r
@@ -37,59 +21,140 @@ Content-Type: text/plain; charset="iso-8859-1"\r
 .\r
 """
 
-async def service_main(reader,writer):
-    global loginInfo
-    writer.write(b'+OK\r\n')
-    await writer.drain()
+mailList=[
+    {
+        'msg':msg.encode('iso8859-1'),
+        'delete':False
+    }
+]
+    
+class POP3Service:
+    __user=None
+    __authPass=False
+    __running=True
+    __authCmd={'STAT','LIST','RETR','DELE','REST','NOOP'}
+    def __init__(self,reader,writer,timeout=60):
+        self.__reader=reader
+        self.__writer=writer
+        self.__timeout=timeout
+        self.__handlerDict={
+            'USER':self.__handleUser,
+            'PASS':self.__handlePass,
+            'STAT':self.__handleStat,
+            'LIST':self.__handleList,
+            'RETR':self.__handleRetr,
+            'DELE':self.__handleDel,
+            'REST':self.__handleRest,
+            'NOOP':self.__handleNoop,
+            'QUIT':self.__handleQuit,
+        }
+        
+    def __handleUser(self,line):
+        content=line.decode('iso8859-1','ignore').strip()
+        match=re.search(r'^[^\s]+\s+([^\s]+)',content)
+        if match is None:
+            self.__writer.write(b'-ERR Missing Username\r\n')
+            return
+        self.__user=match[1]
+        self.__writer.write(b'+OK\r\n')
+    
+    def __handlePass(self,line):
+        content=line.decode('iso8859-1','ignore').strip()
+        match=re.search(r'^[^\s]+\s+([^\s]+)',content)
+        if match is None:
+            self.__writer.write(b'-ERR Missing Password\r\n')
+            return
+        self.__authPass=True
+        self.__writer.write(b'+OK\r\n')
+        
+    def __handleStat(self,line):
+        global mailList
+        totalSize=0
+        for mail in mailList:
+            totalSize+=len(mail['msg'])
+        self.__writer.write(f"+OK {len(mailList)} {totalSize}\r\n".encode('iso8859-1'))
 
-    # Get user
-    content=await asyncio.wait_for(reader.read(1000), timeout=60)
-    print(content)
-    writer.write(b'+OK\r\n')
-    await writer.drain()
+    def __handleList(self,line):
+        global mailList
+        for mail in mailList:
+            totalSize+=len(mail['msg'])
+        self.__writer.write(f"+OK {len(mailList)} messages {totalSize}\r\n".encode('iso8859-1','ignore'))
+        for idx in range(len(mailList)):
+            msg=mailList[idx]['msg']
+            self.__writer.write(f"{idx+1} {len(msg)}\r\n".encode('iso8859-1'))
+    
+    def __handleRetr(self,line):
+        global mailList
+        content=line.decode('iso8859-1','ignore').strip()
+        match=re.search(r'^[^\s]+\s+([^\s]+)',content)
+        if match is None:
+            self.__writer.write(b'-ERR Missing email num\r\n')
+            return
+        idx=int(match[1])-1
+        msg=mailList[idx]['msg']
+        self.__writer.write(b'+OK\r\n')
+        self.__writer.write(msg)
+        
+    def __handleDel(self,line):
+        global mailList
+        content=line.decode('iso8859-1','ignore').strip()
+        match=re.search(r'^[^\s]+\s+([^\s]+)',content)
+        if match is None:
+            self.__writer.write(b'-ERR Missing email num\r\n')
+            return
+        idx=int(match[1])-1
+        mailList[idx]['delete']=True
+        self.__writer.write(b'+OK\r\n')
 
-    # Get password
-    content=await asyncio.wait_for(reader.read(1000), timeout=60)
-    print(content)
-    writer.write(b'+OK\r\n')
-    await writer.drain()
+    def __handleRest(self,line):
+        global mailList
+        content=line.decode('iso8859-1','ignore').strip()
+        match=re.search(r'^[^\s]+\s+([^\s]+)',content)
+        if match is None:
+            self.__writer.write(b'-ERR Missing email num\r\n')
+            return
+        idx=int(match[1])-1
+        mailList[idx]['delete']=False
+        self.__writer.write(b'+OK\r\n')
+    
+    def __handleNoop(self,line):
+        self.__writer.write(b'+OK\r\n')
 
-    running=True
-    while running:
-        content=await asyncio.wait_for(reader.read(1000), timeout=60)
-        if b'' == content:
-            running=False
-        elif re.search(rb'^QUIT', content) is not None:
-            running=False
-        elif re.search(rb'^STAT', content) is not None:
-            writer.write(b'+OK 1 333\r\n')
-            await writer.drain()
-        elif re.search(rb'^LIST', content) is not None:
-            writer.write(b'+OK\r\n')
-            writer.write(b'1 333\r\n')
-            await writer.drain()
-        elif re.search(rb'^RETR', content) is not None:
-            writer.write(b'+OK\r\n')
-            writer.write(msg.encode('gbk'))
-            await writer.drain()
-        else:
-            print(content)
-            writer.write(b'+OK\r\n')
-            await writer.drain()
-
-    print('Finished')
-    return running
+    def __handleQuit(self,line):
+        self.__running=False
+        self.__writer.write(b'+OK\r\n')
+        
+    def __getCmd(self,line):
+        if line==b'':
+            return None
+        cmd=line.decode('iso8859-1','ignore').strip()
+        match=re.search(r'^([^\s]+)',cmd)
+        if match is None:
+            return ''
+        return match[1]
+    
+    async def run(self):
+        self.__writer.write(b'+OK\r\n')
+        while self.__running:
+            line=await asyncio.wait_for(self.__reader.readuntil(b'\n'), timeout=self.__timeout)
+            cmd=self.__getCmd(line)
+            if cmd is None:
+                break
+            handler=self.__handlerDict.get(cmd,None)
+            if handler is None:
+                self.__writer.write(b'-ERR Invalid Command\r\n')
+            elif (cmd in self.__authCmd) and (not self.__authPass):
+                self.__writer.write(b'-ERR Not Authorized\r\n')
+            else:
+                handler(line)
+            await self.__writer.drain()
 
 async def service_handler(reader,writer):
     try:
-        await service_main(reader,writer)
-        print('Connection closed')
-    except asyncio.TimeoutError:
-        writer.write(b'\r\n\r\nTimeout!!\r\n')
-    except ConnectionResetError:
-        print('Connection reset')
-    except BrokenPipeError:
-        print('Broken pipe')
+        srv=POP3Service(reader,writer)
+        await srv.run()
+    except (asyncio.TimeoutError, ConnectionResetError, BrokenPipeError):
+        pass
     except Exception as e:
         print_exc()
     finally:
@@ -128,4 +193,3 @@ if '__main__'==__name__:
     )
     args = parser.parse_args();
     asyncio.run(main(args.host,args.port))
-
