@@ -44,20 +44,14 @@ class MailBox:
         self.__mailList=mailList
     
     def close(self):
-        pass
-        
+        self.__mailList[:]=[mail for mail in self.__mailList if not mail['delete']]
+
     def stat(self):
         totalSize=0
         for mail in self.__mailList:
             totalSize+=len(mail['msg'])
         return (len(self.__mailList), totalSize)
-        
-    def list(self):
-        res=[]
-        for idx in len(self.__mailList):
-            res.append((idx+1, len(self.__mailList[idx]['msg'])))
-        return res
-        
+
     def retrive(self,idx):
         if idx < 1 or idx > len(self.__mailList):
             return None
@@ -102,7 +96,7 @@ class POP3Service:
     __user=None
     __mailBox=None
     __running=True
-    __authCmd={'STAT','LIST','RETR','DELE','REST','NOOP'}
+    __noAuthCmd={'USER','PASS'}
     def __init__(self,reader,writer,timeout=60):
         self.__reader=reader
         self.__writer=writer
@@ -111,7 +105,6 @@ class POP3Service:
             'USER':self.__handleUser,
             'PASS':self.__handlePass,
             'STAT':self.__handleStat,
-            'LIST':self.__handleList,
             'RETR':self.__handleRetr,
             'DELE':self.__handleDel,
             'NOOP':self.__handleNoop,
@@ -146,12 +139,6 @@ class POP3Service:
         mailCount, totalSize = self.__mailBox.stat()
         self.__writer.write(f"+OK {mailCount} {totalSize}\r\n".encode('iso8859-1'))
 
-    def __handleList(self,line):
-        mailList=self.__mailBox.list()
-        self.__writer.write(f"+OK {len(mailList)} messages\r\n".encode('io8859-1'))
-        for idx, size in mailList:
-            self.__writer.write(f"{idx} {size}\r\n".encode('iso8859-1'))
-    
     def __handleRetr(self,line):
         content=line.decode('iso8859-1','ignore').strip()
         match=re.search(r'^[^\s]+\s+([^\s]+)',content)
@@ -204,7 +191,7 @@ class POP3Service:
             handler=self.__handlerDict.get(cmd,None)
             if handler is None:
                 self.__writer.write(b'-ERR Invalid Command\r\n')
-            elif (cmd in self.__authCmd) and (self.__mailBox is None):
+            elif (cmd not in self.__noAuthCmd) and (self.__mailBox is None):
                 self.__writer.write(b'-ERR Not Authorized\r\n')
             else:
                 handler(line)
