@@ -21,16 +21,86 @@ Content-Type: text/plain; charset="iso-8859-1"\r
 .\r
 """
 
-mailList=[
-    {
-        'msg':msg.encode('iso8859-1'),
-        'delete':False
-    }
-]
+msg2="""Received: from frank ( [60.215.174.212] ) by\r
+erine ; Tue, 25 Jul 2024 22:09:28 +0800 (GMT+08:00)\r
+Date: Mon, 14 May 2012 00:56:10 +0900\r
+From: erine@ai.com\r
+Subject: Test 2\r
+Content-Transfer-Encoding: Quoted-Printable\r
+Content-Disposition: inline\r
+Mime-Version: 1.0\r
+X-Priority: 3\r
+To: frank@10.0.2.2\r
+Content-Type: text/plain; charset="iso-8859-1"\r
+\r
+=B9=FE=B9=FE=B9=FE
+\r
+\r
+.\r
+"""
+
+class MailBox:
+    def __init__(self,mailList):
+        self.__mailList=mailList
     
+    def close(self):
+        pass
+        
+    def stat(self):
+        totalSize=0
+        for mail in self.__mailList:
+            totalSize+=len(mail['msg'])
+        return (len(self.__mailList), totalSize)
+        
+    def list(self):
+        res=[]
+        for idx in len(self.__mailList):
+            res.append((idx+1, len(self.__mailList[idx]['msg'])))
+        return res
+        
+    def retrive(self,idx):
+        if idx < 1 or idx > len(self.__mailList):
+            return None
+        idx-=1
+        mail=self.__mailList[idx]
+        return mail['msg']
+        
+    def delete(self,idx,flag=True):
+        if idx < 1 or idx > len(self.__mailList):
+            return False
+        idx-=1
+        mail=self.__mailList[idx]
+        mail['delete']=flag
+        return True
+
+class MailCenter:
+    def __init__(self):
+        self.__data={
+            'frank':{
+                'mailList':[
+                    {
+                        'msg':msg.encode('iso8859-1'),
+                        'delete':False
+                    },
+                    {
+                        'msg':msg2.encode('iso8859-1'),
+                        'delete':False
+                    }
+                ]
+            }
+        }
+
+    def getMailBox(self,user,password):
+        userInfo=self.__data.get(user,None)
+        if userInfo is None:
+           return None
+        return MailBox(userInfo['mailList'])
+        
+mailCenter=MailCenter()
+
 class POP3Service:
     __user=None
-    __authPass=False
+    __mailBox=None
     __running=True
     __authCmd={'STAT','LIST','RETR','DELE','REST','NOOP'}
     def __init__(self,reader,writer,timeout=60):
@@ -44,7 +114,6 @@ class POP3Service:
             'LIST':self.__handleList,
             'RETR':self.__handleRetr,
             'DELE':self.__handleDel,
-            'REST':self.__handleRest,
             'NOOP':self.__handleNoop,
             'QUIT':self.__handleQuit,
         }
@@ -56,66 +125,58 @@ class POP3Service:
             self.__writer.write(b'-ERR Missing Username\r\n')
             return
         self.__user=match[1]
+        self.__mailBox=None
         self.__writer.write(b'+OK\r\n')
     
     def __handlePass(self,line):
+        global mailCenter
         content=line.decode('iso8859-1','ignore').strip()
         match=re.search(r'^[^\s]+\s+([^\s]+)',content)
         if match is None:
             self.__writer.write(b'-ERR Missing Password\r\n')
             return
-        self.__authPass=True
+        mailBox=mailCenter.getMailBox(self.__user,match[1])
+        if mailBox is None:
+            self.__writer.write(b'-ERR Auth Failed\r\n')
+            return
+        self.__mailBox=mailBox
         self.__writer.write(b'+OK\r\n')
         
     def __handleStat(self,line):
-        global mailList
-        totalSize=0
-        for mail in mailList:
-            totalSize+=len(mail['msg'])
-        self.__writer.write(f"+OK {len(mailList)} {totalSize}\r\n".encode('iso8859-1'))
+        mailCount, totalSize = self.__mailBox.stat()
+        self.__writer.write(f"+OK {mailCount} {totalSize}\r\n".encode('iso8859-1'))
 
     def __handleList(self,line):
-        global mailList
-        for mail in mailList:
-            totalSize+=len(mail['msg'])
-        self.__writer.write(f"+OK {len(mailList)} messages {totalSize}\r\n".encode('iso8859-1','ignore'))
-        for idx in range(len(mailList)):
-            msg=mailList[idx]['msg']
-            self.__writer.write(f"{idx+1} {len(msg)}\r\n".encode('iso8859-1'))
+        mailList=self.__mailBox.list()
+        self.__writer.write(f"+OK {len(mailList)} messages\r\n".encode('io8859-1'))
+        for idx, size in mailList:
+            self.__writer.write(f"{idx} {size}\r\n".encode('iso8859-1'))
     
     def __handleRetr(self,line):
-        global mailList
         content=line.decode('iso8859-1','ignore').strip()
         match=re.search(r'^[^\s]+\s+([^\s]+)',content)
         if match is None:
             self.__writer.write(b'-ERR Missing email num\r\n')
             return
-        idx=int(match[1])-1
-        msg=mailList[idx]['msg']
+        idx=int(match[1])
+        msg=self.__mailBox.retrive(idx)
+        if msg is None:
+            self.__writer.write(b'-ERR Mail not found\r\n')
+            return
         self.__writer.write(b'+OK\r\n')
         self.__writer.write(msg)
         
     def __handleDel(self,line):
-        global mailList
         content=line.decode('iso8859-1','ignore').strip()
         match=re.search(r'^[^\s]+\s+([^\s]+)',content)
         if match is None:
             self.__writer.write(b'-ERR Missing email num\r\n')
             return
-        idx=int(match[1])-1
-        mailList[idx]['delete']=True
-        self.__writer.write(b'+OK\r\n')
-
-    def __handleRest(self,line):
-        global mailList
-        content=line.decode('iso8859-1','ignore').strip()
-        match=re.search(r'^[^\s]+\s+([^\s]+)',content)
-        if match is None:
-            self.__writer.write(b'-ERR Missing email num\r\n')
-            return
-        idx=int(match[1])-1
-        mailList[idx]['delete']=False
-        self.__writer.write(b'+OK\r\n')
+        idx=int(match[1])
+        if self.__mailBox.delete(idx):
+            self.__writer.write(b'+OK\r\n')
+        else:
+            self.__writer.write(b'-ERR Failed to delete mail\r\n')
     
     def __handleNoop(self,line):
         self.__writer.write(b'+OK\r\n')
@@ -143,11 +204,12 @@ class POP3Service:
             handler=self.__handlerDict.get(cmd,None)
             if handler is None:
                 self.__writer.write(b'-ERR Invalid Command\r\n')
-            elif (cmd in self.__authCmd) and (not self.__authPass):
+            elif (cmd in self.__authCmd) and (self.__mailBox is None):
                 self.__writer.write(b'-ERR Not Authorized\r\n')
             else:
                 handler(line)
             await self.__writer.drain()
+        self.__mailBox.close()
 
 async def service_handler(reader,writer):
     try:
@@ -165,8 +227,8 @@ async def service_handler(reader,writer):
 async def main(host,port):
     server=await asyncio.start_server(service_handler,host=host,port=port)
     loop = asyncio.get_event_loop()
-#    for s in (signal.SIGINT, signal.SIGTERM):
-#        loop.add_signal_handler(s, lambda: server.close())
+    for s in (signal.SIGINT, signal.SIGTERM):
+        loop.add_signal_handler(s, lambda: server.close())
     try:
         async with server:
             await server.serve_forever()
