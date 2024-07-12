@@ -1,79 +1,101 @@
 #!/usr/bin/env python3
 
-import asyncio,signal,json,hashlib,os,re
+import asyncio,signal,json,hashlib,os,re,threading
 from traceback import print_exc
 
-class MailBox:
-    def __init__(self,username,mailList):
-        self.__user=username
-        self.__mailList=mailList
-    
-    def close(self):
-        self.__mailList[:]=[mail for mail in self.__mailList if not mail['delete']]
+class MailUserNormal:
+    def __init__(self,userName):
+        self.__user=userName
+        self.__mailList=[]
+        self.__lock=threading.Lock()
 
     def stat(self):
         totalSize=0
+        self.__lock.acquire()
+        mailCount=len(self.__mailList)
         for mail in self.__mailList:
             totalSize+=len(mail['msg'])
-        return (len(self.__mailList), totalSize)
+        self.__lock.release()
+        return (mailCount,totalSize)
+
+    def sync(self):
+        self.__lock.acquire()
+        self.__mailList[:]=[mail for mail in self.__mailList if not mail['delete']]
+        self.__lock.release()
 
     def retrive(self,idx):
-        if idx < 1 or idx > len(self.__mailList):
-            return None
         idx-=1
-        mail=self.__mailList[idx]
-        return mail['msg']
+        self.__lock.acquire()
+        if idx < 0 or idx >= len(self.__mailList):
+            self.__lock.release()
+            return None
+        msg=self.__mailList[idx]['msg']
+        self.__lock.release()
+        return msg
         
     def delete(self,idx,flag=True):
-        if idx < 1 or idx > len(self.__mailList):
-            return False
         idx-=1
-        mail=self.__mailList[idx]
-        mail['delete']=flag
+        self.__lock.acquire()
+        if idx < 0 or idx >= len(self.__mailList):
+            self.__lock.release()
+            return False
+        self.__mailList[idx]['delete']=flag
+        self.__lock.release()
         return True
+
+    def append(self,userFrom,msg):
+        self.__lock.acquire()
+        self.__mailList.append({
+            'msg':msg,
+            'from':userFrom,
+            'delete':False,
+        })
+        self.__lock.release()
+        return True
+
 
 class MailCenter:
     __acceptedHosts={'10.0.2.2'}
     def __init__(self):
-       self.__data={
-            'frank':{
-                'role':'user',
-                'mailList':[]
-            },
-            'niwenwoda':{
-                'role':'robot',
-                'mailList':[]
-            }
-        }
+        self.__user={}
+        self.__password={}
 
-    def getMailBox(self,user,password):
-        userInfo=self.__data.get(user,None)
-        if userInfo is None:
+    def load(self, configFile):
+        with open(configFile, 'r') as f:
+            jsonData=json.load(f)
+            for userName in jsonData:
+                userDetail=jsonData[userName]
+                if 'password' in userDetail:
+                    self.__user[userName]=MailUserNormal(userName)
+                    self.__password[userName]=userDetail['password']
+                elif 'module' in userDetail:
+                    pass
+
+    def getUser(self,user,passwordIn):
+        password=self.__password.get(user,None)
+        if password is None:
            return None
-        return MailBox(user,userInfo['mailList'])
+        passwordInHash=hashlib.sha256(passwordIn.encode('iso8859-1')).hexdigest();
+        if password != passwordInHash:
+           return None
+        return self.__user[user]
     
     def checkAddr(self,addr,isSender=False):
         match=re.search(r'^([a-zA-Z0-9._%+-]+)@([a-zA-Z0-9.-]+)$',addr)
         if match is None:
             return None
         user,host = match[1],match[2]
-        if (host not in self.__acceptedHosts) or (user not in self.__data):
+        if (host not in self.__acceptedHosts) or (user not in self.__user):
             return None
-        userData=self.__data[user]
-        if isSender and userData['role'] != 'user':
+        elif isSender and (user not in self.__password):
             return None
         else:
             return user
     
     def sendTo(self,userFrom,userTo,msg):
-        if userTo not in self.__data:
+        if userTo not in self.__user:
             return False
-        self.__data[userTo]['mailList'].append({
-            'msg':msg,
-            'from':userFrom,
-            'delete':False,
-        })
-        return True
+        return self.__user[userTo].append(userFrom,msg)
         
 mailCenter=MailCenter()
 
@@ -113,11 +135,10 @@ class POP3Service:
         if match is None:
             self.__writer.write(b'-ERR Missing Password\r\n')
             return
-        mailBox=mailCenter.getMailBox(self.__user,match[1])
-        if mailBox is None:
+        self.__mailBox=mailCenter.getUser(self.__user, match[1])
+        if self.__mailBox is None:
             self.__writer.write(b'-ERR Auth Failed\r\n')
             return
-        self.__mailBox=mailBox
         self.__writer.write(b'+OK\r\n')
         
     def __handleStat(self,line):
@@ -184,7 +205,7 @@ class POP3Service:
             else:
                 handler(line)
             await self.__writer.drain()
-        self.__mailBox.close()
+        self.__mailBox.sync()
 
 class SMTPService:
     __running=True
@@ -315,6 +336,8 @@ async def service_handler_smtp(reader,writer):
             await writer.wait_closed()
 
 async def main(args):
+    global mailCenter
+    mailCenter.load(args.config);
     server_pop3=await asyncio.start_server(service_handler_pop3,host=args.host,port=args.port_pop3)
     server_smtp=await asyncio.start_server(service_handler_smtp,host=args.host,port=args.port_smtp)
     loop = asyncio.get_event_loop()
@@ -349,6 +372,12 @@ if '__main__'==__name__:
         help='Specify port for the PPP server.',
         type=int,
         default=25
+    )
+    parser.add_argument(
+        '--config',
+        '-c',
+        help='Specify config file for the telnetd server.',
+        default='./mail-center.json'
     )
     args = parser.parse_args();
     asyncio.run(main(args))
