@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 
-import asyncio,signal,json,hashlib,os,re,threading
+import asyncio,signal,json,hashlib,os,re,threading,importlib
 from traceback import print_exc
 
 class MailUserNormal:
@@ -53,12 +53,36 @@ class MailUserNormal:
         self.__lock.release()
         return True
 
+class MailUserRobot:
+    __task=None
+    def __init__(self,userName,module,sendQueue):
+        self.__user=userName
+        self.__recvQueue=asyncio.Queue()
+        self.__sendQueue=sendQueue
+        self.__module=importlib.import_module(module)
+
+    def append(self,userFrom,msg):
+        self.__recvQueue.put_nowait({
+            'msg':msg,
+            'from':userFrom,
+            'delete':False,
+        })
+        return True
+
+    async def run(self):
+        self.__task=asyncio.create_task(self.__module.run(self.__recvQueue,self.__sendQueue))
+        await self.__task
+
+    def close(self):
+        if self.__task is not None:
+            self.__task.cancel()
 
 class MailCenter:
     __acceptedHosts={'10.0.2.2'}
     def __init__(self):
         self.__user={}
         self.__password={}
+        self.__sendQueue=asyncio.Queue()
 
     def load(self, configFile):
         with open(configFile, 'r') as f:
@@ -69,7 +93,7 @@ class MailCenter:
                     self.__user[userName]=MailUserNormal(userName)
                     self.__password[userName]=userDetail['password']
                 elif 'module' in userDetail:
-                    pass
+                    self.__user[userName]=MailUserRobot(userName,userDetail['module'],self.__sendQueue)
 
     def getUser(self,user,passwordIn):
         password=self.__password.get(user,None)
@@ -95,7 +119,19 @@ class MailCenter:
     def sendTo(self,userFrom,userTo,msg):
         if userTo not in self.__user:
             return False
-        return self.__user[userTo].append(userFrom,msg)
+        self.__user[userTo].append(userFrom,msg)
+
+    async def run(self):
+        tasks=[]
+        for user in self.__user.values():
+            if isinstance(user,MailUserRobot):
+                tasks.append(user.run())
+        asyncio.gather(*tasks)
+
+    def close(self):
+        for user in self.__user.values():
+            if isinstance(user,MailUserRobot):
+                user.close()
         
 mailCenter=MailCenter()
 
@@ -252,7 +288,7 @@ class SMTPService:
             self.__writer.write(b'501 Invalid Parameter\r\n')
             await self.__writer.drain()
             return
-        user=mailCenter.checkAddr(match[1],True)
+        user=mailCenter.checkAddr(match[1])
         if user is None:
             self.__writer.write(b'510 Invalid email address\r\n')
             await self.__writer.drain()
@@ -280,7 +316,7 @@ class SMTPService:
         self.__writer.write(b'250 Mail OK\r\n')
         await self.__writer.drain()
         for user in self.__rcpt:
-            mailCenter.sendTo(self.__mailFrom, user, msg);
+            mailCenter.sendTo(self.__mailFrom, user, msg)
 
     def __getCmd(self,line):
         if line==b'':
@@ -344,10 +380,11 @@ async def main(args):
     for s in (signal.SIGINT, signal.SIGTERM):
         loop.add_signal_handler(s, lambda: server_pop3.close())
         loop.add_signal_handler(s, lambda: server_smtp.close())
+        loop.add_signal_handler(s, lambda: mailCenter.close())
     try:
         async with server_pop3:
             async with server_smtp:
-                await asyncio.gather(server_pop3.serve_forever(), server_smtp.serve_forever())
+                await asyncio.gather(server_pop3.serve_forever(), server_smtp.serve_forever(), mailCenter.run())
     except asyncio.exceptions.CancelledError:
         pass
     finally:
