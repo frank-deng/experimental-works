@@ -1,47 +1,11 @@
 #!/usr/bin/env python3
 
 import asyncio,signal,json,hashlib,os,re
-import email
 from traceback import print_exc
 
-msg="""Received: from aldkfmwakd ( [60.215.174.212] ) by\r
-aldwkcoaiwdfoaiwdjfoiaw ; Tue, 25 Jul 2023 22:09:28 +0800 (GMT+08:00)\r
-Date: Mon, 14 May 2012 00:56:10 +0900\r
-From: erine@ai.com\r
-Subject: Test\r
-Content-Transfer-Encoding: Quoted-Printable\r
-Content-Disposition: inline\r
-Mime-Version: 1.0\r
-X-Priority: 3\r
-To: frank@10.0.2.2\r
-Content-Type: text/plain; charset="iso-8859-1"\r
-\r
-=B9=FE=B9=FE=B9=FE
-\r
-\r
-.\r
-"""
-
-msg2="""Received: from frank ( [60.215.174.212] ) by\r
-erine ; Tue, 25 Jul 2024 22:09:28 +0800 (GMT+08:00)\r
-Date: Mon, 14 May 2012 00:56:10 +0900\r
-From: erine@ai.com\r
-Subject: Test 2\r
-Content-Transfer-Encoding: Quoted-Printable\r
-Content-Disposition: inline\r
-Mime-Version: 1.0\r
-X-Priority: 3\r
-To: frank@10.0.2.2\r
-Content-Type: text/plain; charset="iso-8859-1"\r
-\r
-=B9=FE=B9=FE=B9=FE
-\r
-\r
-.\r
-"""
-
 class MailBox:
-    def __init__(self,mailList):
+    def __init__(self,username,mailList):
+        self.__user=username
         self.__mailList=mailList
     
     def close(self):
@@ -69,19 +33,16 @@ class MailBox:
         return True
 
 class MailCenter:
+    __acceptedHosts={'10.0.2.2'}
     def __init__(self):
-        self.__data={
+       self.__data={
             'frank':{
-                'mailList':[
-                    {
-                        'msg':msg.encode('iso8859-1'),
-                        'delete':False
-                    },
-                    {
-                        'msg':msg2.encode('iso8859-1'),
-                        'delete':False
-                    }
-                ]
+                'role':'user',
+                'mailList':[]
+            },
+            'niwenwoda':{
+                'role':'robot',
+                'mailList':[]
             }
         }
 
@@ -89,7 +50,30 @@ class MailCenter:
         userInfo=self.__data.get(user,None)
         if userInfo is None:
            return None
-        return MailBox(userInfo['mailList'])
+        return MailBox(user,userInfo['mailList'])
+    
+    def checkAddr(self,addr,isSender=False):
+        match=re.search(r'^([a-zA-Z0-9._%+-]+)@([a-zA-Z0-9.-]+)$',addr)
+        if match is None:
+            return None
+        user,host = match[1],match[2]
+        if (host not in self.__acceptedHosts) or (user not in self.__data):
+            return None
+        userData=self.__data[user]
+        if isSender and userData['role'] != 'user':
+            return None
+        else:
+            return user
+    
+    def sendTo(self,userFrom,userTo,msg):
+        if userTo not in self.__data:
+            return False
+        self.__data[userTo]['mailList'].append({
+            'msg':msg,
+            'from':userFrom,
+            'delete':False,
+        })
+        return True
         
 mailCenter=MailCenter()
 
@@ -151,6 +135,9 @@ class POP3Service:
         if msg is None:
             self.__writer.write(b'-ERR Mail not found\r\n')
             return
+        if re.search(rb'\r\n$',msg) is None:
+            msg+=b'\r\n'
+        msg+=b'.\r\n'
         self.__writer.write(b'+OK\r\n')
         self.__writer.write(msg)
         
@@ -202,7 +189,6 @@ class POP3Service:
 class SMTPService:
     __running=True
     __mailFrom=None
-    __msg=b''
     def __init__(self,reader,writer,timeout=60):
         self.__reader=reader
         self.__writer=writer
@@ -222,13 +208,19 @@ class SMTPService:
         await self.__writer.drain()
 
     async def __handleSrc(self,line):
+        global mailCenter
         content=line.decode('iso8859-1','ignore').strip()
         match=re.search(r'^MAIL From:\s*<([^<>\s]+)>',content,re.IGNORECASE)
         if match is None:
             self.__writer.write(b'501 Invalid Parameter\r\n')
             await self.__writer.drain()
             return
-        self.__mailFrom=match[1]
+        user=mailCenter.checkAddr(match[1],True)
+        if user is None:
+            self.__writer.write(b'510 Invalid email address\r\n')
+            await self.__writer.drain()
+            return
+        self.__mailFrom=user
         self.__writer.write(b'250 OK\r\n')
         await self.__writer.drain()
 
@@ -239,7 +231,12 @@ class SMTPService:
             self.__writer.write(b'501 Invalid Parameter\r\n')
             await self.__writer.drain()
             return
-        self.__rcpt.add(match[1])
+        user=mailCenter.checkAddr(match[1],True)
+        if user is None:
+            self.__writer.write(b'510 Invalid email address\r\n')
+            await self.__writer.drain()
+            return
+        self.__rcpt.add(user)
         self.__writer.write(b'250 OK\r\n')
         await self.__writer.drain()
         
@@ -255,14 +252,14 @@ class SMTPService:
     async def __handleData(self,line):
         self.__writer.write(b'354 End data with <CR><LF>.<CR><LF>\r\n')
         await self.__writer.drain()
-        self.__msg=b''
-        while True:
-            line=await asyncio.wait_for(self.__reader.readuntil(b'\n'), timeout=self.__timeout)
-            if re.search(rb'^.\r\n$', line) is not None:
-                break
-            self.__msg+=line
+        msg=b''
+        while msg.find(b'\r\n.\r\n')<0:
+            msg+=await asyncio.wait_for(self.__reader.read(512), timeout=self.__timeout)
+        msg=msg[:msg.find(b'\r\n.\r\n')]
         self.__writer.write(b'250 Mail OK\r\n')
         await self.__writer.drain()
+        for user in self.__rcpt:
+            mailCenter.sendTo(self.__mailFrom, user, msg);
 
     def __getCmd(self,line):
         if line==b'':
