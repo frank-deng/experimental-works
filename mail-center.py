@@ -44,19 +44,26 @@ class MailUserRobot:
         })
 
     def close(self):
-        print('close robot')
         if self.__task is not None:
-            print('cancel task')
-            self.__recvQueue.put_nowait(None)
             self.__task.cancel()
-            print('cancel task ok')
 
 class MailCenter:
     __acceptedHosts={'10.0.2.2'}
+    __task=None
     def __init__(self):
         self.__user={}
         self.__password={}
         self.__sendQueue=asyncio.Queue()
+        
+    async def __sendQueueTask(self):
+        while True:
+            mail=await self.__sendQueue.get()
+            if 'to' not in mail:
+                continue
+            target=mail['to']
+            if target not in self.__user:
+                continue
+            await self.__user[target].append(mail.get('from','unknown'), mail['msg'])
 
     def load(self, configFile):
         with open(configFile, 'r') as f:
@@ -68,6 +75,7 @@ class MailCenter:
                     self.__password[userName]=userDetail['password']
                 elif 'module' in userDetail:
                     self.__user[userName]=MailUserRobot(userName,userDetail['module'],self.__sendQueue)
+        self.__task=asyncio.create_task(self.__sendQueueTask())
 
     def getUser(self,user,passwordIn):
         password=self.__password.get(user,None)
@@ -96,10 +104,11 @@ class MailCenter:
         await self.__user[userTo].append(userFrom,msg)
 
     def close(self):
-        print('close')
         for user in self.__user.values():
             if isinstance(user,MailUserRobot):
                 user.close()
+        if self.__task is not None:
+            self.__task.cancel()
         
 mailCenter=MailCenter()
 
@@ -360,21 +369,23 @@ async def service_handler_smtp(reader,writer):
 
 async def main(args):
     global mailCenter
-    mailCenter.load(args.config);
+    mailCenter.load(args.config)
     server_pop3=await asyncio.start_server(service_handler_pop3,host=args.host,port=args.port_pop3)
     server_smtp=await asyncio.start_server(service_handler_smtp,host=args.host,port=args.port_smtp)
     loop = asyncio.get_event_loop()
     for s in (signal.SIGINT, signal.SIGTERM):
         loop.add_signal_handler(s, lambda: server_pop3.close())
         loop.add_signal_handler(s, lambda: server_smtp.close())
-        loop.add_signal_handler(s, lambda: mailCenter.close())
     try:
         async with server_pop3:
             async with server_smtp:
                 await asyncio.gather(server_pop3.serve_forever(), server_smtp.serve_forever())
     except asyncio.exceptions.CancelledError:
         pass
+    except Exception as e:
+        print_exc()
     finally:
+        mailCenter.close()
         await asyncio.gather(server_pop3.wait_closed(), server_smtp.wait_closed())
 
 if '__main__'==__name__:
