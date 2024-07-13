@@ -1,81 +1,55 @@
 #!/usr/bin/env python3
 
 import asyncio,signal,json,hashlib,os,re,threading,importlib
+from uuid import uuid4 as uuidgen
 from traceback import print_exc
 
 class MailUserNormal:
     def __init__(self,userName):
         self.__user=userName
         self.__mailList=[]
-        self.__lock=threading.Lock()
+        self.__lock=asyncio.Lock()
 
-    def stat(self):
-        totalSize=0
-        self.__lock.acquire()
-        mailCount=len(self.__mailList)
-        for mail in self.__mailList:
-            totalSize+=len(mail['msg'])
-        self.__lock.release()
-        return (mailCount,totalSize)
+    async def getAll(self):
+        res=[]
+        async with self.__lock:
+            res=self.__mailList[:]
+        return res
 
-    def sync(self):
-        self.__lock.acquire()
-        self.__mailList[:]=[mail for mail in self.__mailList if not mail['delete']]
-        self.__lock.release()
+    async def delete(self,delSet):
+        async with self.__lock:
+            self.__mailList[:]=[mail for mail in self.__mailList if mail['id'] not in delSet]
 
-    def retrive(self,idx):
-        idx-=1
-        self.__lock.acquire()
-        if idx < 0 or idx >= len(self.__mailList):
-            self.__lock.release()
-            return None
-        msg=self.__mailList[idx]['msg']
-        self.__lock.release()
-        return msg
-        
-    def delete(self,idx,flag=True):
-        idx-=1
-        self.__lock.acquire()
-        if idx < 0 or idx >= len(self.__mailList):
-            self.__lock.release()
-            return False
-        self.__mailList[idx]['delete']=flag
-        self.__lock.release()
-        return True
-
-    def append(self,userFrom,msg):
-        self.__lock.acquire()
-        self.__mailList.append({
-            'msg':msg,
-            'from':userFrom,
-            'delete':False,
-        })
-        self.__lock.release()
-        return True
+    async def append(self,userFrom,msg):
+        async with self.__lock:
+            self.__mailList.append({
+                'id':str(uuidgen()),
+                'from':userFrom,
+                'msg':msg
+            })
 
 class MailUserRobot:
     __task=None
     def __init__(self,userName,module,sendQueue):
         self.__user=userName
         self.__recvQueue=asyncio.Queue()
-        self.__sendQueue=sendQueue
         self.__module=importlib.import_module(module)
+        self.__task=asyncio.create_task(self.__module.run(self.__recvQueue,sendQueue))
 
-    def append(self,userFrom,msg):
+    async def append(self,userFrom,msg):
         self.__recvQueue.put_nowait({
-            'msg':msg,
+            'id':str(uuidgen()),
             'from':userFrom,
-            'delete':False,
+            'msg':msg
         })
-        return True
-
-    async def run(self):
-        self.__task=asyncio.create_task(self.__module.run(self.__recvQueue,self.__sendQueue))
-        await self.__task
 
     def close(self):
+        print('close robot')
         if self.__task is not None:
+            print('cancel task')
+            self.__recvQueue.put_nowait(None)
             self.__task.cancel()
+            print('cancel task ok')
 
 class MailCenter:
     __acceptedHosts={'10.0.2.2'}
@@ -116,19 +90,13 @@ class MailCenter:
         else:
             return user
     
-    def sendTo(self,userFrom,userTo,msg):
+    async def sendTo(self,userFrom,userTo,msg):
         if userTo not in self.__user:
             return False
-        self.__user[userTo].append(userFrom,msg)
-
-    async def run(self):
-        tasks=[]
-        for user in self.__user.values():
-            if isinstance(user,MailUserRobot):
-                tasks.append(user.run())
-        asyncio.gather(*tasks)
+        await self.__user[userTo].append(userFrom,msg)
 
     def close(self):
+        print('close')
         for user in self.__user.values():
             if isinstance(user,MailUserRobot):
                 user.close()
@@ -137,13 +105,14 @@ mailCenter=MailCenter()
 
 class POP3Service:
     __user=None
-    __mailBox=None
+    __mailList=None
     __running=True
     __noAuthCmd={'USER','PASS'}
     def __init__(self,reader,writer,timeout=60):
         self.__reader=reader
         self.__writer=writer
         self.__timeout=timeout
+        self.__delSet=set()
         self.__handlerDict={
             'USER':self.__handleUser,
             'PASS':self.__handlePass,
@@ -154,7 +123,7 @@ class POP3Service:
             'QUIT':self.__handleQuit,
         }
         
-    def __handleUser(self,line):
+    async def __handleUser(self,line):
         content=line.decode('iso8859-1','ignore').strip()
         match=re.search(r'^[^\s]+\s+([^\s]+)',content)
         if match is None:
@@ -162,9 +131,11 @@ class POP3Service:
             return
         self.__user=match[1]
         self.__mailBox=None
+        self.__mailList=None
+        self.__delSet.clear()
         self.__writer.write(b'+OK\r\n')
     
-    def __handlePass(self,line):
+    async def __handlePass(self,line):
         global mailCenter
         content=line.decode('iso8859-1','ignore').strip()
         match=re.search(r'^[^\s]+\s+([^\s]+)',content)
@@ -175,45 +146,50 @@ class POP3Service:
         if self.__mailBox is None:
             self.__writer.write(b'-ERR Auth Failed\r\n')
             return
+        self.__mailList=await self.__mailBox.getAll()
         self.__writer.write(b'+OK\r\n')
         
-    def __handleStat(self,line):
-        mailCount, totalSize = self.__mailBox.stat()
+    async def __handleStat(self,line):
+        mailCount=len(self.__mailList)
+        totalSize=0
+        for item in self.__mailList:
+            totalSize+=len(item['msg'])
         self.__writer.write(f"+OK {mailCount} {totalSize}\r\n".encode('iso8859-1'))
 
-    def __handleRetr(self,line):
+    async def __handleRetr(self,line):
         content=line.decode('iso8859-1','ignore').strip()
         match=re.search(r'^[^\s]+\s+([^\s]+)',content)
         if match is None:
             self.__writer.write(b'-ERR Missing email num\r\n')
             return
-        idx=int(match[1])
-        msg=self.__mailBox.retrive(idx)
-        if msg is None:
+        idx=int(match[1])-1
+        if idx<0 or idx>=len(self.__mailList):
             self.__writer.write(b'-ERR Mail not found\r\n')
             return
+        msg=self.__mailList[idx]['msg']
         if re.search(rb'\r\n$',msg) is None:
             msg+=b'\r\n'
         msg+=b'.\r\n'
         self.__writer.write(b'+OK\r\n')
         self.__writer.write(msg)
-        
-    def __handleDel(self,line):
+    
+    async def __handleDel(self,line):
         content=line.decode('iso8859-1','ignore').strip()
         match=re.search(r'^[^\s]+\s+([^\s]+)',content)
         if match is None:
             self.__writer.write(b'-ERR Missing email num\r\n')
             return
-        idx=int(match[1])
-        if self.__mailBox.delete(idx):
+        idx=int(match[1])-1
+        try:
+            self.__delSet.add(self.__mailList[idx]['id'])
             self.__writer.write(b'+OK\r\n')
-        else:
+        except IndexError:
             self.__writer.write(b'-ERR Failed to delete mail\r\n')
     
-    def __handleNoop(self,line):
+    async def __handleNoop(self,line):
         self.__writer.write(b'+OK\r\n')
 
-    def __handleQuit(self,line):
+    async def __handleQuit(self,line):
         self.__running=False
         self.__writer.write(b'+OK\r\n')
         
@@ -229,19 +205,24 @@ class POP3Service:
     async def run(self):
         self.__writer.write(b'+OK\r\n')
         while self.__running:
-            line=await asyncio.wait_for(self.__reader.readuntil(b'\n'), timeout=self.__timeout)
+            line=b''
+            try:
+                line=await asyncio.wait_for(self.__reader.readuntil(b'\n'), timeout=self.__timeout)
+            except asyncio.exceptions.IncompleteReadError:
+                continue
             cmd=self.__getCmd(line)
             if cmd is None:
                 break
             handler=self.__handlerDict.get(cmd,None)
             if handler is None:
                 self.__writer.write(b'-ERR Invalid Command\r\n')
-            elif (cmd not in self.__noAuthCmd) and (self.__mailBox is None):
+            elif (cmd not in self.__noAuthCmd) and (self.__mailList is None):
                 self.__writer.write(b'-ERR Not Authorized\r\n')
             else:
-                handler(line)
+                await handler(line)
             await self.__writer.drain()
-        self.__mailBox.sync()
+        await self.__mailBox.delete(self.__delSet)
+        self.__delSet.clear()
 
 class SMTPService:
     __running=True
@@ -315,8 +296,10 @@ class SMTPService:
         msg=msg[:msg.find(b'\r\n.\r\n')]
         self.__writer.write(b'250 Mail OK\r\n')
         await self.__writer.drain()
+        tasks=[]
         for user in self.__rcpt:
-            mailCenter.sendTo(self.__mailFrom, user, msg)
+            tasks.append(mailCenter.sendTo(self.__mailFrom, user, msg))
+        await asyncio.gather(*tasks)
 
     def __getCmd(self,line):
         if line==b'':
@@ -330,7 +313,11 @@ class SMTPService:
     async def run(self):
         self.__writer.write(b'220 mysite.net\r\n')
         while self.__running:
-            line=await asyncio.wait_for(self.__reader.readuntil(b'\n'), timeout=self.__timeout)
+            line=b''
+            try:
+                line=await asyncio.wait_for(self.__reader.readuntil(b'\n'), timeout=self.__timeout)
+            except asyncio.exceptions.IncompleteReadError:
+                continue
             cmd=self.__getCmd(line)
             if cmd is None:
                 break
@@ -384,7 +371,7 @@ async def main(args):
     try:
         async with server_pop3:
             async with server_smtp:
-                await asyncio.gather(server_pop3.serve_forever(), server_smtp.serve_forever(), mailCenter.run())
+                await asyncio.gather(server_pop3.serve_forever(), server_smtp.serve_forever())
     except asyncio.exceptions.CancelledError:
         pass
     finally:
