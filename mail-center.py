@@ -38,7 +38,6 @@ class MailUserRobot:
 
     async def append(self,userFrom,msg):
         self.__recvQueue.put_nowait({
-            'id':str(uuidgen()),
             'from':userFrom,
             'msg':msg
         })
@@ -57,15 +56,15 @@ class MailCenter:
         
     async def __sendQueueTask(self):
         while True:
+            print('wait',self.__sendQueue)
             mail=await self.__sendQueue.get()
-            if 'to' not in mail:
-                continue
-            target=mail['to']
-            if target not in self.__user:
+            print(mail)
+            target=mail.get('to',None)
+            if (target is None) or (target not in self.__user):
                 continue
             await self.__user[target].append(mail.get('from','unknown'), mail['msg'])
 
-    def load(self, configFile):
+    async def load(self, configFile):
         with open(configFile, 'r') as f:
             jsonData=json.load(f)
             for userName in jsonData:
@@ -75,7 +74,8 @@ class MailCenter:
                     self.__password[userName]=userDetail['password']
                 elif 'module' in userDetail:
                     self.__user[userName]=MailUserRobot(userName,userDetail['module'],self.__sendQueue)
-        self.__task=asyncio.create_task(self.__sendQueueTask())
+            self.__task=asyncio.create_task(self.__sendQueueTask())
+            await asyncio.sleep(0)
 
     def getUser(self,user,passwordIn):
         password=self.__password.get(user,None)
@@ -369,9 +369,11 @@ async def service_handler_smtp(reader,writer):
 
 async def main(args):
     global mailCenter
-    mailCenter.load(args.config)
-    server_pop3=await asyncio.start_server(service_handler_pop3,host=args.host,port=args.port_pop3)
-    server_smtp=await asyncio.start_server(service_handler_smtp,host=args.host,port=args.port_smtp)
+    server_pop3,server_smtp,dummy = await asyncio.gather(
+        asyncio.start_server(service_handler_pop3,host=args.host,port=args.port_pop3),
+        asyncio.start_server(service_handler_smtp,host=args.host,port=args.port_smtp),
+        mailCenter.load(args.config)
+    )
     loop = asyncio.get_event_loop()
     for s in (signal.SIGINT, signal.SIGTERM):
         loop.add_signal_handler(s, lambda: server_pop3.close())
