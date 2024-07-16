@@ -1,29 +1,27 @@
 import email,asyncio
 from email.header import decode_header
 from codecs import decode
+from email.mime.multipart import MIMEMultipart
+from email.mime.text import MIMEText
 from traceback import print_exc
-
-ENCODING_CONV={
-    'CN-GB':'GB2312'
-}
 
 async def run(recvQueue,sendQueue):
     while True:
         msgInfo=await recvQueue.get()
         try:
+            print(msgInfo['msg'])
             msg = email.message_from_bytes(msgInfo['msg'])
-            encoding = msg.get_content_charset().upper()
-            encoding = ENCODING_CONV.get(encoding,encoding)
-            print(msg['subject'])
-            print(msg.get_payload())
+            encoding = msg.get_content_charset().lower()
+            msg2 = MIMEMultipart()
+            msg2['From']='test@10.0.2.2'
+            msg2['To']=msg['From']
+            msg2['Subject']="Fw: "+msg['subject']
+            msg2.attach(MIMEText(msg.get_payload(),'plain'))
             msgNew={
                 'from':'test',
                 'to':msgInfo['from'],
-                'msg':msgInfo['msg']
+                'msg':msg2.as_bytes()
             }
         except:
             print_exc()
-        print('send mail',sendQueue)
         sendQueue.put_nowait(msgNew)
-        print('send mail ok')
-

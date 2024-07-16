@@ -56,9 +56,7 @@ class MailCenter:
         
     async def __sendQueueTask(self):
         while True:
-            print('wait',self.__sendQueue)
             mail=await self.__sendQueue.get()
-            print(mail)
             target=mail.get('to',None)
             if (target is None) or (target not in self.__user):
                 continue
