@@ -30,11 +30,11 @@ class MailUserNormal:
 
 class MailUserRobot:
     __task=None
-    def __init__(self,userName,module,sendQueue):
+    def __init__(self,userName,params,sendQueue):
         self.__user=userName
         self.__recvQueue=asyncio.Queue()
-        self.__module=importlib.import_module(module)
-        self.__task=asyncio.create_task(self.__module.run(self.__recvQueue,sendQueue))
+        self.__module=importlib.import_module(params['module'])
+        self.__task=asyncio.create_task(self.__module.run(params,self.__recvQueue,sendQueue))
 
     async def append(self,userFrom,msg):
         self.__recvQueue.put_nowait({
@@ -71,7 +71,7 @@ class MailCenter:
                     self.__user[userName]=MailUserNormal(userName)
                     self.__password[userName]=userDetail['password']
                 elif 'module' in userDetail:
-                    self.__user[userName]=MailUserRobot(userName,userDetail['module'],self.__sendQueue)
+                    self.__user[userName]=MailUserRobot(userName,userDetail.copy(),self.__sendQueue)
             self.__task=asyncio.create_task(self.__sendQueueTask())
             await asyncio.sleep(0)
 
