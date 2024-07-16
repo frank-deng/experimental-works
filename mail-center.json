@@ -4,6 +4,9 @@
   },
   "test":{
     "module":"emailtest"
+  },
+  "niwenwoda":{
+    "module":"askbot",
+    "erine_key":["client_id","client_secret"]
   }
 }
-

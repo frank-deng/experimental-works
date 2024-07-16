@@ -1,27 +1,41 @@
 import email,asyncio
-from email.header import decode_header
-from codecs import decode
-from email.mime.multipart import MIMEMultipart
-from email.mime.text import MIMEText
+from email.message import EmailMessage
 from traceback import print_exc
 
-async def run(recvQueue,sendQueue):
+def process_email(msg_raw):
+    msg=email.message_from_bytes(msg_raw)
+    content=None
+    charset=None
+    if msg.is_multipart():
+        for part in msg.walk():
+            content_type=part.get_content_type()
+            content_encoding=part.get_content_transfer_encoding()
+            if content_type in {'text/plain','text/html'}:
+                charset=part.get_content_charset()
+                payload=part.get_payload(decode=True).decode(charset)
+    else:
+        charset=msg.get_content_charset()
+        payload=msg.get_payload(decode=True).decode(charset)
+    msg_reply = EmailMessage()
+    msg_reply['From']='test@10.0.2.2'
+    msg_reply['To']=msg['From']
+    msg_reply['Subject']="Re: "+msg['subject']
+    msg_reply.set_content(payload.encode(charset),'text','plain',cte='7bit')
+    msg_reply.set_param('charset',charset)
+    return msg_reply
+
+async def run(params,recvQueue,sendQueue):
     while True:
         msgInfo=await recvQueue.get()
         try:
-            print(msgInfo['msg'])
-            msg = email.message_from_bytes(msgInfo['msg'])
-            encoding = msg.get_content_charset().lower()
-            msg2 = MIMEMultipart()
-            msg2['From']='test@10.0.2.2'
-            msg2['To']=msg['From']
-            msg2['Subject']="Fw: "+msg['subject']
-            msg2.attach(MIMEText(msg.get_payload(),'plain'))
-            msgNew={
+            print(msgInfo['msg'],'\n')
+            msg_reply=process_email(msgInfo['msg'])
+            msg_reply_bytes=msg_reply.as_bytes().replace(b'\n',b'\r\n')
+            print(msg_reply_bytes,'\n')
+            sendQueue.put_nowait({
                 'from':'test',
                 'to':msgInfo['from'],
-                'msg':msg2.as_bytes()
-            }
+                'msg':msg_reply_bytes
+            })
         except:
             print_exc()
-        sendQueue.put_nowait(msgNew)
