@@ -36,6 +36,8 @@ def get_xy(x,y,dir):
 snake_data=[]
 snake_dir=DIR_EAST
 snake_dir_req=None
+board_w=32
+board_h=20
 food_x=10
 food_y=10
 score=0
@@ -52,6 +54,9 @@ def snake_update_dir(dir):
 
 def snake_init():
     init_len=6
+    scr.addstr(board_h,0,' '*board_w,curses.A_REVERSE)
+    for i in range(board_h+1):
+        scr.addstr(i,board_w,' ',curses.A_REVERSE)
     for i in range(init_len):
         snake_data.append((i,0))
         if i==0:
@@ -66,8 +71,8 @@ def nextfood():
     global snake_dir,food_x,food_y,score,snake_data,game_over
     passed=False
     while not passed:
-         food_x=rnd(0,32)
-         food_y=rnd(0,20)
+         food_x=rnd(0,board_w-1)
+         food_y=rnd(0,board_h-1)
          passed=True
          for x,y in snake_data:
              if food_x==x and food_y==y:
@@ -83,7 +88,7 @@ def snake_main():
     if snake_dir_req is not None:
          dir_next=snake_dir_req
     x_next,y_next=get_xy(head[0],head[1],dir_next)
-    if x_next<0 or y_next<0 or x_next>=32 or y_next>=20:
+    if x_next<0 or y_next<0 or x_next>=board_w or y_next>=board_h:
          game_over=True
          return
     snake_data.append((x_next,y_next))
