@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 
 import curses,time
+from random import randint as rnd
 
 DIR_EAST=1
 DIR_WEST=-1
@@ -35,6 +36,10 @@ def get_xy(x,y,dir):
 snake_data=[]
 snake_dir=DIR_EAST
 snake_dir_req=None
+food_x=10
+food_y=10
+score=0
+game_over=False
 
 def snake_update_dir(dir):
     global snake_dir_req
@@ -55,15 +60,32 @@ def snake_init():
             scr.addstr(0,i,'\u2578')
         else:
             scr.addstr(0,i,'\u2501')
+    nextfood()
+
+def nextfood():
+    global snake_dir,food_x,food_y,score,snake_data,game_over
+    passed=False
+    while not passed:
+         food_x=rnd(0,32)
+         food_y=rnd(0,20)
+         passed=True
+         for x,y in snake_data:
+             if food_x==x and food_y==y:
+                 passed=False
+                 break
+    scr.addstr(food_y,food_x,'$')
 
 def snake_main():
-    global snake_dir
+    global snake_dir,food_x,food_y,score,game_over
     head=snake_data[-1]
     tail=snake_data[0]
     dir_next=snake_dir
     if snake_dir_req is not None:
          dir_next=snake_dir_req
     x_next,y_next=get_xy(head[0],head[1],dir_next)
+    if x_next<0 or y_next<0 or x_next>=32 or y_next>=20:
+         game_over=True
+         return
     snake_data.append((x_next,y_next))
 
     if (snake_dir==DIR_EAST and dir_next==DIR_EAST) or (snake_dir==DIR_WEST and dir_next==DIR_WEST):
@@ -78,6 +100,7 @@ def snake_main():
         scr.addstr(head[1],head[0],'\u2517')
     elif (snake_dir==DIR_SOUTH and dir_next==DIR_WEST) or (snake_dir==DIR_EAST and dir_next==DIR_NORTH):
         scr.addstr(head[1],head[0],'\u251b')
+    snake_dir=dir_next
 
     if dir_next==DIR_EAST:
         scr.addstr(y_next,x_next,'\u2578')
@@ -87,8 +110,13 @@ def snake_main():
         scr.addstr(y_next,x_next,'\u257b')
     elif dir_next==DIR_SOUTH:
         scr.addstr(y_next,x_next,'\u2579')
-    scr.addstr(tail[1],tail[0],' ')
 
+    if y_next==food_y and x_next==food_x:
+        score+=1
+        nextfood()
+        return
+
+    scr.addstr(tail[1],tail[0],' ')
     snake_data.pop(0)
     x_tail,y_tail=snake_data[0]
     dir_tail=get_dir(x_tail,y_tail,snake_data[1][0],snake_data[1][1],)
@@ -100,10 +128,9 @@ def snake_main():
         scr.addstr(y_tail,x_tail,'\u2579')
     elif dir_tail==DIR_SOUTH:
         scr.addstr(y_tail,x_tail,'\u257b')
-    snake_dir=dir_next
 
 def main(stdscr):
-    global scr
+    global scr,game_over
     scr=stdscr
     stdscr.clear()
     stdscr.nodelay(True)
@@ -113,7 +140,7 @@ def main(stdscr):
     key=-1
     counter=0
     snake_init()
-    while key != 27:
+    while key != 27 and not game_over:
         key=stdscr.getch()
         if key==curses.KEY_UP:
             snake_update_dir(DIR_NORTH)
@@ -123,6 +150,7 @@ def main(stdscr):
             snake_update_dir(DIR_WEST)
         elif key==curses.KEY_RIGHT:
             snake_update_dir(DIR_EAST)
+        
         stdscr.refresh()
         counter+=1
         time.sleep(0.1)
@@ -131,3 +159,5 @@ def main(stdscr):
             snake_main()
 
 curses.wrapper(main)
+if game_over:
+    print('game_over')
