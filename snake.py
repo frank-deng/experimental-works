@@ -126,12 +126,13 @@ def snake_main():
         nextfood()
         return
 
-    scr.addstr(tail[1],tail[0],' ')
-    snake_data.pop(0)
-    x_tail,y_tail=snake_data[0]
+    x_tail,y_tail=tail
+    scr.addstr(y_tail,x_tail,' ')
     val = snake_map[y_tail][x_tail >> 4]
     map_mask = (1 << (x_tail & 0xf))
     snake_map[y_tail][x_tail >> 4] = (val & (~map_mask))
+    snake_data.pop(0)
+    x_tail,y_tail=snake_data[0]
     dir_tail=get_dir(x_tail,y_tail,snake_data[1][0],snake_data[1][1])
     if dir_tail==DIR_EAST:
         scr.addstr(y_tail,x_tail,'\u257a')
