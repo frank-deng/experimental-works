@@ -20,12 +20,15 @@ def get_xy(x,y,dir):
     elif dir==DIR_NORTH:
         return x,y-1
 
-snake_data=[]
-DR1=DIR_EAST
-DR2=DIR_EAST
 board_w=32
 board_h=20
+HD=0
+TL=0
+QLEN=board_w*board_h
+DR1=DIR_EAST
+DR2=DIR_EAST
 snake_map=[[0,0] for i in range(board_h+1)]
+snake_data=[[0 for _ in range(3)] for _ in range(QLEN)]
 food_x=10
 food_y=10
 score=0
@@ -35,22 +38,6 @@ def snake_update_dir():
     global DR2
     if ((DR1==DIR_EAST or DR1==DIR_WEST) and (DR2==DIR_EAST or DR2==DIR_WEST)) or ((DR1==DIR_NORTH or DR1==DIR_SOUTH) and (DR2==DIR_NORTH or DR2==DIR_SOUTH)):
         DR2=DR1
-
-def snake_init():
-    scr.addstr(board_h,0,' '*board_w,curses.A_REVERSE)
-    for i in range(board_h+1):
-        scr.addstr(i,board_w,' ',curses.A_REVERSE)
-    init_len=6
-    snake_map[0][0] = (1<<init_len)-1
-    for i in range(init_len):
-        snake_data.append([i,0,DIR_EAST])
-        if i==0:
-            scr.addstr(0,i,'\u257a')
-        elif i>=init_len-1:
-            scr.addstr(0,i,'\u2578')
-        else:
-            scr.addstr(0,i,'\u2501')
-    nextfood()
 
 def nextfood():
     global food_x,food_y
@@ -66,8 +53,8 @@ def nextfood():
     scr.addstr(food_y,food_x,'$')
 
 def snake_main():
-    global DR1,DR2,food_x,food_y,score,game_over
-    head=snake_data[-1]
+    global DR1,DR2,HD,TL,food_x,food_y,score,game_over
+    head=snake_data[HD]
     x_next,y_next=get_xy(head[0],head[1],DR2)
     map_mask = (1 << (x_next & 0xf))
     val = snake_map[y_next][x_next >> 4]
@@ -76,7 +63,12 @@ def snake_main():
         return
     snake_map[y_next][x_next >> 4] = (val | map_mask)
     head[2]=DR2
-    snake_data.append([x_next,y_next,DR2])
+    HD=HD+1
+    if HD >= QLEN:
+         HD=0
+    snake_data[HD][0]=x_next
+    snake_data[HD][1]=y_next
+    snake_data[HD][2]=DR2
 
     if (DR1==DIR_EAST and DR2==DIR_EAST) or (DR1==DIR_WEST and DR2==DIR_WEST):
         scr.addstr(head[1],head[0],'\u2501')
@@ -106,13 +98,15 @@ def snake_main():
         nextfood()
         return
 
-    x_tail,y_tail,dir_tail=snake_data[0]
+    x_tail,y_tail,dir_tail=snake_data[TL]
     scr.addstr(y_tail,x_tail,' ')
     val = snake_map[y_tail][x_tail >> 4]
     map_mask = (1 << (x_tail & 0xf))
     snake_map[y_tail][x_tail >> 4] = (val & (~map_mask))
-    snake_data.pop(0)
-    x_tail,y_tail,dir_tail=snake_data[0]
+    TL=TL+1
+    if TL>=QLEN:
+         TL=0
+    x_tail,y_tail,dir_tail=snake_data[TL]
     if dir_tail==DIR_EAST:
         scr.addstr(y_tail,x_tail,'\u257a')
     elif dir_tail==DIR_WEST:
@@ -123,7 +117,7 @@ def snake_main():
         scr.addstr(y_tail,x_tail,'\u257b')
 
 def main(stdscr):
-    global scr,game_over,DR2
+    global scr,game_over,DR2,HD
     scr=stdscr
     stdscr.clear()
     stdscr.nodelay(True)
@@ -132,7 +126,22 @@ def main(stdscr):
     stdscr.keypad(True)
     key=-1
     counter=0
-    snake_init()
+    scr.addstr(board_h,0,' '*board_w,curses.A_REVERSE)
+    for i in range(board_h+1):
+        scr.addstr(i,board_w,' ',curses.A_REVERSE)
+    init_len=6
+    snake_map[0][0] = (1<<init_len)-1
+    for i in range(init_len):
+        snake_data[i][0]=i
+        snake_data[i][2]=DIR_EAST
+        if i==0:
+            scr.addstr(0,i,'\u257a')
+        elif i>=init_len-1:
+            scr.addstr(0,i,'\u2578')
+        else:
+            scr.addstr(0,i,'\u2501')
+    HD=init_len-1
+    nextfood()
     while key != 27 and not game_over:
         key=stdscr.getch()
         if key==curses.KEY_UP:
@@ -158,5 +167,3 @@ def main(stdscr):
 curses.wrapper(main)
 if game_over:
     print('game_over')
-print(snake_map)
-
