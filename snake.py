@@ -52,24 +52,22 @@ def nextfood():
             passed=False
     scr.addstr(food_y,food_x,'$')
 
-def snake_main():
-    global DR1,DR2,HD,TL,food_x,food_y,score,game_over
+def move_head(x_next,y_next):
+    global HD,DR1,DR2,game_over
     head=snake_data[HD]
-    x_next,y_next=get_xy(head[0],head[1],DR2)
     map_mask = (1 << (x_next & 0xf))
     val = snake_map[y_next][x_next >> 4]
-    if x_next<0 or y_next<0 or x_next>=board_w or y_next>=board_h or (val & map_mask)!=0:
+    if (val & map_mask)!=0:
         game_over=True
         return
     snake_map[y_next][x_next >> 4] = (val | map_mask)
     head[2]=DR2
     HD=HD+1
     if HD >= QLEN:
-         HD=0
+        HD=0
     snake_data[HD][0]=x_next
     snake_data[HD][1]=y_next
     snake_data[HD][2]=DR2
-
     if (DR1==DIR_EAST and DR2==DIR_EAST) or (DR1==DIR_WEST and DR2==DIR_WEST):
         scr.addstr(head[1],head[0],'\u2501')
     elif (DR1==DIR_NORTH and DR2==DIR_NORTH) or (DR1==DIR_SOUTH and DR2==DIR_SOUTH):
@@ -83,7 +81,6 @@ def snake_main():
     elif (DR1==DIR_SOUTH and DR2==DIR_WEST) or (DR1==DIR_EAST and DR2==DIR_NORTH):
         scr.addstr(head[1],head[0],'\u251b')
     DR1=DR2
-
     if DR2==DIR_EAST:
         scr.addstr(y_next,x_next,'\u2578')
     elif DR2==DIR_WEST:
@@ -93,11 +90,25 @@ def snake_main():
     elif DR2==DIR_SOUTH:
         scr.addstr(y_next,x_next,'\u2579')
 
+def snake_main():
+    global DR1,DR2,HD,TL,food_x,food_y,score,game_over
+    x_next,y_next,_=snake_data[HD]
+    if DR2==DIR_EAST:
+        x_next=x_next+1
+    elif DR2==DIR_WEST:
+        x_next=x_next-1
+    elif DR2==DIR_SOUTH:
+        y_next=y_next+1
+    elif DR2==DIR_NORTH:
+        y_next=y_next-1
+    if x_next<0 or y_next<0 or x_next>=board_w or y_next>=board_h:
+        game_over=True
+        return
     if y_next==food_y and x_next==food_x:
         score+=1
+        move_head(x_next,y_next)
         nextfood()
         return
-
     x_tail,y_tail,dir_tail=snake_data[TL]
     scr.addstr(y_tail,x_tail,' ')
     val = snake_map[y_tail][x_tail >> 4]
@@ -115,6 +126,7 @@ def snake_main():
         scr.addstr(y_tail,x_tail,'\u2579')
     elif dir_tail==DIR_SOUTH:
         scr.addstr(y_tail,x_tail,'\u257b')
+    move_head(x_next,y_next)
 
 def main(stdscr):
     global scr,game_over,DR2,HD
