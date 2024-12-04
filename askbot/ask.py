@@ -34,30 +34,43 @@ async def askBot(access_token,question):
             return res.get('result',None)
     return None
 
-async def main(args,config):
-    access_token=await getAccessToken(config['client_id'],config['client_secret'])
+async def input_interactive():
     content=''
     print('请输入您的问题：')
     for line in sys.stdin:
         line=line.rstrip()
-        if '.' == line:
-            break
         content+=line+'\n'
-    sys.stdin.close()
     print('回答中……')
+    return content
+
+def process_content(template):
+    content=[]
+    stdin_processed=False
+    for item in template:
+        if item!='-':
+            content.append(item)
+        elif not stdin_processed:
+            stdin_processed=True
+            content.append('\n'.join(sys.stdin.readlines()))
+            
+    return '\n'.join(content)
+
+async def main(args):
+    access_token=await getAccessToken(os.environ.get('CLIENT_ID'),os.environ.get('CLIENT_SECRET'))
+    content=''
+    if len(args.question)==0:
+        content=await input_interactive()
+    else:
+        content=process_content(args.question)
+    sys.stdin.close()
     print(await askBot(access_token,content))
 
 if '__main__'==__name__:
     import argparse
     parser = argparse.ArgumentParser()
     parser.add_argument(
-        '--config',
-        '-c',
-        help='Specify config file.',
-        default='./config.json'
+        'question',
+        nargs='*'
     )
     args = parser.parse_args();
-    config=None
-    with open(args.config, 'r') as f:
-        config=json.load(f)
-    asyncio.run(main(args,config))
+    asyncio.run(main(args))
