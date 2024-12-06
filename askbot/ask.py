@@ -17,22 +17,29 @@ async def getAccessToken(client_id,client_secret):
             if res is not None and 'access_token' in res:
                 return res['access_token']
     return None
-    
+
 async def askBot(access_token,question):
-    url=f"https://aip.baidubce.com/rpc/2.0/ai_custom/v1/wenxinworkshop/chat/completions?access_token={access_token}"
+    url=f"https://aip.baidubce.com/rpc/2.0/ai_custom/v1/wenxinworkshop/chat/completions_pro?access_token={access_token}"
     jsonData={
         'messages':[
             {
                 'role':'user',
-                'content':question
+                'content':question,
+                'temperature':0.01,
+                'top_p':0,
             }
-        ]
+        ],
+        'stream':True,
     }
     async with aiohttp.ClientSession() as session:
         async with session.post(url,json=jsonData) as response:
-            res=json.loads(await response.text())
-            return res.get('result',None)
-    return None
+            async for chunk in response.content:
+                chunk_str=re.sub('^data: ', '', chunk.decode().strip())
+                if not chunk_str:
+                    continue
+                data=json.loads(chunk_str)
+                print(data.get('result'), end='')
+    print('')
 
 async def input_interactive():
     content=''
@@ -52,7 +59,6 @@ def process_content(template):
         elif not stdin_processed:
             stdin_processed=True
             content.append('\n'.join(sys.stdin.readlines()))
-            
     return '\n'.join(content)
 
 async def main(args):
@@ -63,7 +69,7 @@ async def main(args):
     else:
         content=process_content(args.question)
     sys.stdin.close()
-    print(await askBot(access_token,content))
+    await askBot(access_token,content)
 
 if '__main__'==__name__:
     import argparse
