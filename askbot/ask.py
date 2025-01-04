@@ -1,8 +1,9 @@
 #!/usr/bin/env python3
 #-*- coding:utf-8-*
 
-import asyncio,signal,json,hashlib,os,re,threading,importlib,platform
-import aiohttp,asyncio,json,sys
+import asyncio,signal,json,hashlib,os,sys,readline,re,threading,importlib,platform
+import subprocess as subp
+import aiohttp
 
 async def getAccessToken(client_id,client_secret):
     url='https://aip.baidubce.com/oauth/2.0/token'
@@ -20,6 +21,7 @@ async def getAccessToken(client_id,client_secret):
 
 async def askBot(access_token,question):
     url=f"https://aip.baidubce.com/rpc/2.0/ai_custom/v1/wenxinworkshop/chat/completions_pro?access_token={access_token}"
+    result=''
     jsonData={
         'messages':[
             {
@@ -37,16 +39,21 @@ async def askBot(access_token,question):
                 chunk_str=re.sub('^data: ', '', chunk.decode().strip())
                 if not chunk_str:
                     continue
-                data=json.loads(chunk_str)
-                print(data.get('result'), end='')
+                data=json.loads(chunk_str).get('result')
+                result+=data
+                print(data, end='')
     print('')
 
 async def input_interactive():
     content=''
     print('请输入您的问题：')
-    for line in sys.stdin:
-        line=line.rstrip()
-        content+=line+'\n'
+    while True:
+        line=input()
+        line=line.strip()
+        if line=='.':
+            break
+        else:
+            content+=line+'\n'
     print('回答中……')
     return content
 
@@ -69,7 +76,7 @@ async def main(args):
     else:
         content=process_content(args.question)
     sys.stdin.close()
-    await askBot(access_token,content)
+    content=await askBot(access_token,content)
 
 if '__main__'==__name__:
     import argparse
@@ -79,4 +86,9 @@ if '__main__'==__name__:
         nargs='*'
     )
     args = parser.parse_args();
-    asyncio.run(main(args))
+    try:
+        asyncio.run(main(args))
+    except KeyboardInterrupt:
+        pass
+    exit(0)
+
