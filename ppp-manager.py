@@ -9,6 +9,7 @@ import fcntl
 import os
 import configparser
 import logging
+import time
 
 
 class Logger:
@@ -24,32 +25,49 @@ class Logger:
 class PPPConnection(Logger):
     __username=None
     __task=None
-    def __init__(self,reader,writer,*,login_timeout=120,max_retry=3):
+    __retry=0
+    def __init__(self,reader,writer,*,login_timeout=120,max_retry=3,onlogin=None,onclose=None):
         self.__reader,self.__writer=reader,writer
         self.__login_timeout=login_timeout
+        self.__timestamp=time.time()
+        self.__max_retry=max_retry
+        self.__onlogin=onlogin
+        self.__onclose=onclose
+
+    async def __readchar(self):
+        running=True
+        char=0
+        while running:
+            running=False
+            try:
+                char=await asyncio.wait_for(self.__reader.read(1),1)
+            except asyncio.TimeoutError:
+                running=True
+            if time.time() - self.__timestamp > self.__login_timeout:
+                raise asyncio.TimeoutError
+        char=int.from_bytes(char,'little')
+        if 0==char:
+            raise BrokenPipeError
+        return char
 
     async def __readline(self,echo=True,max_len=1024):
         reader,writer=self.__reader,self.__writer
         res=b''
         running=True
         while running:
-            char=await asyncio.wait_for(reader.read(1),
-                                        timeout=self.__login_timeout)
-            val=int.from_bytes(char,'little')
-            if 0==val: #Connection closed
-                raise BrokenPipeError
-            elif 0x08==val and len(res)>0: #Backspace
+            val=await self.__readchar()
+            if 0x08==val and len(res)>0: #Backspace
                 res=res[:-1]
                 if(echo):
                     writer.write(b'\x08 \x08')
                     await writer.drain()
-            elif 0x0d==val or 0x0a==val or 0==val: #Finished
+            elif val in (0x0d,0x0a): #Finished
                 running=False
                 writer.write(b'\r\n')
                 await writer.drain()
             elif val>=0x20 and val<=0x7e and len(res)<max_len:
                 res+=val.to_bytes(1,'little')
-                if(echo):
+                if echo:
                     writer.write(val.to_bytes(1,'little'))
                     await writer.drain()
         # Ignore input after Enter as much as possible
@@ -64,12 +82,12 @@ class PPPConnection(Logger):
         self.__username=None
         writer.write(b'\r\nLogin:')
         await writer.drain()
-        username=await self.__readline(reader,writer,echo=True,max_len=80)
+        username=await self.__readline(True,80)
         if not username:
             return False
         writer.write(b'Password:')
         await writer.drain()
-        password=await self.__readline(reader,writer,echo=False,max_len=80)
+        password=await self.__readline(False,80)
         username=username.decode('UTF-8')
         password=hashlib.sha256(password).hexdigest();
         self.__username=username
@@ -82,7 +100,7 @@ class PPPConnection(Logger):
         for i in range(30):
             writer.write(f'{i}'.encode('iso8859-1')+b' ')
             await writer.drain()
-            await asyncio.sleep(30)
+            await asyncio.sleep(1)
     
     async def __run(self):
         try:
@@ -97,6 +115,8 @@ class PPPConnection(Logger):
             if not self.__writer.is_closing():
                 self.__writer.close()
                 await self.__writer.wait_closed()
+            if self.__onclose is not None:
+                self.__onclose(self)
 
     async def __aenter__(self):
         try:
@@ -105,12 +125,14 @@ class PPPConnection(Logger):
             self.logger.error(e,exc_info=True)
 
     async def __aexit__(self,exc_type,exc_val,exc_tb):
-        if self.__task is not None:
-            await self.__task
+        pass
 
-    async def close(self):
+    def close(self):
         if self.__task is not None:
             self.__task.cancel()
+
+    async def wait_closed(self):
+        if self.__task is not None:
             await self.__task
 
 
@@ -153,17 +175,18 @@ class PPPServer(PPPUserManager):
 
     async def __aexit__(self,exc_type,exc_val,exc_tb):
         self.logger.debug('close server')
-        if self.__server is not None:
-            await self.__server.wait_closed()
-            self.__server=None
-        self.logger.debug('wait_closed ok')
-
         close_tasks=[]
-        for conn in self.__conn:
-            close_tasks.append(conn.close())
+        conn_all=self.__conn.copy()
+        for conn in conn_all:
+            self.logger.debug('got conn')
+            conn.close()
+        for conn in conn_all:
+            close_tasks.append(conn.wait_closed())
+        self.logger.debug('close_connections')
         await asyncio.gather(*close_tasks)
         self.logger.debug('close_connections ok')
-
+        await self.__server.wait_closed()
+        self.logger.debug('wait_closed ok')
         await super().__aexit__(exc_type,exc_val,exc_tb)
         self.logger.debug('close server finish')
 
@@ -183,14 +206,18 @@ class PPPServer(PPPUserManager):
     async def __handler(self,reader,writer):
         conn=None
         try:
-            conn=PPPConnection(reader,writer,login_timeout=self.__timeout,
+            conn=PPPConnection(reader,writer,
+                               login_timeout=self.__timeout,
                                max_retry=self.__max_retry)
             async with conn:
                 self.__conn.add(conn)
+                self.logger.debug(f'Connections: {len(self.__conn)}')
         except Exception as e:
             self.logger.error(e,exc_info=True)
-        finally:
-            self.__conn.discard(conn)
+
+    async def __onclose(self,conn):
+        self.__conn.discard(conn)
+        self.logger.debug(f'Connections: {len(self.__conn)}')
 
 		
 async def main(config):
