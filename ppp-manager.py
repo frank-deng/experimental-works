@@ -2,14 +2,14 @@
 
 import asyncio
 import signal
-import hashlib,subprocess,pty,fcntl,os,time
+import hashlib
+import subprocess
+import pty
+import fcntl
+import os
 import configparser
-import logger
+import logging
 
-pppdExec='/usr/sbin/pppd'
-login_timeout=120
-loginInfo={}
-session_info={}
 
 class Logger:
     _logger = None
@@ -21,89 +21,12 @@ class Logger:
         return self._logger
 
 
-async def service_main(reader,writer):
-    global loginInfo
-    writer.write(b'\r\nLogin:')
-    await writer.drain()
-    username=await read_line(reader,writer,echo=True,max_len=80)
-    if not username:
-        return True
-    writer.write(b'Password:')
-    await writer.drain()
-    password=await read_line(reader,writer,echo=False,max_len=80)
-    username=username.decode('UTF-8')
-    password=hashlib.sha256(password).hexdigest();
-    __loginInfo=loginInfo.get(username)
-    if __loginInfo is None or password != __loginInfo['password']:
-        writer.write(b'Login Failed.\r\n')
-        await writer.drain()
-        return True
-    elif username in session_info:
-        writer_orig=session_info[username]
-        session_info[username]=writer
-        writer_orig.close()
-        await writer_orig.wait_closed()
-    else:
-        session_info[username]=writer
-    __master, __slave = pty.openpty()
-    fcntl.fcntl(__master, fcntl.F_SETFL, fcntl.fcntl(__master, fcntl.F_GETFL) | os.O_NONBLOCK)
-    fcntl.fcntl(__slave, fcntl.F_SETFL, fcntl.fcntl(__slave, fcntl.F_GETFL) | os.O_NONBLOCK)
-    ptyPath="/proc/%d/fd/%d"%(os.getpid(),__slave)
-    subprocess.Popen([pppdExec,ptyPath,] + __loginInfo['options'], bufsize=0, start_new_session=True,
-        stdin=__slave, stdout=__slave, stderr=__slave)
-    try:
-        while not writer.is_closing():
-            try:
-                writer.write(os.read(__master, 1024))
-            except BlockingIOError:
-                pass
-            try:
-                content=await asyncio.wait_for(reader.read(1024), timeout=0.01)
-                if not content:
-                    raise BrokenPipeError
-                os.write(__master, content)
-            except asyncio.TimeoutError:
-                pass
-            except BlockingIOError:
-                pass
-    finally:
-        os.close(__slave)
-        os.close(__master)
-        if username in session_info and session_info[username]==writer:
-            del session_info[username]
-    return False
-
-async def service_handler(reader,writer):
-    try:
-        running=True
-        while running:
-            running=await service_main(reader,writer)
-    except asyncio.TimeoutError:
-        writer.write(b'\r\n\r\nTimeout!!\r\n')
-    except ConnectionResetError:
-        pass
-    except BrokenPipeError:
-        pass
-    except Exception as e:
-        print_exc()
-    finally:
-        if not writer.is_closing():
-            writer.close()
-            await writer.wait_closed()
-
-clas PPPConnection(Logger):
+class PPPConnection(Logger):
     __username=None
-    def __init__(self,user_manager,reader,writer,*,login_timeout=120):
+    __task=None
+    def __init__(self,reader,writer,*,login_timeout=120,max_retry=3):
         self.__reader,self.__writer=reader,writer
         self.__login_timeout=login_timeout
-        self.__user_manager=user_manager
-
-    def close(self):
-        if not self.__writer.is_closing():
-            self.__writer.close()
-
-    def wait_closed(self):
-        await self.__writer.wait_closed()
 
     async def __readline(self,echo=True,max_len=1024):
         reader,writer=self.__reader,self.__writer
@@ -137,86 +60,143 @@ clas PPPConnection(Logger):
         return res
 
     async def __login(self):
+        reader,writer=self.__reader,self.__writer
         self.__username=None
         writer.write(b'\r\nLogin:')
         await writer.drain()
-        username=await self.__read_line(reader,writer,echo=True,max_len=80)
+        username=await self.__readline(reader,writer,echo=True,max_len=80)
         if not username:
             return False
         writer.write(b'Password:')
         await writer.drain()
-        password=await read_line(reader,writer,echo=False,max_len=80)
+        password=await self.__readline(reader,writer,echo=False,max_len=80)
         username=username.decode('UTF-8')
         password=hashlib.sha256(password).hexdigest();
-        __loginInfo=loginInfo.get(username)
-        if __loginInfo is None or password != __loginInfo['password']:
-            writer.write(b'Login Failed.\r\n')
-            await writer.drain()
-            return False
         self.__username=username
         return True
 
     async def __start_pppd(self):
+        reader,writer=self.__reader,self.__writer
         writer.write(b'Success\r\n')
         await writer.drain()
-        await asyncio.sleep(30)
+        for i in range(30):
+            writer.write(f'{i}'.encode('iso8859-1')+b' ')
+            await writer.drain()
+            await asyncio.sleep(30)
     
-    async def run(self):
+    async def __run(self):
         try:
             while not await self.__login():
                 pass
             await self.__start_pppd()
-        except asyncio.TimeoutError:
-            pass
+        except (asyncio.TimeoutError,asyncio.CancelledError,ConnectionResetError,BrokenPipeError) as e:
+            self.logger.debug(f'Connection closed {e}')
+        except Exception as e:
+            self.logger.error(e,exc_info=True)
+        finally:
+            if not self.__writer.is_closing():
+                self.__writer.close()
+                await self.__writer.wait_closed()
 
-    @property
-    def username(self):
-        return self.__username
+    async def __aenter__(self):
+        try:
+            self.__task=asyncio.create_task(self.__run())
+        except Exception as e:
+            self.logger.error(e,exc_info=True)
+
+    async def __aexit__(self,exc_type,exc_val,exc_tb):
+        if self.__task is not None:
+            await self.__task
+
+    async def close(self):
+        if self.__task is not None:
+            self.__task.cancel()
+            await self.__task
+
 
 class PPPUserManager(Logger):
-
-class PPPServer(Logger):
-    __reader=None
-    __writer=None
     def __init__(self,config):
+        self.__userlist_file=config.get('server','userlist')
+        self.__passwd={}
+        self.__conn={}
+
+    async def __aenter__(self):
+        with open(self.__userlist_file,'r',encoding='utf-8') as fp:
+            for line in fp:
+                username,password=line.strip().split('|')
+                self.__passwd[username]=password
+
+    async def __aexit__(self,exc_type,exc_val,exc_tb):
+        pass
+
+
+class PPPServer(PPPUserManager):
+    __server=None
+    __conn=set()
+    def __init__(self,config,*,signal_shutdown=(signal.SIGINT,signal.SIGTERM,signal.SIGQUIT)):
+        super().__init__(config)
         self.__host=config.get('server','host',fallback='0.0.0.0')
         self.__port=config.getint('server','port',fallback=2345)
         self.__timeout=config.getint('server','login_timeout',fallback=120)
         self.__max_retry=config.getint('server','max_retry',fallback=3)
+        if signal_shutdown is not None:
+            loop = asyncio.get_event_loop()
+            for s in signal_shutdown:
+                loop.add_signal_handler(s,lambda:self.shutdown())
 
-    def close(self):
-        self.__server.close()
-
-    async def run(self):
+    async def __aenter__(self):
+        await super().__aenter__()
         self.__server=await asyncio.start_server(self.__handler,
-            host=host,port=port,reuse_address=True,reuse_port=True)
-        try:
-            async with self.__server:
-                await server.serve_forever()
-        except asyncio.exceptions.CancelledError:
-            pass
-        except Exception as e:
-            self.logger.critical(e,exc_info=True)
-        finally:
+            host=self.__host,port=self.__port,
+            reuse_address=True,reuse_port=True)
+        return self
+
+    async def __aexit__(self,exc_type,exc_val,exc_tb):
+        self.logger.debug('close server')
+        if self.__server is not None:
             await self.__server.wait_closed()
+            self.__server=None
+        self.logger.debug('wait_closed ok')
+
+        close_tasks=[]
+        for conn in self.__conn:
+            close_tasks.append(conn.close())
+        await asyncio.gather(*close_tasks)
+        self.logger.debug('close_connections ok')
+
+        await super().__aexit__(exc_type,exc_val,exc_tb)
+        self.logger.debug('close server finish')
+
+    async def serve_forever(self):
+        if self.__server is None:
+            raise RuntimeError('Server not initialized')
+        try:
+            await self.__server.serve_forever()
+        except asyncio.CancelledError:
+            pass
+
+    def shutdown(self):
+        if self.__server is not None:
+            self.logger.debug('Start close server')
+            self.__server.close()
 
     async def __handler(self,reader,writer):
+        conn=None
         try:
-            conn=PPPConnection(None,reader,writer,login_timeout=self.__timeout,
+            conn=PPPConnection(reader,writer,login_timeout=self.__timeout,
                                max_retry=self.__max_retry)
-            await conn.run()
-            conn.close()
+            async with conn:
+                self.__conn.add(conn)
         except Exception as e:
             self.logger.error(e,exc_info=True)
+        finally:
+            self.__conn.discard(conn)
 
 		
 async def main(config):
     try:
-        server = PPPServer(config)
-        loop = asyncio.get_event_loop()
-        for s in (signal.SIGINT, signal.SIGTERM, signal.SIGQUIT):
-            loop.add_signal_handler(s, lambda: server.close())
-        await server.run()
+        async with PPPServer(config) as server:
+            await server.serve_forever()
     except Exception as e:
         logging.getLogger(main.__name__).critical(e,exc_info=True)
 
@@ -227,7 +207,7 @@ if '__main__'==__name__:
         '--config',
         '-c',
         help='Specify config file for the PPP server.',
-        default='./ppp-manager.ini'
+        default='ppp-manager.ini'
     )
     args=parser.parse_args();
     config=configparser.ConfigParser()
@@ -237,4 +217,7 @@ if '__main__'==__name__:
         filename=config.get('server','log_file',fallback='ppp-manager.log'),
         level=getattr(logging,log_level,logging.INFO)
     )
-    asyncio.run(main(config))
+    try:
+        asyncio.run(main(config))
+    except Exception as e:
+        logging.getLogger(main.__name__).critical(e,exc_info=True)
