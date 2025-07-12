@@ -10,6 +10,7 @@ import os
 import configparser
 import logging
 import time
+import uuid
 
 
 class Logger:
@@ -26,12 +27,14 @@ class PPPConnection(Logger):
     __username=None
     __task=None
     __retry=0
-    def __init__(self,config,reader,writer,*,onlogin):
+    def __init__(self,config,reader,writer,*,onlogin,onlogout):
+        self.__id=uuid.uuid4()
         self.__login_timeout=config.getint('server','login_timeout',fallback=120)
         self.__max_retry=config.getint('server','max_retry',fallback=3)
         self.__reader,self.__writer=reader,writer
         self.__timestamp=time.time()
         self.__onlogin=onlogin
+        self.__onlogout=onlogout
 
     async def __readchar(self):
         running=True
@@ -118,9 +121,13 @@ class PPPConnection(Logger):
         except Exception as e:
             self.logger.error(e,exc_info=True)
         finally:
-            if not self.__writer.is_closing():
-                self.__writer.close()
-                await self.__writer.wait_closed()
+            try:
+                if not self.__writer.is_closing():
+                    self.__writer.close()
+                    await self.__writer.wait_closed()
+                await self.__onlogout(self)
+            except Exception as e:
+                self.logger.error(e,exc_info=True)
 
     async def __aenter__(self):
         try:
@@ -136,6 +143,10 @@ class PPPConnection(Logger):
     def username(self):
         return self.__username
 
+    @property
+    def conn_id(self):
+        return self.__id
+
     async def close(self):
         if self.__task is not None:
             self.__task.cancel()
@@ -146,7 +157,8 @@ class PPPUserManager(Logger):
     def __init__(self,config):
         self.__userlist_file=config.get('server','userlist')
         self.__passwd={}
-        self.__conn={}
+        self.__conn_user={}
+        self.__conn_id={}
 
     async def __aenter__(self):
         with open(self.__userlist_file,'r',encoding='utf-8') as fp:
@@ -157,23 +169,31 @@ class PPPUserManager(Logger):
 
     async def __aexit__(self,exc_type,exc_val,exc_tb):
         self.__passwd={}
-        self.__conn={}
+        self.__conn_user={}
+        self.__conn_id={}
 
-    def _del_conn(self,user):
-        conn=None
-        if user is not None and user in self.__conn:
-            conn=self.__conn[user]
-            del self.__conn[user]
-        return conn
-
-    async def login_handler(self,conn,user,passwd):
+    async def _login_handler(self,conn,user,passwd):
+        if user is None or passwd is None:
+            return False
         if user not in self.__passwd or passwd!=self.__passwd[user]:
             return False
-        if user in self.__conn:
-            conn=self.__conn[user]
-            self.__conn[user]=conn
-            await conn.close()
+        if user in self.__conn_user:
+            self.logger.debug(f'Found existing conn for {user}')
+            await self.__conn_user[user].close()
+            self.logger.debug(f'Closed existing conn for {user}')
+        self.__conn_user[user]=conn
+        self.__conn_id[conn.conn_id]=conn
+        self.logger.debug(f'Applied curr conn for {user}')
         return True
+
+    async def _logout_handler(self,conn):
+        if conn.conn_id in self.__conn_id:
+            self.logger.debug(f'Delete conn for {conn.username} by id')
+            del self.__conn_id[conn.conn_id]
+        user=conn.username
+        if user is not None and user in self.__conn_user:
+            self.logger.debug(f'Delete conn for {conn.username} by username')
+            del self.__conn_user[user]
 
 
 class PPPServer(PPPUserManager):
@@ -212,10 +232,9 @@ class PPPServer(PPPUserManager):
             if self.__shutdown:
                 return
             self.__shutdown=True
-            self.logger.debug('reject new request')
+            self.logger.debug('start shutdown')
             if self.__server is not None:
                 self.__server.close()
-            self.logger.debug('close all connection')
             await asyncio.gather(*[conn.close() for conn in self.__conn.copy()])
             self.logger.debug('close all connection finish')
         except Exception as e:
@@ -224,14 +243,15 @@ class PPPServer(PPPUserManager):
     async def __handler(self,reader,writer):
         conn=None
         try:
-            conn=PPPConnection(self.__config,reader,writer,onlogin=self.login_handler)
+            conn=PPPConnection(self.__config,reader,writer,
+                               onlogin=self._login_handler,
+                               onlogout=self._logout_handler)
             async with conn:
                 self.__conn.add(conn)
                 self.logger.debug(f'Start conn. Connections: {len(self.__conn)}')
         except Exception as e:
             self.logger.error(e,exc_info=True)
         finally:
-            self._del_conn(conn.username)
             self.__conn.discard(conn)
             self.logger.debug(f'End conn. Connections: {len(self.__conn)}')
 
