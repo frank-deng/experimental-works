@@ -26,11 +26,11 @@ class PPPConnection(Logger):
     __username=None
     __task=None
     __retry=0
-    def __init__(self,reader,writer,*,login_timeout=120,max_retry=3,onlogin=None):
+    def __init__(self,config,reader,writer,*,onlogin):
+        self.__login_timeout=config.getint('server','login_timeout',fallback=120)
+        self.__max_retry=config.getint('server','max_retry',fallback=3)
         self.__reader,self.__writer=reader,writer
-        self.__login_timeout=login_timeout
         self.__timestamp=time.time()
-        self.__max_retry=max_retry
         self.__onlogin=onlogin
 
     async def __readchar(self):
@@ -89,8 +89,15 @@ class PPPConnection(Logger):
         password=await self.__readline(False,80)
         username=username.decode('UTF-8')
         password=hashlib.sha256(password).hexdigest();
-        self.__username=username
-        return True
+        if await self.__onlogin(self,username,password):
+            self.__username=username
+            return True
+        writer.write(b'Login Failed.\r\n')
+        await asyncio.gather(writer.drain(),asyncio.sleep(3))
+        self.__retry+=1
+        if self.__retry>=self.__max_retry:
+            raise asyncio.CancelledError
+        return False
 
     async def __start_pppd(self):
         reader,writer=self.__reader,self.__writer
@@ -106,7 +113,7 @@ class PPPConnection(Logger):
             while not await self.__login():
                 pass
             await self.__start_pppd()
-        except (asyncio.TimeoutError,asyncio.CancelledError,ConnectionResetError,BrokenPipeError) as e:
+        except (asyncio.CancelledError,asyncio.TimeoutError,ConnectionResetError,BrokenPipeError) as e:
             self.logger.debug(f'Connection closed {e}')
         except Exception as e:
             self.logger.error(e,exc_info=True)
@@ -125,6 +132,10 @@ class PPPConnection(Logger):
         if self.__task is not None:
             await self.__task
 
+    @property
+    def username(self):
+        return self.__username
+
     async def close(self):
         if self.__task is not None:
             self.__task.cancel()
@@ -142,9 +153,27 @@ class PPPUserManager(Logger):
             for line in fp:
                 username,password=line.strip().split('|')
                 self.__passwd[username]=password
+                self.logger.debug(f'{username},{password}')
 
     async def __aexit__(self,exc_type,exc_val,exc_tb):
-        pass
+        self.__passwd={}
+        self.__conn={}
+
+    def _del_conn(self,user):
+        conn=None
+        if user is not None and user in self.__conn:
+            conn=self.__conn[user]
+            del self.__conn[user]
+        return conn
+
+    async def login_handler(self,conn,user,passwd):
+        if user not in self.__passwd or passwd!=self.__passwd[user]:
+            return False
+        if user in self.__conn:
+            conn=self.__conn[user]
+            self.__conn[user]=conn
+            await conn.close()
+        return True
 
 
 class PPPServer(PPPUserManager):
@@ -153,19 +182,15 @@ class PPPServer(PPPUserManager):
     __shutdown=False
     def __init__(self,config):
         super().__init__(config)
+        self.__config=config
         self.__host=config.get('server','host',fallback='0.0.0.0')
         self.__port=config.getint('server','port',fallback=2345)
-        self.__timeout=config.getint('server','login_timeout',fallback=120)
-        self.__max_retry=config.getint('server','max_retry',fallback=3)
 
     async def __aenter__(self):
         await super().__aenter__()
         self.__server=await asyncio.start_server(self.__handler,
             host=self.__host,port=self.__port,
             reuse_address=True,reuse_port=True)
-        loop = asyncio.get_event_loop()
-        for s in (signal.SIGINT,signal.SIGTERM,signal.SIGQUIT):
-            loop.add_signal_handler(s,lambda:asyncio.create_task(self.shutdown()))
         return self
 
     async def __aexit__(self,exc_type,exc_val,exc_tb):
@@ -191,10 +216,7 @@ class PPPServer(PPPUserManager):
             if self.__server is not None:
                 self.__server.close()
             self.logger.debug('close all connection')
-            close_tasks=[]
-            for conn in self.__conn.copy():
-                close_tasks.append(conn.close())
-            await asyncio.gather(*close_tasks)
+            await asyncio.gather(*[conn.close() for conn in self.__conn.copy()])
             self.logger.debug('close all connection finish')
         except Exception as e:
             self.logger.error(e,exc_info=True)
@@ -202,15 +224,14 @@ class PPPServer(PPPUserManager):
     async def __handler(self,reader,writer):
         conn=None
         try:
-            conn=PPPConnection(reader,writer,
-                               login_timeout=self.__timeout,
-                               max_retry=self.__max_retry)
+            conn=PPPConnection(self.__config,reader,writer,onlogin=self.login_handler)
             async with conn:
                 self.__conn.add(conn)
                 self.logger.debug(f'Start conn. Connections: {len(self.__conn)}')
         except Exception as e:
             self.logger.error(e,exc_info=True)
         finally:
+            self._del_conn(conn.username)
             self.__conn.discard(conn)
             self.logger.debug(f'End conn. Connections: {len(self.__conn)}')
 
@@ -218,6 +239,9 @@ class PPPServer(PPPUserManager):
 async def main(config):
     try:
         async with PPPServer(config) as server:
+            loop = asyncio.get_event_loop()
+            for s in (signal.SIGINT,signal.SIGTERM,signal.SIGQUIT):
+                loop.add_signal_handler(s,lambda:asyncio.create_task(server.shutdown()))
             await server.serve_forever()
     except Exception as e:
         logging.getLogger(main.__name__).critical(e,exc_info=True)
