@@ -157,6 +157,7 @@ class PPPUserManager(Logger):
     def __init__(self,config):
         self.__userlist_file=config.get('server','userlist')
         self.__passwd={}
+        self.__conn_info_lock=asyncio.Lock()
         self.__conn_user={}
         self.__conn_id={}
 
@@ -177,34 +178,43 @@ class PPPUserManager(Logger):
             return False
         if user not in self.__passwd or passwd!=self.__passwd[user]:
             return False
-        if user in self.__conn_user:
+        conn_orig=None
+        async with self.__conn_info_lock:
+            conn_orig=self.__conn_user.get(user,None)
+            if conn_orig is not None:
+                del self.__conn_id[conn_orig.conn_id]
+            self.__conn_user[user]=conn
+            self.__conn_id[conn.conn_id]=conn
+            self.logger.debug(f'Applied curr conn for {user}')
+        if conn_orig is not None:
             self.logger.debug(f'Found existing conn for {user}')
-            await self.__conn_user[user].close()
-            self.logger.debug(f'Closed existing conn for {user}')
-        self.__conn_user[user]=conn
-        self.__conn_id[conn.conn_id]=conn
-        self.logger.debug(f'Applied curr conn for {user}')
+            await conn_orig.close()
         return True
 
     async def _logout_handler(self,conn):
-        if conn.conn_id in self.__conn_id:
-            self.logger.debug(f'Delete conn for {conn.username} by id')
-            del self.__conn_id[conn.conn_id]
-        user=conn.username
-        if user is not None and user in self.__conn_user:
-            self.logger.debug(f'Delete conn for {conn.username} by username')
-            del self.__conn_user[user]
+        async with self.__conn_info_lock:
+            if conn.conn_id in self.__conn_id:
+                self.logger.debug(f'Delete conn for {conn.username} by id')
+                del self.__conn_id[conn.conn_id]
+            conn_by_user=None
+            username=conn.username
+            if username is not None and username in self.__conn_user:
+                conn_by_user=self.__conn_user.get(username,None)
+            if conn_by_user is not None and conn_by_user.conn_id==conn.conn_id:
+                self.logger.debug(f'Delete conn for {conn.username} by username')
+                del self.__conn_user[username]
 
 
 class PPPServer(PPPUserManager):
     __server=None
-    __conn=set()
     __shutdown=False
     def __init__(self,config):
         super().__init__(config)
         self.__config=config
         self.__host=config.get('server','host',fallback='0.0.0.0')
         self.__port=config.getint('server','port',fallback=2345)
+        self.__conn=set()
+        self.__conn_lock=asyncio.Lock()
 
     async def __aenter__(self):
         await super().__aenter__()
@@ -235,25 +245,32 @@ class PPPServer(PPPUserManager):
             self.logger.debug('start shutdown')
             if self.__server is not None:
                 self.__server.close()
-            await asyncio.gather(*[conn.close() for conn in self.__conn.copy()])
+            conn_all=set()
+            async with self.__conn_lock:
+                conn_all=self.__conn.copy()
+            await asyncio.gather(*[conn.close() for conn in conn_all])
             self.logger.debug('close all connection finish')
         except Exception as e:
             self.logger.error(e,exc_info=True)
 
     async def __handler(self,reader,writer):
         conn=None
+        if self.__shutdown:
+            return
         try:
             conn=PPPConnection(self.__config,reader,writer,
                                onlogin=self._login_handler,
                                onlogout=self._logout_handler)
             async with conn:
-                self.__conn.add(conn)
-                self.logger.debug(f'Start conn. Connections: {len(self.__conn)}')
+                async with self.__conn_lock:
+                    self.__conn.add(conn)
+                    self.logger.debug(f'Start conn. Connections: {len(self.__conn)}')
         except Exception as e:
             self.logger.error(e,exc_info=True)
         finally:
-            self.__conn.discard(conn)
-            self.logger.debug(f'End conn. Connections: {len(self.__conn)}')
+            async with self.__conn_lock:
+                self.__conn.discard(conn)
+                self.logger.debug(f'End conn. Connections: {len(self.__conn)}')
 
 		
 async def main(config):
