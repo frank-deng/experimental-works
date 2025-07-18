@@ -1,0 +1,21 @@
+#!/bin/bash
+qemu-system-aarch64 \
+-pidfile $PREFIX/tmp/openeuler.pid \
+-daemonize \
+-machine virt -cpu cortex-a72 -smp 4 -m 4096 \
+-accel tcg,thread=multi \
+-bios $PREFIX/share/qemu/edk2-aarch64-code.fd \
+-drive file=~/openeuler.qcow2,if=none,id=disk \
+-device virtio-scsi-device \
+-device virtio-blk-device,drive=disk \
+-netdev user,id=network0,dns=8.8.8.8 \
+-device virtio-net,netdev=network0 \
+-serial unix:$HOME/openeuler-serial.sock,server=on,wait=off \
+-monitor unix:$HOME/openeuler-monitor.sock,server=on,wait=off \
+-parallel none \
+-boot order=dc \
+-device scsi-cd,drive=cdrom \
+-drive file=/sdcard/Download/Browser/openEuler-24.03-LTS-SP2-netinst-aarch64-dvd.iso,media=cdrom,if=none,id=cdrom \
+-device virtio-gpu-pci -vnc 127.0.0.1:0 \
+-device nec-usb-xhci -device usb-kbd -device usb-tablet \
+-serial unix:$HOME/openeuler-serial.sock,server,nowait
