@@ -5,113 +5,63 @@ import logging
 import signal
 from util import Logger
 from util import TCPServer
+from util import ConnectionHandler
+from util import ReadLine
+from util import LoginHandler
 
-class TCPConnection(Logger):
-    TASK_CANCEL_TIMEOUT=10
-    __task=None
-    __timeout=None
-    __timestamp=None
-    def __init__(self,reader,writer,**params):
+
+class TestConn(ConnectionHandler):
+    def __init__(self,reader,writer):
+        super().__init__(reader,writer)
         self.__reader,self.__writer=reader,writer
-        self.__id=uuid.uuid4()
+        self.set_timeout(20)
+        self.__readline=ReadLine(self,70)
 
-    async def __aenter__(self):
-        try:
-            self.__task=asyncio.create_task(self.__run_task())
-        except Exception as e:
-            self.logger.error(e,exc_info=True)
+    async def __run_counter(self):
+        counter=0
+        while True:
+            await self.write(f'{counter} '.encode())
+            await asyncio.sleep(1)
+            counter+=1
 
-    async def __aexit__(self,exc_type,exc_val,exc_tb):
-        try:
-            await self.__task
-        except asyncio.CancelledError:
-            pass
+    async def run(self):
+        while True:
+            await self.write(b'>')
+            cmd=await self.__readline.readline()
+            if cmd is None:
+                self.logger.debug('Conn closed during input')
+            if cmd is None or cmd==b'quit':
+                break
+            if cmd==b'run':
+                await self.__run_counter()
+            await self.write(b'$')
+            await self.write(cmd)
+            await self.write(b'\r\n\r\n')
 
-    async def __run_task(self):
-        try:
-            self.run()
-        except (ConnectionResetError,BrokenPipeError) as e:
-            self.logger.debug(f'Connection closed {e}')
-        except Exception as e:
-            self.logger.error(e,exc_info=True)
-        finally:
-            self.__writer.close()
-
-    def __check_timeout(self):
-        if self.__timeout is None or self.__timestamp is None:
-            return
-        elif time.time() - self.__timestamp > self.__timeout:
-            raise asyncio.TimeoutError
-
-    async def _run(self):
-        pass
-
-    def _set_timeout(self,timeout):
-        self.__timeout=timeout
-        if timeout is None:
-            self.__timestamp
-        else:
-            self.__timestamp=time.time()
-
-    async def _read(self,size,timeout=None):
-        data=None
-        if timeout is not None:
-            try:
-                data=await asyncio.wait_for(self.__reader.read(size),
-                                            timeout=timeout)
-            except asyncio.TimeoutError:
-                pass
-        else:
-            data=await self.__reader.read(size)
-        if data==b'':
-            raise ConnectionResetError('Connection closed')
-        self.__check_timeout()
-        return data 
-
-    async def _write(self,data):
-        self.__writer.write(data)
-        await self.__writer.drain()
-        self.__check_timeout()
-
-    async def close(self):
-        self.__writer.close()
-        try:
-            await asyncio.wait_for(self.__task,
-                                   timeout=TCPConnection.TASK_CANCEL_TIMEOUT)
-        except asyncio.CancelledError:
-            pass
-        except asyncio.TimeoutError:
-            self.__task.cancel()
-            self.logger.debug('Connection task cancelled by force.')
-
-    @property
-    def conn_id(self):
-        return self.__id
 
 class TestServer(TCPServer):
     def __init__(self,port,*,host='0.0.0.0',max_conn=None):
         super().__init__(port,host=host,max_conn=max_conn)
 
     async def handler(self,reader,writer):
-        counter=None
-        while True:
-            data=await reader.read(1)
-            if data==b'':
+        try:
+            login_handler=LoginHandler(reader,writer,retry=3,timeout=30)
+            userinfo=None
+            while True:
+                userinfo=await login_handler.login()
+                self.logger.debug(userinfo)
+                if userinfo is None:
+                    break
+                elif userinfo[0]=='test':
+                    break
+            if userinfo is None:
                 return
-            self.logger.debug(data)
-            writer.write(data)
-            await writer.drain()
-            if data==b'q':
-                break
-            elif data==b'n':
-                counter=0
-                break
-        if counter is None:
-            return
-        while True:
-            writer.write(f'{counter} '.encode())
-            await writer.drain()
-            await asyncio.sleep(1)
+            self.logger.debug(userinfo)
+            conn=TestConn(reader,writer)
+            await conn.write(b'Login success')
+            await conn.run()
+        except asyncio.TimeoutError:
+            pass
 
 async def main():
     async with TestServer(6666,max_conn=1) as server:
