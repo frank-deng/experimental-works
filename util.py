@@ -204,3 +204,32 @@ class LoginHandler(ConnectionHandler):
         password=hashlib.sha256(password).hexdigest();
         return (username,password)
 
+
+class SingleUserConnManager:
+    def __init__(self):
+        super().__init__(port,host=host,max_conn=max_conn)
+        self.__active_users_lock=asyncio.Lock()
+        self.__active_users={}
+
+    @staticmethod
+    def __get_writer_id(writer):
+        addr=writer.get_extra_info('peername')
+        return f"{addr[0]}:{addr[1]}"
+
+    async def add(self,username,writer):
+        writer_orig=None
+        async with self.__active_users_lock:
+            if username in self.__active_users:
+                writer_orig=self.__active_users[username]
+            self.__active_users[username]=writer
+        if writer_orig is not None:
+            writer_orig.close()
+            await writer_orig.wait_closed()
+
+    async def discard(self,username,writer):
+        async with self.__active_users_lock:
+            writer_del=self.__active_users[username]
+            id_curr=SingleUserConnManager.__get_writer_id(writer)
+            id_del=SingleUserConnManager.__get_writer_id(writer_del)
+            if id_curr==id_del:
+                del self.__active_users[username]

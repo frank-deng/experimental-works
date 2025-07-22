@@ -14,7 +14,7 @@ class TestConn(ConnectionHandler):
     def __init__(self,reader,writer):
         super().__init__(reader,writer)
         self.__reader,self.__writer=reader,writer
-        self.set_timeout(20)
+        self.set_timeout(200)
         self.__readline=ReadLine(self,70)
 
     async def __run_counter(self):
@@ -42,6 +42,7 @@ class TestConn(ConnectionHandler):
 class TestServer(TCPServer):
     def __init__(self,port,*,host='0.0.0.0',max_conn=None):
         super().__init__(port,host=host,max_conn=max_conn)
+        self.__single_user_manager=SingleUserConnManager()
 
     async def handler(self,reader,writer):
         try:
@@ -57,14 +58,16 @@ class TestServer(TCPServer):
             if userinfo is None:
                 return
             self.logger.debug(userinfo)
+            await self.__single_user_manager.add(userinfo[0],writer)
             conn=TestConn(reader,writer)
             await conn.write(b'Login success')
             await conn.run()
+            await self.__single_user_manager.discard(userinfo[0],writer)
         except asyncio.TimeoutError:
             pass
 
 async def main():
-    async with TestServer(6666,max_conn=1) as server:
+    async with TestServer(6666,max_conn=10) as server:
         loop = asyncio.get_event_loop()
         for s in (signal.SIGINT,signal.SIGTERM,signal.SIGQUIT):
             loop.add_signal_handler(s,server.close)
