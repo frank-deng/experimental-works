@@ -8,6 +8,7 @@ from util import TCPServer
 from util import ConnectionHandler
 from util import ReadLine
 from util import LoginHandler
+from util import SingleUserConnManager
 
 
 class TestConn(ConnectionHandler):
@@ -39,32 +40,45 @@ class TestConn(ConnectionHandler):
             await self.write(b'\r\n\r\n')
 
 
+class UserManager(SingleUserConnManager):
+    def __init__(self):
+        self.__passwd={
+            'test':'9f86d081884c7d659a2feaa0c55ad015a3bf4f1b2b0b822cd15d6c15b0f00a08',
+            'aaa':'9834876dcfb05cb167a5c24953eba58c4ac89b1adf57f28f2f9d09af107ee8f0',
+        }
+
+    async def login(self,username,password,writer):
+        if username is None or password is None or username not in self.__passwd:
+            return None
+        elif self.__passwd[username]!=password:
+            return None
+        await super().login(username,writer)
+        return True
+
+
 class TestServer(TCPServer):
     def __init__(self,port,*,host='0.0.0.0',max_conn=None):
         super().__init__(port,host=host,max_conn=max_conn)
-        self.__single_user_manager=SingleUserConnManager()
+        self.__user_manager=UserManager()
 
     async def handler(self,reader,writer):
+        username,userinfo=None,None
         try:
             login_handler=LoginHandler(reader,writer,retry=3,timeout=30)
-            userinfo=None
             while True:
-                userinfo=await login_handler.login()
-                self.logger.debug(userinfo)
-                if userinfo is None:
+                username,password=await login_handler.login()
+                if username is None:
+                    return
+                userinfo=await self.__user_manager.login(username,password)
+                if userinfo is not None:
                     break
-                elif userinfo[0]=='test':
-                    break
-            if userinfo is None:
-                return
-            self.logger.debug(userinfo)
-            await self.__single_user_manager.add(userinfo[0],writer)
             conn=TestConn(reader,writer)
             await conn.write(b'Login success')
             await conn.run()
-            await self.__single_user_manager.discard(userinfo[0],writer)
         except asyncio.TimeoutError:
             pass
+        finally:
+            await self.__user_manager.logout(username,writer)
 
 async def main():
     async with TestServer(6666,max_conn=10) as server:

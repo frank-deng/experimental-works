@@ -144,7 +144,8 @@ class ReadLine:
         if val>=0x20 and val<=0x7e and self.__len<self.__size:
             self.__inp[self.__len]=val
             self.__len+=1
-            await self.__conn.write(char)
+            if self.__echo:
+                await self.__conn.write(char)
 
     async def readline(self,*,echo=True):
         self.__echo=echo
@@ -194,20 +195,21 @@ class LoginHandler(ConnectionHandler):
 
     async def login(self):
         if not self.__check_retry():
-            return None
+            return None,None
         username=await self.__get_username()
         if username is None:
-            return None
+            return None,None
         await self.write(b'Password:')
         password=await self.__readline.readline(echo=False)
+        if password is None:
+            return None,None
         username=username.decode('UTF-8')
         password=hashlib.sha256(password).hexdigest();
-        return (username,password)
+        return username,password
 
 
-class SingleUserConnManager:
+class SingleUserConnManager(Logger):
     def __init__(self):
-        super().__init__(port,host=host,max_conn=max_conn)
         self.__active_users_lock=asyncio.Lock()
         self.__active_users={}
 
@@ -216,7 +218,9 @@ class SingleUserConnManager:
         addr=writer.get_extra_info('peername')
         return f"{addr[0]}:{addr[1]}"
 
-    async def add(self,username,writer):
+    async def login(self,username,writer):
+        if username is None or writer is None:
+            return
         writer_orig=None
         async with self.__active_users_lock:
             if username in self.__active_users:
@@ -226,10 +230,18 @@ class SingleUserConnManager:
             writer_orig.close()
             await writer_orig.wait_closed()
 
-    async def discard(self,username,writer):
+    async def logout(self,username,writer):
+        if username is None or writer is None:
+            return
         async with self.__active_users_lock:
+            if username not in self.__active_users:
+                return
             writer_del=self.__active_users[username]
             id_curr=SingleUserConnManager.__get_writer_id(writer)
             id_del=SingleUserConnManager.__get_writer_id(writer_del)
             if id_curr==id_del:
                 del self.__active_users[username]
+                self.logger.debug(f'Deleted {username} {id_curr}')
+            else:
+                self.logger.debug(f'{username} not deleted {id_del}!={id_curr}')
+
