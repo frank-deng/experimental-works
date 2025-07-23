@@ -4,12 +4,12 @@ import time
 import hashlib
 
 class Logger:
-    _logger = None
+    _logger=None
 
     @property
     def logger(self):
         if self._logger is None:
-            self._logger = logging.getLogger(self.__class__.__name__)
+            self._logger=logging.getLogger(self.__class__.__name__)
         return self._logger
 
 
@@ -227,8 +227,10 @@ class SingleUserConnManager(Logger):
                 writer_orig=self.__active_users[username]
             self.__active_users[username]=writer
         if writer_orig is not None:
+            self.logger.debug(f'{username} has existing conn {self.__class__.__get_writer_id(writer_orig)}')
             writer_orig.close()
             await writer_orig.wait_closed()
+            self.logger.debug(f'{username} existing conn closed')
 
     async def logout(self,username,writer):
         if username is None or writer is None:
@@ -237,8 +239,8 @@ class SingleUserConnManager(Logger):
             if username not in self.__active_users:
                 return
             writer_del=self.__active_users[username]
-            id_curr=SingleUserConnManager.__get_writer_id(writer)
-            id_del=SingleUserConnManager.__get_writer_id(writer_del)
+            id_curr=self.__class__.__get_writer_id(writer)
+            id_del=self.__class__.__get_writer_id(writer_del)
             if id_curr==id_del:
                 del self.__active_users[username]
                 self.logger.debug(f'Deleted {username} {id_curr}')
