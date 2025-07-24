@@ -2,6 +2,8 @@ import asyncio
 import logging
 import time
 import hashlib
+import os
+import pty
 
 class Logger:
     _logger=None
@@ -118,18 +120,18 @@ class ConnectionHandler(Logger):
         self.__check_timeout()
 
 
-class ReadLine:
+class ReadlineHandler(ConnectionHandler):
     __echo=True
     __len=0
-    def __init__(self,conn:ConnectionHandler,size=1024):
-        self.__conn=conn
+    def __init__(self,reader,writer,size=1024):
+        super().__init__(reader,writer)
         self.__inp=bytearray(size)
         self.__size=size
 
     async def __read_char(self):
         char=None
         while char is None:
-            char=await self.__conn.read(1,1)
+            char=await self.read(1,1)
         return char
 
     async def __handle_backspace(self):
@@ -137,7 +139,7 @@ class ReadLine:
             return
         self.__len-=1
         if self.__echo:
-            await self.__conn.write(b'\x08 \x08')
+            await self.write(b'\x08 \x08')
 
     async def __handle_char(self,char):
         val=int.from_bytes(char,'little')
@@ -145,7 +147,7 @@ class ReadLine:
             self.__inp[self.__len]=val
             self.__len+=1
             if self.__echo:
-                await self.__conn.write(char)
+                await self.write(char)
 
     async def readline(self,*,echo=True):
         self.__echo=echo
@@ -156,7 +158,7 @@ class ReadLine:
                 self.__len=None
                 break
             elif char in (b'\x0d',b'\x0a'): #Finished
-                await self.__conn.write(b'\r\n')
+                await self.write(b'\r\n')
                 break
             elif b'\x08'==char: #Backspace
                 await self.__handle_backspace()
@@ -166,15 +168,14 @@ class ReadLine:
         if self.__len is not None:
             # Ignore input after Enter as much as possible
             res=bytes(self.__inp[:self.__len])
-            await self.__conn.read(1000,0.01)
+            await self.read(1000,0.01)
         return res
 
 
-class LoginHandler(ConnectionHandler):
+class LoginHandler(ReadlineHandler):
     __retry=None
     def __init__(self,reader,writer,*,retry=None,timeout=None):
-        super().__init__(reader,writer)
-        self.__readline=ReadLine(self,70)
+        super().__init__(reader,writer,70)
         self.__retry=retry
         self.set_timeout(timeout)
 
@@ -190,7 +191,7 @@ class LoginHandler(ConnectionHandler):
         username=b''
         while username==b'':
             await self.write(b'\r\nLogin:')
-            username=await self.__readline.readline(echo=True)
+            username=await self.readline(echo=True)
         return username
 
     async def login(self):
@@ -200,7 +201,7 @@ class LoginHandler(ConnectionHandler):
         if username is None:
             return None,None
         await self.write(b'Password:')
-        password=await self.__readline.readline(echo=False)
+        password=await self.readline(echo=False)
         if password is None:
             return None,None
         username=username.decode('UTF-8')
@@ -246,4 +247,122 @@ class SingleUserConnManager(Logger):
                 self.logger.debug(f'Deleted {username} {id_curr}')
             else:
                 self.logger.debug(f'{username} not deleted {id_del}!={id_curr}')
+
+
+class ProcessHandler(Logger):
+    __buf_size=4096
+    __proc=None
+    __master_fd=None
+    __pty_reader=None
+    __tasks=None
+    def __init__(self,reader,writer,*,buf_size=4096):
+        self.__reader,self.__writer=reader,writer
+        self.__buf_size=buf_size
+        self.__loop=asyncio.get_running_loop()
+        self.__queue=asyncio.Queue()
+
+    async def __aenter__(self):
+        slave_fd=None
+        try:
+            self.__master_fd,slave_fd=pty.openpty()
+            self.__proc=await self.create_subprocess_exec(slave_fd)
+            os.set_blocking(self.__master_fd,False)
+            self.__tasks=(
+                asyncio.create_task(self.__pty_to_tcp()),
+                asyncio.create_task(self.__tcp_to_pty())
+            )
+        except Exception as e:
+            await self.__cleanup()
+            raise
+        finally:
+            if slave_fd is not None:
+                os.close(slave_fd)
+        return self
+
+    async def __aexit__(self,exc_type,exc_val,exc_tb):
+        if self.__tasks is not None:
+            await asyncio.wait(self.__tasks,return_when=asyncio.FIRST_COMPLETED)
+        await self.__cleanup()
+
+    def __fd_ready(self):
+        try:
+            data=os.read(self.__master_fd,self.__buf_size)
+            if not data:
+                self.__loop.call_soon(self.__queue.put_nowait,b"")
+                return
+            self.__queue.put_nowait(data)
+        except (OSError,asyncio.CancelledError):
+            self.__queue.put_nowait(b"")
+
+    async def __pty_to_tcp(self):
+        self.__loop.add_reader(self.__master_fd,self.__fd_ready)
+        try:
+            while True:
+                data=await self.__queue.get()
+                if not data:
+                    break
+                self.__writer.write(data)
+                await self.__writer.drain()
+        except (ConnectionResetError,asyncio.CancelledError):
+            pass
+        except Exception as e:
+            self.logger.error(e,exc_info=True)
+        finally:
+            self.__loop.remove_reader(self.__master_fd)
+
+    async def __write_fd(self,data):
+        n=None
+        while data:
+            try:
+                n=os.write(self.__master_fd,data)
+                data=data[n:]
+            except BlockingIOError:
+                self.logger.debug(f'Partial data written {n}/{len(data)}')
+                await asyncio.sleep(0.01)
+
+    async def __tcp_to_pty(self):
+        try:
+            while True:
+                data=await self.__reader.read(self.__buf_size)
+                if not data:
+                    break
+                await self.__write_fd(data)
+        except (ConnectionResetError,OSError,asyncio.CancelledError):
+            pass
+        except Exception as e:
+            self.logger.error(e,exc_info=True)
+
+    async def __cleanup(self):
+        try:
+            if self.__tasks is not None:
+                for task in self.__tasks:
+                    if not task.done():
+                        task.cancel()
+                await asyncio.gather(*self.__tasks)
+        except Exception as e:
+            self.logger.error(e,exc_info=True)
+        finally:
+            await self.__close_fd()
+            await self.__stop_proc()
+
+    async def __close_fd(self):
+        try:
+            if self.__master_fd is not None:
+                os.close(self.__master_fd)
+        except Exception as e:
+            self.logger.error(e,exc_info=True)
+
+    async def __stop_proc(self):
+        try:
+            if self.__proc is None or self.__proc.returncode is not None:
+                return
+            await asyncio.wait_for(self.__proc.communicate(),timeout=10)
+        except asyncio.TimeoutError:
+            self.__proc.kill()
+            await asyncio.wait_for(self.__proc.wait(),timeout=10)
+        finally:
+            self.__proc=None
+
+    async def create_subprocess_exec(self,slave_fd):
+        pass
 
