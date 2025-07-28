@@ -2,7 +2,7 @@
 qemu-system-aarch64 \
 -pidfile $PREFIX/tmp/openeuler.pid \
 -daemonize \
--machine virt -cpu cortex-a72 -smp 4 -m 4096 \
+-machine virt -cpu cortex-a72 -smp 2 -m 2048 \
 -accel tcg,thread=multi \
 -bios $PREFIX/share/qemu/edk2-aarch64-code.fd \
 -drive file=~/openeuler.qcow2,if=none,id=disk \
