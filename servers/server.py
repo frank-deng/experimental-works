@@ -11,7 +11,58 @@ import fcntl
 import atexit
 import os
 import platform
+import time
 from util import Logger
+
+from threading import Thread
+
+class Watchdog(Thread):
+    __running=True
+    __flag=False
+    __task=None
+    def __init__(self,timeout):
+        super().__init__()
+        self.__timeout=timeout
+
+    def __enter__(self):
+        self.start()
+        return self
+
+    def __exit__(self,exc_type,exc_val,exc_tb):
+        self.__running=False
+        self.join()
+
+    async def __aenter__(self):
+        self.__task=asyncio.create_task(self.__feed_task())
+
+    async def __aexit__(self,exc_type,exc_val,exc_tb):
+        self.__task.cancel()
+        await(self.__task)
+
+    async def __feed_task(self):
+        try:
+            while self.__running:
+                self.__flag=True
+                await asyncio.sleep(0.5)
+        except asyncio.CancelledError:
+            pass
+
+    def run(self):
+        self.__timestamp=time.time()
+        is_timeout=False
+        while self.__running:
+            if self.__flag:
+                self.__timestamp=time.time()
+                self.__flag=False
+            elif time.time() - self.__timestamp > self.__timeout:
+                is_timeout=True
+                self.__running=False
+                break
+            time.sleep(0.5)
+        if is_timeout:
+            logging.getLogger(self.__class__.__name__).critical(
+                    f'Watchdog not fed within {self.__timeout}s')
+            sys.exit(2)
 
 
 class ServerManager(Logger):
@@ -79,10 +130,11 @@ class ServerManager(Logger):
             server.close()
 
 
-async def main(config):
+async def main(config,watchdog):
     try:
-        async with ServerManager(config) as server_manager:
-            register_close_signal(server_manager.close)
+        async with watchdog:
+            async with ServerManager(config) as server_manager:
+                register_close_signal(server_manager.close)
     except Exception as e:
         logging.getLogger(main.__name__).critical(e,exc_info=True)
 
@@ -175,7 +227,8 @@ if '__main__'==__name__:
             level=getattr(logging,config.get('log_level','INFO'),logging.INFO)
         )
         try:
-            asyncio.run(main(config))
+            with Watchdog(config.get('watchdog_timeout',10)) as watchdog:
+                asyncio.run(main(config,watchdog))
         except Exception as e:
             logging.getLogger(__name__).critical(e,exc_info=True)
 

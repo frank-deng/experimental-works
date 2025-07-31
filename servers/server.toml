@@ -1,10 +1,9 @@
 log_file="server.log"
 log_level="DEBUG"
 pid_file="/data/data/com.termux/files/usr/tmp/server.pid"
-daemonize=true
+daemonize=false
 
 [server.dialin]
-enabled=true
 module="dialin:DialInServer"
 port=3333
 host="127.0.0.1"
@@ -22,3 +21,6 @@ host="127.0.0.1"
 port=8022
 term="ansi"
 
+[server.test]
+module="test-server:TestServer"
+port=6666
