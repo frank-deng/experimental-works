@@ -6,6 +6,11 @@ import tomllib
 import importlib
 import asyncio
 import signal
+import argparse
+import fcntl
+import atexit
+import os
+import platform
 from util import Logger
 
 
@@ -19,6 +24,8 @@ class ServerManager(Logger):
             if server_instance is None:
                 continue
             self.__servers.append(server_instance)
+        if not len(self.__servers):
+            raise RuntimeError('None of the servers has been started')
 
     def __server_init(self,config,server_key):
         server_instance=None
@@ -41,7 +48,8 @@ class ServerManager(Logger):
         return server_instance
 
     async def __aenter__(self):
-        tasks=await asyncio.gather(*[self.__server_aenter(s) for s in self.__servers])
+        tasks=await asyncio.gather(*[self.__server_aenter(s) \
+                for s in self.__servers])
         for i in range(len(tasks)-1,-1,-1):
             _,e=tasks[i]
             if e is not None:
@@ -57,13 +65,16 @@ class ServerManager(Logger):
             return None,e
 
     async def __aexit__(self,exc_type,exc_val,exc_tb):
-        for server in self.__servers:
-            try:
-                await server.__aexit__(exc_type,exc_val,exc_tb)
-            except Exception as e:
-                self.logger.error(e,exc_info=True)
+        await asyncio.gather(*[self.__server_aexit(s,exc_type,exc_val,exc_tb) \
+                for s in self.__servers])
 
-    def close():
+    async def __server_aexit(self,server,exc_type,exc_val,exc_tb):
+        try:
+            await server.__aexit__(exc_type,exc_val,exc_tb)
+        except Exception as e:
+            self.logger.error(e,exc_info=True)
+
+    def close(self):
         for server in self.__servers:
             server.close()
 
@@ -71,14 +82,75 @@ class ServerManager(Logger):
 async def main(config):
     try:
         async with ServerManager(config) as server_manager:
-            loop = asyncio.get_event_loop()
-            for s in (signal.SIGINT,signal.SIGTERM,signal.SIGQUIT):
-                loop.add_signal_handler(s,server_manager.close)
+            register_close_signal(server_manager.close)
     except Exception as e:
         logging.getLogger(main.__name__).critical(e,exc_info=True)
 
+
+def register_close_signal(func):
+    loop = asyncio.get_event_loop()
+    if 'Windows'==platform.system():
+        for s in (signal.SIGINT, signal.SIGTERM):
+            signal.signal(s,func)
+    else:
+        for s in (signal.SIGINT,signal.SIGTERM,signal.SIGQUIT):
+            loop.add_signal_handler(s,func)
+
+
+class DaemonManager:
+    __daemonize=False
+    __is_daemon=False
+    __pid_file=None
+    def __init__(self,pid_file=None,daemonize=False):
+        self.__daemonize=daemonize
+        if pid_file is None:
+            return
+        try:
+            self.__pid_fp=open(pid_file,'w')
+            fcntl.flock(self.__pid_fp,fcntl.LOCK_EX|fcntl.LOCK_NB)
+            atexit.register(self.__exit__)
+        except (IOError,OSError,BlockingIOError):
+            print(f'Another instance is running',file=sys.stderr)
+            exit(1)
+        self.__pid_file=pid_file
+
+    def __enter__(self):
+        if not self.__do_daemonize():
+            return None
+        self.__pid_fp.write(str(os.getpid()))
+        self.__pid_fp.flush()
+        self.__is_daemon=True
+        return self
+
+    def __do_daemonize(self):
+        if not self.__daemonize or 'Windows'==platform.system():
+            return True
+        if os.fork():
+            return False
+        os.setsid()
+        os.umask(0)
+        if os.fork():
+            return False
+        sys.stdout.flush()
+        sys.stderr.flush()
+        with open(os.devnull, 'r') as devnull:
+            os.dup2(devnull.fileno(),sys.stdin.fileno())
+        with open(os.devnull, 'a') as out:
+            os.dup2(out.fileno(),sys.stdout.fileno())
+            os.dup2(out.fileno(),sys.stderr.fileno())
+        return True
+
+    def __exit__(self,exc_type,exc_val,exc_tb):
+        if self.__pid_fp is not None:
+            self.__pid_fp.close()
+            self.__pid_fp=None
+        if self.__is_daemon and self.__pid_file is not None:
+            os.remove(self.__pid_file)
+            self.__pid_file=None
+        atexit.unregister(self.__exit__)
+
+
 if '__main__'==__name__:
-    import argparse
     parser=argparse.ArgumentParser()
     parser.add_argument(
         '--config',
@@ -88,20 +160,22 @@ if '__main__'==__name__:
     )
     args=parser.parse_args();
     config=None
-    with open(args.config, 'rb') as f:
-        try:
-            config=tomllib.load(f)
-        except tomllib.TOMLDecodeError as e:
-            print(f'Failed to load {args.config}: {e}',file=sys.stderr)
-            exit(1)
-    logging.basicConfig(
-        filename=config.get('log_file','server.log'),
-        level=getattr(logging,config.get('log_level','INFO'),logging.INFO)
-    )
     try:
-        asyncio.run(main(config))
-    except KeyboardInterrupt:
-        pass
-    except Exception as e:
-        logging.getLogger(main.__name__).critical(e,exc_info=True)
+        with open(args.config, 'rb') as f:
+            config=tomllib.load(f)
+    except tomllib.TOMLDecodeError as e:
+        print(f'Failed to load {args.config}: {e}',file=sys.stderr)
+        exit(1)
+    pid_file=config.get('pid_file',None)
+    with DaemonManager(pid_file,config.get('daemonize',False)) as daemon:
+        if daemon is None:
+            exit(0)
+        logging.basicConfig(
+            filename=config.get('log_file','server.log'),
+            level=getattr(logging,config.get('log_level','INFO'),logging.INFO)
+        )
+        try:
+            asyncio.run(main(config))
+        except Exception as e:
+            logging.getLogger(__name__).critical(e,exc_info=True)
 

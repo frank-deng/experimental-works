@@ -7,8 +7,6 @@ from util import Logger
 from util import TCPServer
 from util import LoginHandler
 
-from pprint import pprint
-
 
 class SSHHandler(Logger):
     __password=None
@@ -109,7 +107,6 @@ class SSHHandler(Logger):
 
 class DialInServer(TCPServer):
     def __init__(self,config):
-        pprint(config)
         super().__init__(
             config.get('port',2333),
             host=config.get('host','0.0.0.0'),
