@@ -7,7 +7,7 @@ qemu-system-aarch64 \
 -drive file=/sdcard/devel/alpine.qcow2,if=none,id=disk \
 -device virtio-scsi-device \
 -device virtio-blk-device,drive=disk \
--netdev user,id=network0,dns=8.8.8.8 \
+-netdev user,id=network0,hostfwd=tcp:127.0.0.1:8122-:22,hostfwd=tcp:127.0.0.1:2333-:2333,dns=8.8.8.8 \
 -device virtio-net,netdev=network0 \
 -monitor unix:$HOME/alpine-monitor.sock,server=on,wait=off \
 -serial unix:$HOME/alpine-serial.sock,server=on,wait=off \

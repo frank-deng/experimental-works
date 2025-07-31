@@ -1,13 +1,13 @@
 #!/usr/bin/env python3
 
-import logging
-import tomllib
 import asyncio
 import asyncssh
 import signal
 from util import Logger
 from util import TCPServer
 from util import LoginHandler
+
+from pprint import pprint
 
 
 class SSHHandler(Logger):
@@ -30,7 +30,7 @@ class SSHHandler(Logger):
             self.__conn = await asyncssh.connect(
                 host=self.__config['host'],
                 port=self.__config['port'],
-                username=self.__config['remote_username'],
+                username=self.__config['username'],
                 password=self.__password,
                 known_hosts=None
             )
@@ -107,8 +107,9 @@ class SSHHandler(Logger):
             await self.__channel.wait_closed()
 
 
-class TelnetServer(TCPServer):
+class DialInServer(TCPServer):
     def __init__(self,config):
+        pprint(config)
         super().__init__(
             config.get('port',2333),
             host=config.get('host','0.0.0.0'),
@@ -117,13 +118,11 @@ class TelnetServer(TCPServer):
         self.__login_retry=config.get('login_retry',None)
         self.__login_timeout=config.get('login_timeout',None)
         self.__userinfo={}
-        for item in config['servers']:
-            username=item['username']
-            if username in self.__userinfo:
-                raise ValueError(f'Duplicated user {username}')
-            if 'remote_username' not in item:
-                item['remote_username']=username
-            self.__userinfo[username]=item
+        for username in config['conn']:
+            conn_info=config['conn'][username].copy()
+            if 'username' not in conn_info:
+                conn_info['username']=username
+            self.__userinfo[username]=conn_info
 
     def __get_userinfo(self,username):
         if username is None:
@@ -142,8 +141,10 @@ class TelnetServer(TCPServer):
             userinfo=self.__get_userinfo(username)
             if userinfo is not None:
                 return userinfo,password
-            await login_handler.write(b'Login Failed.\r\n')
-            await asyncio.sleep(3)
+            await asyncio.gather(
+                login_handler.write(b'Login Failed.\r\n'),
+                asyncio.sleep(3)
+            )
 
     async def handler(self,reader,writer):
         while True:
@@ -154,42 +155,8 @@ class TelnetServer(TCPServer):
                 async with SSHHandler(reader,writer,userinfo,password):
                     pass
             except asyncssh.misc.PermissionDenied:
-                self.__writer.write(b'Login Failed.\r\n')
-                await asyncio.sleep(3)
+                writer.write(b'Login Failed.\r\n')
+                await asyncio.gather(writer.drain(),asyncio.sleep(3))
             except Exception as e:
                 self.logger.error(e,exc_info=True)
-		
-async def main(config):
-    try:
-        async with TelnetServer(config) as server:
-            loop = asyncio.get_event_loop()
-            for s in (signal.SIGINT,signal.SIGTERM,signal.SIGQUIT):
-                loop.add_signal_handler(s,server.close)
-    except Exception as e:
-        logging.getLogger(main.__name__).critical(e,exc_info=True)
-
-if '__main__'==__name__:
-    import argparse
-    parser=argparse.ArgumentParser()
-    parser.add_argument(
-        '--config',
-        '-c',
-        help='Specify config file for the PPP server.',
-        default='ppp-manager.ini'
-    )
-    args=parser.parse_args();
-    config=None
-    with open(args.config, 'rb') as f:
-        config=tomllib.load(f)
-    log_level=config.get('log_level','INFO')
-    logging.basicConfig(
-        filename=config.get('log_file','telnet-ssh-adapter.log'),
-        level=getattr(logging,log_level,logging.INFO)
-    )
-    try:
-        asyncio.run(main(config))
-    except KeyboardInterrupt:
-        pass
-    except Exception as e:
-        logging.getLogger(main.__name__).critical(e,exc_info=True)
 
