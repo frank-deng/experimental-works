@@ -57,24 +57,26 @@ class Watchdog(Thread,Logger):
             while self.__running:
                 self.__flag=True
                 await asyncio.sleep(0.5)
-                self.logger.debug(f'Feed watchdog')
         except asyncio.CancelledError:
             pass
 
     def run(self):
-        timestamp_feed=time.time()
-        while self.__running:
+        try:
+            timestamp_feed=time.time()
             timestamp_inner=time.time()
-            self.logger.debug(f'Test watchdog {self.__flag} {timestamp_feed} {timestamp_inner}')
-            if self.__flag:
-                timestamp_feed=time.time()
-                self.__flag=False
-            elif timestamp_inner-timestamp_feed > self.__timeout:
-                logging.getLogger(self.__class__.__name__).critical(
-                        f'''Watchdog not fed within {self.__timeout}s, 
-Last fed:{timestamp_feed}, now:{timestamp_inner}''')
-                self.__class__.__kill()
-            time.sleep(0.5)
+            while self.__running:
+                if self.__flag:
+                    timestamp_feed=time.time()
+                    self.__flag=False
+                elif timestamp_inner-timestamp_feed > self.__timeout:
+                    logging.getLogger(self.__class__.__name__).critical(
+                            f'''Watchdog not fed within {self.__timeout}s, 
+    Last fed:{timestamp_feed}, now:{timestamp_inner}''')
+                    self.__class__.__kill()
+                timestamp_inner=time.time()
+                time.sleep(0.5)
+        except Exception as e:
+            self.logger.error(e,exc_info=True)
 
 
 class ServerManager(Logger):
@@ -236,12 +238,14 @@ if '__main__'==__name__:
         if daemon is None:
             exit(0)
         logging.basicConfig(
+            format='[%(asctime)s][%(levelname)s]%(message)s',
             filename=config.get('log_file','server.log'),
             level=getattr(logging,config.get('log_level','INFO'),logging.INFO)
         )
         try:
             with Watchdog(config.get('watchdog_timeout',10)) as watchdog:
                 asyncio.run(main(config,watchdog))
+            logging.getLogger(__name__).info('Server closed')
         except Exception as e:
             logging.getLogger(__name__).critical(e,exc_info=True)
 
