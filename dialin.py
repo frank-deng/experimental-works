@@ -127,7 +127,7 @@ class TCPServer(Logger):
                 else:
                     return
             await self.handler(reader,writer)
-        except (ConnectionResetError,BrokenPipeError):
+        except (ConnectionResetError,BrokenPipeError,asyncio.TimeoutError):
             pass
         except Exception as e:
             self.logger.error(e,exc_info=True)
@@ -338,8 +338,8 @@ if '__main__'==__name__:
     args=parser.parse_args()
     logging.basicConfig(
         format='[%(asctime)s][%(levelname)s]%(message)s',
+        filename='/var/log/dialin-server.log',
         level=logging.DEBUG
     )
-        #filename='/var/log/dialin-server.log',
     asyncio.run(main(args))
 
