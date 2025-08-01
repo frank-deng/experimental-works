@@ -10,7 +10,8 @@ import pam
 import pwd
 import pty
 import fcntl
-from logging.handlers import SysLogHandler
+import termios
+import struct
 
 
 async def readline(reader,writer,*,timeout=120,size=70,echo=True):
@@ -159,7 +160,7 @@ class ProcessHandler(Logger):
     async def __aenter__(self):
         try:
             self.__master_fd,self.__slave_fd=pty.openpty()
-            await self.create_subprocess_exec(self.__slave_fd)
+            await self.create_subprocess_exec(self.__master_fd,self.__slave_fd)
             os.close(self.__slave_fd)
             os.set_blocking(self.__master_fd,False)
             self.__tasks=(
@@ -235,7 +236,7 @@ class ProcessHandler(Logger):
             self.logger.error(e,exc_info=True)
         finally:
             self.__close_fd(self.__master_fd)
-            self.__close_fd(self.__slave_fd)
+            self.__master_fd=None
 
     def __close_fd(self,fd):
         try:
@@ -251,10 +252,34 @@ class ProcessHandler(Logger):
 class UserShellHandler(ProcessHandler):
     def __init__(self,reader,writer,username,*,buf_size=4096):
         super().__init__(reader,writer,buf_size=buf_size)
+        self.__username=username
         self.__userinfo=pwd.getpwnam(username)
 
-    def create_subprocess_exec(self,slave_fd):
-        fcntl.
+    async def create_subprocess_exec(self,master_fd,slave_fd):
+        env={
+            'USER':self.__userinfo.pw_name,
+            'HOME':self.__userinfo.pw_dir,
+            'SHELL':self.__userinfo.pw_shell,
+            'TERM':'ansi.sys',
+            'PATH':'/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin'
+        }
+        fcntl.ioctl(slave_fd,termios.TIOCSWINSZ,struct.pack('HHHH',24,80,0,0))
+        pid=os.fork()
+        if pid==0:
+            os.close(master_fd)
+            os.setsid()
+            os.close(os.open(os.ttyname(slave_fd),os.O_RDWR))
+            os.dup2(slave_fd,0)
+            os.dup2(slave_fd,1)
+            os.dup2(slave_fd,2)
+            os.close(slave_fd)
+            os.setgid(self.__userinfo.pw_gid)
+            os.setuid(self.__userinfo.pw_uid)
+            for key,value in env.items():
+                os.environ[key]=value
+            os.chdir(self.__userinfo.pw_dir)
+            os.execl(self.__userinfo.pw_shell,self.__userinfo.pw_shell,'--login')
+            os._exit(1)
 
 
 class DialInServer(TCPServer):
@@ -313,8 +338,8 @@ if '__main__'==__name__:
     args=parser.parse_args()
     logging.basicConfig(
         format='[%(asctime)s][%(levelname)s]%(message)s',
-        filename='/var/log/dialin-server.log',
         level=logging.DEBUG
     )
+        #filename='/var/log/dialin-server.log',
     asyncio.run(main(args))
 
