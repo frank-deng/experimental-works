@@ -6,13 +6,14 @@ import tomllib
 import importlib
 import asyncio
 import signal
-import argparse
+import click
 import fcntl
 import atexit
 import os
 import platform
 import time
 import ctypes
+import errno
 from util import Logger
 
 from threading import Thread
@@ -177,8 +178,8 @@ class DaemonManager:
             fcntl.flock(self.__pid_fp,fcntl.LOCK_EX|fcntl.LOCK_NB)
             atexit.register(self.__exit__)
         except (IOError,OSError,BlockingIOError):
-            print(f'Another instance is running',file=sys.stderr)
-            exit(1)
+            click.echo(click.style(f'Another instance is running',fg='red'),err=True)
+            sys.exit(2)
         self.__pid_file=pid_file
 
     def __enter__(self):
@@ -217,22 +218,8 @@ class DaemonManager:
         atexit.unregister(self.__exit__)
 
 
-if '__main__'==__name__:
-    parser=argparse.ArgumentParser()
-    parser.add_argument(
-        '--config',
-        '-c',
-        help='Specify TOML config file.',
-        default='server.toml'
-    )
-    args=parser.parse_args();
-    config=None
-    try:
-        with open(args.config, 'rb') as f:
-            config=tomllib.load(f)
-    except tomllib.TOMLDecodeError as e:
-        print(f'Failed to load {args.config}: {e}',file=sys.stderr)
-        exit(1)
+def server_main(ctx):
+    config=ctx.obj
     pid_file=config.get('pid_file',None)
     with DaemonManager(pid_file,config.get('detach',False)) as daemon:
         if daemon is None:
@@ -249,3 +236,47 @@ if '__main__'==__name__:
         except Exception as e:
             logging.getLogger(__name__).critical(e,exc_info=True)
 
+
+@click.group(invoke_without_command=True)
+@click.option('--config_file','-c',default='server.toml',
+              help='Specify TOML config file.')
+@click.pass_context
+def cli(ctx,config_file):
+    sys.path.insert(0,os.path.dirname(os.path.abspath(__file__)))
+    config=None
+    try:
+        with open(config_file, 'rb') as f:
+            config=tomllib.load(f)
+    except tomllib.TOMLDecodeError as e:
+        click.echo(click.style(f'Failed to load {config_file}: {e}',fg='red'),err=True)
+        ctx.exit(code=1)
+    ctx.obj=config
+    if ctx.invoked_subcommand is None:
+        server_main(ctx)
+
+@cli.command()
+@click.pass_context
+def stop(ctx):
+    config=ctx.obj
+    pid_file=config.get('pid_file',None)
+    pid=None
+    if not os.path.exists(pid_file):
+        click.echo(click.style(f'Server is not running.',fg='yellow'),err=True)
+        ctx.exit(code=1)
+    with open(pid_file,'r') as f:
+        try:
+            fcntl.flock(f,fcntl.LOCK_EX|fcntl.LOCK_NB)
+            click.echo(click.style(f'Server may have shutdown abnormally, please check server\'s log for detail.',fg='yellow'),err=True)
+            ctx.exit(code=1)
+        except IOError as e:
+            if e.errno not in (errno.EAGAIN, errno.EACCES):
+                raise
+            f.seek(0) 
+            pid=int(f.read().strip())
+    if pid is not None:
+        os.kill(pid,signal.SIGINT)
+        ctx.exit(code=0)
+
+
+if '__main__'==__name__:
+    cli()
