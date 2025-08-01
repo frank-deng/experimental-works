@@ -12,14 +12,27 @@ import atexit
 import os
 import platform
 import time
+import ctypes
 from util import Logger
 
 from threading import Thread
 
-class Watchdog(Thread):
+class Watchdog(Thread,Logger):
     __running=True
     __flag=False
     __task=None
+    __timeout=10
+
+    @staticmethod
+    def __kill():
+        pid=os.getpid()
+        if platform.system()=="Windows":
+            handle=ctypes.windll.kernel32.OpenProcess(1,0,pid)
+            ctypes.windll.kernel32.TerminateProcess(handle,-1)
+            ctypes.windll.kernel32.CloseHandle(handle)
+        else:
+            os.kill(pid,signal.SIGKILL)
+
     def __init__(self,timeout):
         super().__init__()
         self.__timeout=timeout
@@ -44,25 +57,24 @@ class Watchdog(Thread):
             while self.__running:
                 self.__flag=True
                 await asyncio.sleep(0.5)
+                self.logger.debug(f'Feed watchdog')
         except asyncio.CancelledError:
             pass
 
     def run(self):
-        self.__timestamp=time.time()
-        is_timeout=False
+        timestamp_feed=time.time()
         while self.__running:
+            timestamp_inner=time.time()
+            self.logger.debug(f'Test watchdog {self.__flag} {timestamp_feed} {timestamp_inner}')
             if self.__flag:
-                self.__timestamp=time.time()
+                timestamp_feed=time.time()
                 self.__flag=False
-            elif time.time() - self.__timestamp > self.__timeout:
-                is_timeout=True
-                self.__running=False
-                break
+            elif timestamp_inner-timestamp_feed > self.__timeout:
+                logging.getLogger(self.__class__.__name__).critical(
+                        f'''Watchdog not fed within {self.__timeout}s, 
+Last fed:{timestamp_feed}, now:{timestamp_inner}''')
+                self.__class__.__kill()
             time.sleep(0.5)
-        if is_timeout:
-            logging.getLogger(self.__class__.__name__).critical(
-                    f'Watchdog not fed within {self.__timeout}s')
-            sys.exit(2)
 
 
 class ServerManager(Logger):
@@ -150,11 +162,12 @@ def register_close_signal(func):
 
 
 class DaemonManager:
-    __daemonize=False
+    __detach=False
     __is_daemon=False
     __pid_file=None
-    def __init__(self,pid_file=None,daemonize=False):
-        self.__daemonize=daemonize
+    __pid_fp=None
+    def __init__(self,pid_file=None,detach=False):
+        self.__detach=detach
         if pid_file is None:
             return
         try:
@@ -167,15 +180,15 @@ class DaemonManager:
         self.__pid_file=pid_file
 
     def __enter__(self):
-        if not self.__do_daemonize():
+        if not self.__do_detach():
             return None
         self.__pid_fp.write(str(os.getpid()))
         self.__pid_fp.flush()
         self.__is_daemon=True
         return self
 
-    def __do_daemonize(self):
-        if not self.__daemonize or 'Windows'==platform.system():
+    def __do_detach(self):
+        if not self.__detach or 'Windows'==platform.system():
             return True
         if os.fork():
             return False
@@ -219,7 +232,7 @@ if '__main__'==__name__:
         print(f'Failed to load {args.config}: {e}',file=sys.stderr)
         exit(1)
     pid_file=config.get('pid_file',None)
-    with DaemonManager(pid_file,config.get('daemonize',False)) as daemon:
+    with DaemonManager(pid_file,config.get('detach',False)) as daemon:
         if daemon is None:
             exit(0)
         logging.basicConfig(

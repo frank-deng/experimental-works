@@ -1,7 +1,7 @@
 log_file="server.log"
 log_level="DEBUG"
 pid_file="/data/data/com.termux/files/usr/tmp/server.pid"
-daemonize=false
+detach=true
 
 [server.dialin]
 module="dialin:DialInServer"
