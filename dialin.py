@@ -7,6 +7,7 @@ import signal
 import os
 import sys
 import pam
+import pamela
 import pwd
 import pty
 import fcntl
@@ -273,6 +274,7 @@ class UserShellHandler(ProcessHandler):
             os.dup2(slave_fd,1)
             os.dup2(slave_fd,2)
             os.close(slave_fd)
+            pamela.open_session(self.__userinfo.pw_name)
             os.setgid(self.__userinfo.pw_gid)
             os.setuid(self.__userinfo.pw_uid)
             for key,value in env.items():
