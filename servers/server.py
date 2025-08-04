@@ -7,77 +7,13 @@ import importlib
 import asyncio
 import signal
 import click
-import fcntl
-import atexit
 import os
 import platform
 import time
-import ctypes
-import errno
 from util import Logger
-
-from threading import Thread
-
-class Watchdog(Thread,Logger):
-    __running=True
-    __flag=False
-    __task=None
-    __timeout=10
-
-    @staticmethod
-    def __kill():
-        pid=os.getpid()
-        if platform.system()=="Windows":
-            handle=ctypes.windll.kernel32.OpenProcess(1,0,pid)
-            ctypes.windll.kernel32.TerminateProcess(handle,-1)
-            ctypes.windll.kernel32.CloseHandle(handle)
-        else:
-            os.kill(pid,signal.SIGKILL)
-
-    def __init__(self,timeout):
-        super().__init__()
-        self.__timeout=timeout
-
-    def __enter__(self):
-        self.start()
-        return self
-
-    def __exit__(self,exc_type,exc_val,exc_tb):
-        self.__running=False
-        self.join()
-
-    async def __aenter__(self):
-        self.__task=asyncio.create_task(self.__feed_task())
-
-    async def __aexit__(self,exc_type,exc_val,exc_tb):
-        self.__task.cancel()
-        await(self.__task)
-
-    async def __feed_task(self):
-        try:
-            while self.__running:
-                self.__flag=True
-                await asyncio.sleep(0.5)
-        except asyncio.CancelledError:
-            pass
-
-    def run(self):
-        try:
-            timestamp_feed=time.time()
-            timestamp_inner=time.time()
-            while self.__running:
-                if self.__flag:
-                    timestamp_feed=time.time()
-                    self.__flag=False
-                elif timestamp_inner-timestamp_feed > self.__timeout:
-                    logging.getLogger(self.__class__.__name__).critical(
-                            f'''Watchdog not fed within {self.__timeout}s, 
-    Last fed:{timestamp_feed}, now:{timestamp_inner}''')
-                    self.__class__.__kill()
-                timestamp_inner=time.time()
-                time.sleep(0.5)
-        except Exception as e:
-            self.logger.error(e,exc_info=True)
+from util.watchdog import watchdog
+from util.daemon import daemonize
+from util.daemon import stop_daemon
 
 
 class ServerManager(Logger):
@@ -145,13 +81,13 @@ class ServerManager(Logger):
             server.close()
 
 
-async def main(config,watchdog):
+@watchdog('watchdog_timeout')
+async def async_main(config):
     try:
-        async with watchdog:
-            async with ServerManager(config) as server_manager:
-                register_close_signal(server_manager.close)
+        async with ServerManager(config) as server_manager:
+            register_close_signal(server_manager.close)
     except Exception as e:
-        logging.getLogger(main.__name__).critical(e,exc_info=True)
+        logging.getLogger(__name__).critical(e,exc_info=True)
 
 
 def register_close_signal(func):
@@ -164,77 +100,18 @@ def register_close_signal(func):
             loop.add_signal_handler(s,func)
 
 
-class DaemonManager:
-    __detach=False
-    __is_daemon=False
-    __pid_file=None
-    __pid_fp=None
-    def __init__(self,pid_file=None,detach=False):
-        self.__detach=detach
-        if pid_file is None:
-            return
-        try:
-            self.__pid_fp=open(pid_file,'w')
-            fcntl.flock(self.__pid_fp,fcntl.LOCK_EX|fcntl.LOCK_NB)
-            atexit.register(self.__exit__)
-        except (IOError,OSError,BlockingIOError):
-            click.echo(click.style(f'Another instance is running',fg='red'),err=True)
-            sys.exit(2)
-        self.__pid_file=pid_file
-
-    def __enter__(self):
-        if not self.__do_detach():
-            return None
-        self.__pid_fp.write(str(os.getpid()))
-        self.__pid_fp.flush()
-        self.__is_daemon=True
-        return self
-
-    def __do_detach(self):
-        if not self.__detach or 'Windows'==platform.system():
-            return True
-        if os.fork():
-            return False
-        os.setsid()
-        os.umask(0)
-        if os.fork():
-            return False
-        sys.stdout.flush()
-        sys.stderr.flush()
-        with open(os.devnull, 'r') as devnull:
-            os.dup2(devnull.fileno(),sys.stdin.fileno())
-        with open(os.devnull, 'a') as out:
-            os.dup2(out.fileno(),sys.stdout.fileno())
-            os.dup2(out.fileno(),sys.stderr.fileno())
-        return True
-
-    def __exit__(self,exc_type,exc_val,exc_tb):
-        if self.__pid_fp is not None:
-            self.__pid_fp.close()
-            self.__pid_fp=None
-        if self.__is_daemon and self.__pid_file is not None:
-            os.remove(self.__pid_file)
-            self.__pid_file=None
-        atexit.unregister(self.__exit__)
-
-
-def server_main(ctx):
-    config=ctx.obj
-    pid_file=config.get('pid_file',None)
-    with DaemonManager(pid_file,config.get('detach',False)) as daemon:
-        if daemon is None:
-            exit(0)
-        logging.basicConfig(
-            format='[%(asctime)s][%(levelname)s]%(message)s',
-            filename=config.get('log_file','server.log'),
-            level=getattr(logging,config.get('log_level','INFO'),logging.INFO)
-        )
-        try:
-            with Watchdog(config.get('watchdog_timeout',10)) as watchdog:
-                asyncio.run(main(config,watchdog))
-            logging.getLogger(__name__).info('Server closed')
-        except Exception as e:
-            logging.getLogger(__name__).critical(e,exc_info=True)
+@daemonize('pid_file','detach')
+def server_main(config):
+    logging.basicConfig(
+        format='[%(asctime)s][%(levelname)s]%(message)s',
+        filename=config.get('log_file','server.log'),
+        level=getattr(logging,config.get('log_level','INFO'),logging.INFO)
+    )
+    try:
+        asyncio.run(async_main(config))
+        logging.getLogger(__name__).info('Server closed')
+    except Exception as e:
+        logging.getLogger(__name__).critical(e,exc_info=True)
 
 
 @click.group(invoke_without_command=True)
@@ -252,30 +129,16 @@ def cli(ctx,config_file):
         ctx.exit(code=1)
     ctx.obj=config
     if ctx.invoked_subcommand is None:
-        server_main(ctx)
+        server_main(config)
 
 @cli.command()
 @click.pass_context
 def stop(ctx):
     config=ctx.obj
-    pid_file=config.get('pid_file',None)
-    pid=None
-    if not os.path.exists(pid_file):
-        click.echo(click.style(f'Server is not running.',fg='yellow'),err=True)
-        ctx.exit(code=1)
-    with open(pid_file,'r') as f:
-        try:
-            fcntl.flock(f,fcntl.LOCK_EX|fcntl.LOCK_NB)
-            click.echo(click.style(f'Server may have shutdown abnormally, please check server\'s log for detail.',fg='yellow'),err=True)
-            ctx.exit(code=1)
-        except IOError as e:
-            if e.errno not in (errno.EAGAIN, errno.EACCES):
-                raise
-            f.seek(0) 
-            pid=int(f.read().strip())
-    if pid is not None:
-        os.kill(pid,signal.SIGINT)
-        ctx.exit(code=0)
+    if 'pid_file' not in config:
+        click.echo(click.style(f'PID file not specified in the config file.',fg='yellow'),err=True)
+        ctx.exit(1)
+    ctx.exit(code=stop_daemon(config['pid_file']))
 
 
 if '__main__'==__name__:
