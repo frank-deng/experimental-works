@@ -6,7 +6,15 @@ import errno
 import fcntl
 import signal
 import functools
-import click
+
+class DaemonIsRunningError(RuntimeError):
+    pass
+
+class DaemonNotRunningError(RuntimeError):
+    pass
+
+class DaemonAbnormalExitError(RuntimeError):
+    pass
 
 class DaemonManager:
     __detach=False
@@ -22,8 +30,7 @@ class DaemonManager:
             fcntl.flock(self.__pid_fp,fcntl.LOCK_EX|fcntl.LOCK_NB)
             atexit.register(self.__exit__)
         except (IOError,OSError,BlockingIOError):
-            click.echo(click.style(f'Another instance is running',fg='red'),err=True)
-            sys.exit(2)
+            raise DaemonIsRunningError
         self.__pid_file=pid_file
 
     def __enter__(self):
@@ -77,13 +84,11 @@ def daemonize(key_pidfile:str,key_detach:str):
 def stop_daemon(pid_file):
     pid=None
     if not os.path.exists(pid_file):
-        click.echo(click.style(f'Server is not running.',fg='yellow'),err=True)
-        return 1
+        raise DaemonNotRunningError
     with open(pid_file,'r') as f:
         try:
             fcntl.flock(f,fcntl.LOCK_EX|fcntl.LOCK_NB)
-            click.echo(click.style(f'Server may have shutdown abnormally, please check server\'s log for detail.',fg='yellow'),err=True)
-            ctx.exit(code=1)
+            raise DaemonAbnormalExitError
         except IOError as e:
             if e.errno not in (errno.EAGAIN, errno.EACCES):
                 raise
@@ -91,5 +96,4 @@ def stop_daemon(pid_file):
             pid=int(f.read().strip())
     if pid is not None:
         os.kill(pid,signal.SIGINT)
-    return 0
 

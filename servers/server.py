@@ -14,6 +14,9 @@ from util import Logger
 from util.watchdog import watchdog
 from util.daemon import daemonize
 from util.daemon import stop_daemon
+from util.daemon import DaemonIsRunningError
+from util.daemon import DaemonNotRunningError
+from util.daemon import DaemonAbnormalExitError
 
 
 class ServerManager(Logger):
@@ -129,7 +132,11 @@ def cli(ctx,config_file):
         ctx.exit(code=1)
     ctx.obj=config
     if ctx.invoked_subcommand is None:
-        server_main(config)
+        try:
+            server_main(config)
+        except DaemonIsRunningError as e:
+            click.echo(click.style(f'Server is already running',fg='red'),err=True)
+            ctx.exit(code=1)
 
 @cli.command()
 @click.pass_context
@@ -138,7 +145,14 @@ def stop(ctx):
     if 'pid_file' not in config:
         click.echo(click.style(f'PID file not specified in the config file.',fg='yellow'),err=True)
         ctx.exit(1)
-    ctx.exit(code=stop_daemon(config['pid_file']))
+    try:
+        stop_daemon(config['pid_file'])
+    except DaemonNotRunningError:
+        click.echo(click.style(f'Server is not running.',fg='yellow'),err=True)
+        ctx.exit(code=1)
+    except DaemonAbnormalExitError:
+        click.echo(click.style(f'Server may have shutdown abnormally, please check server\'s log for detail.',fg='yellow'),err=True)
+        ctx.exit(code=1)
 
 
 if '__main__'==__name__:
