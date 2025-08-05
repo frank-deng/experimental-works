@@ -52,8 +52,8 @@ class TCPServer(Logger):
                 else:
                     return
             await self.handler(reader,writer)
-        except (ConnectionResetError,BrokenPipeError):
-            pass
+        except (ConnectionResetError,BrokenPipeError,asyncio.TimeoutError) as e:
+            self.logger.debug(e,exc_info=True)
         except Exception as e:
             self.logger.error(e,exc_info=True)
         finally:

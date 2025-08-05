@@ -4,6 +4,27 @@ pid_file="/data/data/com.termux/files/usr/tmp/server.pid"
 detach=true
 watchdog_timeout=10
 
+[mailcenter.users.frank]
+hosts=["10.0.2.2","mysite.com"]
+password="77646f5a4f3166637627abe998e7a1470fe72d8b430f067dafa86263f1f23f94"
+
+[mailcenter.users."niwenwoda@mysite.com"]
+module="askbot"
+handler="ask_erine"
+client_id=""
+client_secret=""
+
+[mailcenter.users."deepseek@mysite.com"]
+module="askbot"
+handler="ask_deepseek"
+deepseek_key="sk-0123456789abcdef0123456789abcdef"
+
 [server.test]
 module="testserver:TestServer"
 port=6666
+
+[server.smtp]
+port=8025
+
+[server.pop3]
+port=8025
