@@ -155,8 +155,6 @@ async def handler(userName,params,msg):
     msg_reply.set_payload(content_gb2312.decode('gb2312'), charset=reply_charset)
     return msg_reply
 
-import logging
-logging.basicConfig(filename='askbot.log',filemode='a',level=logging.INFO)
 logger=logging.getLogger(__name__)
 
 async def run(userName,params,recvQueue,sendQueue):
@@ -171,7 +169,7 @@ async def run(userName,params,recvQueue,sendQueue):
                 'to':msgInfo['from'],
                 'msg':msg_reply_data
             })
-        except:
-            logger.error(traceback.format_exc())
+        except Exception as e:
+            logger.error(e,exc_info=True)
 
 

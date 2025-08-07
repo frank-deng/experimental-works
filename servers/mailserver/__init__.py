@@ -143,3 +143,7 @@ class MailServer(MailCenter):
         finally:
             await super().__aexit__(exc_type,exc_val,exc_tb)
 
+    def close(self):
+        self.__pop3Server.close()
+        self.__smtpServer.close()
+

@@ -1,4 +1,5 @@
 import asyncio
+import re
 from util import Logger
 from util.tcpserver import TCPServer
 
@@ -118,8 +119,8 @@ class SMTPServer(TCPServer):
             host=server_config.get('host','0,0,0,0'),
             max_conn=server_config.get('max_connection',None))
 
-    async def handler(selfi,reader,writer):
-        pop3handler=POP3Handler(self.__mailCenter,
+    async def handler(self,reader,writer):
+        smtphandler=SMTPHandler(self.__mailCenter,
                                 reader,writer,timeout=self.__timeout)
-        await pop3handler.run()
+        await smtphandler.run()
 
