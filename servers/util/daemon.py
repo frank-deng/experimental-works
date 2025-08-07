@@ -36,8 +36,9 @@ class DaemonManager:
     def __enter__(self):
         if not self.__do_detach():
             return None
-        self.__pid_fp.write(str(os.getpid()))
-        self.__pid_fp.flush()
+        if self.__pid_fp is not None:
+            self.__pid_fp.write(str(os.getpid()))
+            self.__pid_fp.flush()
         self.__is_daemon=True
         return self
 

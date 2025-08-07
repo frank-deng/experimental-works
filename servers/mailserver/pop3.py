@@ -8,7 +8,8 @@ class POP3Handler(Logger):
     __mailList=None
     __running=True
     __noAuthCmd={'USER','PASS'}
-    def __init__(self,reader,writer,*,timeout=60):
+    def __init__(self,mailCenter,reader,writer,*,timeout=60):
+        self.__mailCenter=mailCenter
         self.__reader=reader
         self.__writer=writer
         self.__timeout=timeout
@@ -38,13 +39,12 @@ class POP3Handler(Logger):
         self.__writer.write(b'+OK\r\n')
     
     async def __handlePass(self,line):
-        global mailCenter
         content=line.decode('iso8859-1','ignore').strip()
         match=re.search(r'^[^\s]+\s+([^\s]+)',content)
         if match is None:
             self.__writer.write(b'-ERR Missing Password\r\n')
             return
-        self.__mailBox=mailCenter.getUser(self.__user, match[1])
+        self.__mailBox=self.__mailCenter.getUser(self.__user, match[1])
         if self.__mailBox is None:
             self.__writer.write(b'-ERR Auth Failed\r\n')
             return
@@ -164,9 +164,16 @@ class POP3Handler(Logger):
 
 class POP3Server(TCPServer):
     __timeout=60
-    def __init__(self,config):
+    def __init__(self,mailCenter,config):
+        server_config=config['pop3']
+        self.__mailCenter=mailCenter
+        self.__timeout=server_config.get('timeout',60)
+        super().__init__(server_config['port'],
+            host=server_config.get('host','0,0,0,0'),
+            max_conn=server_config.get('max_connection',None))
 
     async def handler(selfi,reader,writer):
-        pop3handler=POP3Handler(reader,writer,timeout=self.__timeout)
+        pop3handler=POP3Handler(self.__mailCenter,
+                                reader,writer,timeout=self.__timeout)
         await pop3handler.run()
 

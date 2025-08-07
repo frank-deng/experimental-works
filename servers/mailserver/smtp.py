@@ -6,7 +6,8 @@ from util.tcpserver import TCPServer
 class SMTPHandler(Logger):
     __running=True
     __mailFrom=None
-    def __init__(self,reader,writer,*,host='',timeout=60):
+    def __init__(self,mailCenter,reader,writer,*,host='',timeout=60):
+        self.__mailCenter=mailCenter
         self.__reader=reader
         self.__writer=writer
         self.__host=host
@@ -27,13 +28,12 @@ class SMTPHandler(Logger):
         self.__writer.write(b'250 OK\r\n')
 
     async def __handleSrc(self,line):
-        global mailCenter
         content=line.decode('iso8859-1','ignore').strip()
         match=re.search(r'^MAIL From:\s*<([^<>\s]+)>',content,re.IGNORECASE)
         if match is None:
             self.__writer.write(b'501 Invalid Parameter\r\n')
             return
-        user=mailCenter.checkAddr(match[1],True)
+        user=self.__mailCenter.checkAddr(match[1],True)
         if user is None:
             self.__writer.write(b'510 Invalid email address\r\n')
             return
@@ -46,7 +46,7 @@ class SMTPHandler(Logger):
         if match is None:
             self.__writer.write(b'501 Invalid Parameter\r\n')
             return
-        user=mailCenter.checkAddr(match[1])
+        user=self.__mailCenter.checkAddr(match[1])
         if user is None:
             self.__writer.write(b'510 Invalid email address\r\n')
             return
@@ -71,7 +71,7 @@ class SMTPHandler(Logger):
         await self.__writer.drain()
         tasks=[]
         for user in self.__rcpt:
-            tasks.append(mailCenter.sendTo(self.__mailFrom, user, msg))
+            tasks.append(self.__mailCenter.sendTo(self.__mailFrom, user, msg))
         await asyncio.gather(*tasks)
 
     def __getCmd(self,line):
@@ -110,9 +110,16 @@ class SMTPHandler(Logger):
 
 class SMTPServer(TCPServer):
     __timeout=60
-    def __init__(self,config):
+    def __init__(self,mailCenter,config):
+        server_config=config['smtp']
+        self.__mailCenter=mailCenter
+        self.__timeout=server_config.get('timeout',60)
+        super().__init__(server_config['port'],
+            host=server_config.get('host','0,0,0,0'),
+            max_conn=server_config.get('max_connection',None))
 
     async def handler(selfi,reader,writer):
-        pop3handler=POP3Handler(reader,writer,timeout=self.__timeout)
+        pop3handler=POP3Handler(self.__mailCenter,
+                                reader,writer,timeout=self.__timeout)
         await pop3handler.run()
 
