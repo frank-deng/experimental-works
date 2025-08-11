@@ -78,7 +78,7 @@ class ServiceManager(Logger):
         except Exception as e:
             self.logger.error(e,exc_info=True)
 
-    def close(self):
+    def close(self,*args):
         self.__wait_close.set()
 
 
