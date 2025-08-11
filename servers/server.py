@@ -23,6 +23,7 @@ class ServiceManager(Logger):
     def __init__(self,config):
         self.__conf=config
         self.__modules=[]
+        self.__wait_close=asyncio.Event()
         for module in config['modules']:
             server_instance=self.__server_init(module,self.__conf)
             if server_instance is None:
@@ -42,7 +43,7 @@ class ServiceManager(Logger):
                 module=getattr(module,selector)
             server_instance=module(config)
         except Exception as e:
-            self.logger.error(f'Failed to load server {server_key}: {e}',
+            self.logger.error(f'Failed to load module {module_path}: {e}',
                               exc_info=True)
         return server_instance
 
@@ -64,6 +65,10 @@ class ServiceManager(Logger):
             return None,e
 
     async def __aexit__(self,exc_type,exc_val,exc_tb):
+        await self.__wait_close.wait()
+        for server in self.__modules:
+            if hasattr(server,'close'):
+                server.close()
         await asyncio.gather(*[self.__module_aexit(s,exc_type,exc_val,exc_tb) \
                 for s in self.__modules])
 
@@ -74,8 +79,7 @@ class ServiceManager(Logger):
             self.logger.error(e,exc_info=True)
 
     def close(self):
-        for server in self.__modules:
-            server.close()
+        self.__wait_close.set()
 
 
 @watchdog('watchdog_timeout')
