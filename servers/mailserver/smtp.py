@@ -7,12 +7,14 @@ from util.tcpserver import TCPServer
 class SMTPHandler(Logger):
     __running=True
     __mailFrom=None
-    def __init__(self,mailCenter,reader,writer,*,host='',timeout=60):
+    def __init__(self,mailCenter,reader,writer,*,host='',timeout=60,
+                 greeting_host='10.0.2.2'):
         self.__mailCenter=mailCenter
         self.__reader=reader
         self.__writer=writer
         self.__host=host
         self.__timeout=timeout
+        self.__greeting_host=greeting_host
         self.__rcpt=set()
         self.__handlerDict={
             'HELO':self.__handleGreeting,
@@ -85,7 +87,7 @@ class SMTPHandler(Logger):
         return match[1]
     
     async def run(self):
-        self.__writer.write(b'220 Email Server 10.0.2.2\r\n')
+        self.__writer.write(f'220 Email Server {self.__greeting_host}\r\n'.encode('iso8859-1'))
         while self.__running:
             line=b''
             try:
@@ -115,12 +117,14 @@ class SMTPServer(TCPServer):
         server_config=config['smtp']
         self.__mailCenter=mailCenter
         self.__timeout=server_config.get('timeout',60)
+        self.__greeting_host=config.get('greeting_host','10.0.2.2')
         super().__init__(server_config['port'],
             host=server_config.get('host','0,0,0,0'),
             max_conn=server_config.get('max_connection',None))
 
     async def handler(self,reader,writer):
         smtphandler=SMTPHandler(self.__mailCenter,
-                                reader,writer,timeout=self.__timeout)
+                                reader,writer,timeout=self.__timeout,
+                                greeting_host=self.__greeting_host)
         await smtphandler.run()
 

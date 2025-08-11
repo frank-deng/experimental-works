@@ -3,9 +3,15 @@ import platform
 import os
 import atexit
 import errno
-import fcntl
 import signal
 import functools
+if 'win32'==sys.platform:
+    import win32event
+    import win32api
+    import winerror
+else:
+    import fcntl
+
 
 class DaemonIsRunningError(RuntimeError):
     pass
@@ -18,13 +24,13 @@ class DaemonAbnormalExitError(RuntimeError):
 
 class PIDFileManager:
     __pidfile=None
-    __fd=None
+    __fp=None
     def __init__(self,pidfile:str=None):
         self.__pidfile=pidfile
 
     def __atexit(self):
-        if self.__fd is not None:
-            self.__fd.close()
+        if self.__fp is not None:
+            self.__fp.close()
         if self.__pidfile is not None:
             os.remove(self.__pidfile)
             self.__pidfile=None
@@ -53,9 +59,14 @@ class PIDFileManager:
         self.__fp.flush()
         atexit.register(self.__atexit)
 
+    def start_windows(self):
+        if self.__pidfile is None:
+            return
+        self.__fp=win32event.CreateMutex(None,True,self.__pidfile)
+        if win32api.GetLastError()==winerror.ERROR_ALREADY_EXISTS:
+            raise DaemonIsRunningError
+
 def __do_detach():
-    if 'Windows'==platform.system():
-        return True
     if os.fork():
         return False
     os.setsid()
@@ -76,10 +87,13 @@ def daemonize(key_pidfile:str,key_detach:str):
         @functools.wraps(func)
         def wrapper(config,*args,**kwargs):
             pidman=PIDFileManager(config.get(key_pidfile,None))
-            if pidman.is_running():
-                raise DaemonIsRunningError
             detach=config.get(key_detach,False)
-            if not detach or __do_detach():
+            if 'win32'==sys.platform:
+                pidman.start_windows()
+                func(config,*args,**kwargs)
+            elif pidman.is_running():
+                raise DaemonIsRunningError
+            elif not detach or __do_detach():
                 pidman.start()
                 func(config,*args,**kwargs)
         return wrapper
