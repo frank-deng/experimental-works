@@ -4,9 +4,20 @@ pid_file="/data/data/com.termux/files/usr/tmp/server.pid"
 detach=true
 watchdog_timeout=10
 modules=[
+"web:WebServer",
 "testserver:TestServer",
 "mailserver:MailServer"
 ]
+
+[web]
+host="0.0.0.0"
+port=8180
+template_dir="web"
+links=[
+	{label="我的博客",link="blogs"},
+	{label="天气预报",link="weather.asp"}
+]
+api_key="xxx"
 
 [mail.pop3]
 host="0.0.0.0"

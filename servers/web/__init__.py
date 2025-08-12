@@ -11,12 +11,13 @@ class WebServer(Logger):
     __runner=None
     __site=None
     def __init__(self,config):
-        self.__host=config['http']['host']
-        self.__port=config['http']['port']
+        self.__host=config['web']['host']
+        self.__port=config['web']['port']
         self.__app=web.Application()
         self.__app['config']=config
         self.__app.router.add_get("/",index)
-        aiohttp_jinja2.setup(self.__app,loader=FileSystemLoader(config['http']['template_dir']))
+        self.__app.router.add_get("/index.asp",index)
+        aiohttp_jinja2.setup(self.__app,loader=FileSystemLoader(config['web']['template_dir']))
 
     async def __aenter__(self):
         self.__runner=web.AppRunner(self.__app)
