@@ -4,6 +4,7 @@ import aiohttp_jinja2
 from jinja2 import FileSystemLoader
 from aiohttp import web
 from util import Logger
+from util import load_module
 
 from web.index import index
 
@@ -15,11 +16,26 @@ class WebServer(Logger):
         self.__port=config['web']['port']
         self.__app=web.Application()
         self.__app['config']=config
-        self.__app.router.add_get("/",index)
-        self.__app.router.add_get("/index.asp",index)
         aiohttp_jinja2.setup(self.__app,
             loader=FileSystemLoader(config['web']['template_dir']),
             autoescape=True)
+        for route in config['web']['routes']:
+            self.__load_route(route['path'],route)
+
+    def __load_route(self,path,route):
+        try:
+            if isinstance(path,list):
+                for subpath in path:
+                    self.__load_route(subpath,route)
+                return
+            if 'static' in route:
+                self.__app.router.add_static(path,route['static'])
+            else:
+                methods=route.get('method','GET')
+                self.__app.router.add_route(methods,path,load_module(route['module']))
+        except Exception as e:
+            self.logger.error(f'Failed to load route:{e}',exc_info=True)
+
 
     async def __aenter__(self):
         self.__runner=web.AppRunner(self.__app)

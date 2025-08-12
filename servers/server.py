@@ -3,7 +3,6 @@
 import logging
 import sys
 import tomllib
-import importlib
 import asyncio
 import signal
 import click
@@ -11,6 +10,7 @@ import os
 import platform
 import time
 from util import Logger
+from util import load_module
 from util.watchdog import watchdog
 from util.daemon import daemonize
 from util.daemon import stop_daemon
@@ -35,12 +35,7 @@ class ServiceManager(Logger):
     def __server_init(self,module_path,config):
         server_instance=None
         try:
-            selector=None
-            if ':' in module_path:
-                module_path,selector=module_path.split(':')
-            module=importlib.import_module(module_path)
-            if selector is not None:
-                module=getattr(module,selector)
+            module=load_module(module_path)
             server_instance=module(config)
         except Exception as e:
             self.logger.error(f'Failed to load module {module_path}: {e}',

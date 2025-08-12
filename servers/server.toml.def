@@ -12,19 +12,28 @@ modules=[
 [web]
 host="0.0.0.0"
 port=8180
+encoding="gb2312"
 template_dir="web"
 links=[
 	{label="我的博客",link="blogs"},
 	{label="天气预报",link="weather.asp"}
 ]
-api_key="xxx"
+tianapi_key="xxx"
+heweather_key="xxx"
+
+[[web.routes]]
+path="/static"
+static="web/static"
+
+[[web.routes]]
+path=["/","/index.asp"]
+module="web.index:index"
 
 [mail.pop3]
 host="0.0.0.0"
 port=8110
 max_connection=120
 timeout=120
-template_dir="web"
 
 [mail.smtp]
 host="0.0.0.0"
