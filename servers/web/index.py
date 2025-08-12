@@ -1,8 +1,8 @@
 from aiohttp.web import Request
 from aiohttp.web import Response
-from aiohttp_jinja2 import template
+from aiohttp_jinja2 import render_string
+from datetime import datetime
 
-@template('index.html')
 async def index(req:Request):
     config=req.app['config']
     links=config['web']['links']
@@ -12,10 +12,17 @@ async def index(req:Request):
         '橙色':'#ff8000',
         '红色':'#ff0000',
     }
-    return {
-        'dateStr':'hahaha',
+    context={
+        'dateStr':datetime.now().strftime('%Y年%-m月%-d日'),
         'weather':None,
-        'weatherStr':'没有天气信息',
         'links':links
     }
+    utf8_content=render_string("index.html",req,context)
+    output_encoding=config['web']['encoding']
+    return Response(
+        body=utf8_content.encode(output_encoding,errors='replace'),
+        headers={
+            'content-type':f"text/html; charset={output_encoding}"
+        }
+    )
 

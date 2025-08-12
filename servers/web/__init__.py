@@ -17,7 +17,9 @@ class WebServer(Logger):
         self.__app['config']=config
         self.__app.router.add_get("/",index)
         self.__app.router.add_get("/index.asp",index)
-        aiohttp_jinja2.setup(self.__app,loader=FileSystemLoader(config['web']['template_dir']))
+        aiohttp_jinja2.setup(self.__app,
+            loader=FileSystemLoader(config['web']['template_dir']),
+            autoescape=True)
 
     async def __aenter__(self):
         self.__runner=web.AppRunner(self.__app)
