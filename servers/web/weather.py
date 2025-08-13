@@ -3,21 +3,25 @@ import aiohttp
 import logging
 import json
 from urllib.parse import parse_qsl
-from urllib.parse import urlencode
 from aiohttp.web import Request
 from aiohttp.web import Response
 from aiohttp_jinja2 import render_string
 from util import Logger
+from pprint import pprint
 
 class WeatherData(Logger):
-    def __init__(self,key,*,encoding):
+    __host='https://nd2k5bdhyy.re.qweatherapi.com'
+    def __init__(self,key):
         self.__key=key
-        self.__encoding=encoding
+
+    async def __fetch(self,session,path,params=None):
+        headers={'X-QW-Api-Key':self.__key}
+        async with session.get(f'{self.__host}/{path}',params=params,
+                               headers=headers) as response:
+            return await response.json()
 
     async def search_city(self,keyword):
-        url='https://geoapi.qweather.com/v2/city/lookup?'
         params={
-            'key':self.__key,
             'range':'cn',
             'number':20,
             'location':keyword
@@ -26,25 +30,43 @@ class WeatherData(Logger):
         location_data=[]
         try:
             async with aiohttp.ClientSession() as session:
-                async with session.get(url,params=params) as response:
-                    location_data=json.loads(await response.text())['location']
+                location_data=(await self.__fetch(session,'geo/v2/city/lookup',params))['location']
             res=[]
             for item in location_data:
                 name=item['adm1']+'-'+item['adm2']
                 if item['name']!=item['adm2']:
                     name+='-'+item['name']
-                href_param={
-                    'location':(item['id']+','+name).encode(self.__encoding)
-                }
                 res.append({
                     'id':item['id'],
                     'name':name,
-                    'href':'weather.asp?'+urlencode(href_param)
                 })
         except Exception as e:
             self.logger.error(f'Failed to search city: {e}',exc_info=True)
             res=None
         return res
+    
+    async def fetch_weather(self,locid):
+        res={}
+        async with aiohttp.ClientSession() as session:
+            location=(await self.__fetch(session,'geo/v2/city/lookup',{'location':locid}))['location'][0]
+            latitude,longitude=location['lat'],location['lon']
+            tasks_res=await asyncio.gather(
+                self.__fetch(session,'v7/weather/now',{'location':locid}),
+                self.__fetch(session,'v7/weather/7d',{'location':locid}),
+                self.__fetch(session,f'airquality/v1/current/{latitude}/{longitude}'),
+                self.__fetch(session,'v7/warning/now',{'location':locid}),
+                self.__fetch(session,'v7/indices/1d',{'location':locid,'type':0})
+            )
+            res={
+                'location':location,
+                'now':tasks_res[0]['now'],
+                'forecast':tasks_res[1]['daily'],
+                'air':tasks_res[2]['indexes'][0],
+                'warning':tasks_res[3]['warning'],
+                'indices':tasks_res[4]['daily']
+            }
+        return res
+
 
 async def select_city(req:Request):
     config=req.app['config']
@@ -55,7 +77,7 @@ async def select_city(req:Request):
         if key=='city':
             city=value
     if city:
-        weatherData=WeatherData(config['web']['heweather_key'],encoding=encoding)
+        weatherData=WeatherData(config['web']['heweather_key'])
         cityList=await weatherData.search_city(city)
 
     context={
@@ -75,11 +97,16 @@ async def select_city(req:Request):
 
 async def weather(req:Request):
     config=req.app['config']
+    locid=req.url.query.get('location',None)
+    weatherData=WeatherData(config['web']['heweather_key'])
+    weather=await weatherData.fetch_weather(locid)
     context={
         'header':'天气预报',
         'title':'天气预报 - 地名',
     }
-    utf8_content=render_string("index.html",req,context)
+    context.update(weather)
+    pprint(context)
+    utf8_content=render_string("weather.html",req,context)
     output_encoding=config['web']['encoding']
     return Response(
         body=utf8_content.encode(output_encoding,errors='replace'),

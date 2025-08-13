@@ -3,6 +3,6 @@
 </form>
 {% if cityList %}<h3>请选择城市</h3>
 {% for city in cityList %}
-<li><a href='{{city['href']}}'>{{city['name']}}</a></li>
+<li><a href='weather.asp?location={{city['id']}}'>{{city['name']}}</a></li>
 {% endfor %}
 </ul>{% endif %}{% endblock %}

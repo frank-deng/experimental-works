@@ -29,6 +29,14 @@ static="web/static"
 path=["/","/index.asp"]
 module="web.index:index"
 
+[[web.routes]]
+path="/select_city.asp"
+module="web.weather:select_city"
+
+[[web.routes]]
+path="/weather.asp"
+module="web.weather:weather"
+
 [mail.pop3]
 host="0.0.0.0"
 port=8110
