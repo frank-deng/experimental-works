@@ -1,15 +1,18 @@
 import asyncio
+import aiohttp
 import logging
 import json
 from urllib.parse import parse_qsl
+from urllib.parse import urlencode
 from aiohttp.web import Request
 from aiohttp.web import Response
 from aiohttp_jinja2 import render_string
 from util import Logger
 
 class WeatherData(Logger):
-    def __init__(self,key):
+    def __init__(self,key,*,encoding):
         self.__key=key
+        self.__encoding=encoding
 
     async def search_city(self,keyword):
         url='https://geoapi.qweather.com/v2/city/lookup?'
@@ -30,14 +33,20 @@ class WeatherData(Logger):
                 name=item['adm1']+'-'+item['adm2']
                 if item['name']!=item['adm2']:
                     name+='-'+item['name']
-                res.append({'id':item['id'],'name':name})
+                href_param={
+                    'location':(item['id']+','+name).encode(self.__encoding)
+                }
+                res.append({
+                    'id':item['id'],
+                    'name':name,
+                    'href':'weather.asp?'+urlencode(href_param)
+                })
         except Exception as e:
-            logger.error(f'Failed to search city: {e}',exc_info=True)
+            self.logger.error(f'Failed to search city: {e}',exc_info=True)
             res=None
         return res
 
-def select_city(req:Request):
-    logger=logging.getLogger(__name__)
+async def select_city(req:Request):
     config=req.app['config']
     encoding=config['web']['encoding']
     city=''
@@ -46,7 +55,7 @@ def select_city(req:Request):
         if key=='city':
             city=value
     if city:
-        weatherData=WeatherData(config['web']['heweather_key'])
+        weatherData=WeatherData(config['web']['heweather_key'],encoding=encoding)
         cityList=await weatherData.search_city(city)
 
     context={
@@ -64,7 +73,7 @@ def select_city(req:Request):
     )
 
 
-def weather(req:Request):
+async def weather(req:Request):
     config=req.app['config']
     context={
         'header':'天气预报',

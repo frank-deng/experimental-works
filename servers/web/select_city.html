@@ -2,17 +2,7 @@
 请输入城市：<input type='text' name='city' value='{{city}}'><input type='submit' value='搜索'><hr>
 </form>
 {% if cityList %}<h3>请选择城市</h3>
-<ul>
-<?php foreach($cityData as $item){ 
-    $name=$item['adm1'].'-'.$item['adm2'];
-    if($item['name']!=$item['adm2']){
-        $name.='-'.$item['name'];
-    }
-    $query=http_build_query([
-        'location'=>$item['id'].','.$name
-    ]);
-?>
 {% for city in cityList %}
-    <li><a href='weather.php?<?=$query?>'><?=$name?></a></li>
+<li><a href='{{city['href']}}'>{{city['name']}}</a></li>
 {% endfor %}
 </ul>{% endif %}{% endblock %}
