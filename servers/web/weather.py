@@ -60,7 +60,7 @@ class WeatherData(Logger):
             res={
                 'location':location,
                 'now':tasks_res[0]['now'],
-                'forecast':tasks_res[1]['daily'],
+                'forecast':tasks_res[1]['daily'][1:],
                 'air':tasks_res[2]['indexes'][0],
                 'warning':tasks_res[3]['warning'],
                 'indices':tasks_res[4]['daily']
@@ -98,20 +98,27 @@ async def select_city(req:Request):
 async def weather(req:Request):
     logger=logging.getLogger(__name__)
     config=req.app['config']
-    locid=req.url.query.get('location',None)
+    locid=req.url.query.get('location',req.cookies.get('location',None))
+    logger.debug(f'locid:{locid}')
+    if locid is None:
+        return Response(headers={'Location':'select_city.asp'})
     weatherData=WeatherData(config['web']['heweather_key'])
     weather=await weatherData.fetch_weather(locid)
     location=weather['location']
     location_str=location['adm1']+'-'+location['adm2']
     if location['name']!=location['adm2']:
         location_str+='-'+location['name']
+    warningColorTable={'蓝色':'#0000ff','黄色':'#a0a000',
+                       '橙色':'#ff8000','红色':'#ff0000'}
+    for item in weather['warning']:
+        item['level_rgb']=warningColorTable.get(item['level'],'#000000')
     context={
         'header':'天气预报',
         'title':f'天气预报：{location_str}',
-        'location_str':location_str
+        'location_str':location_str,
     }
     context.update(weather)
-    logger.debug(pformat(context))
+    #logger.debug(pformat(context))
     output_encoding=config['web']['encoding']
     headers={
         'content-type':f"text/html; charset={output_encoding}"
