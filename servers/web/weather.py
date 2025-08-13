@@ -7,7 +7,7 @@ from aiohttp.web import Request
 from aiohttp.web import Response
 from aiohttp_jinja2 import render_string
 from util import Logger
-from pprint import pprint
+from pprint import pformat
 
 class WeatherData(Logger):
     __host='https://nd2k5bdhyy.re.qweatherapi.com'
@@ -96,22 +96,30 @@ async def select_city(req:Request):
 
 
 async def weather(req:Request):
+    logger=logging.getLogger(__name__)
     config=req.app['config']
     locid=req.url.query.get('location',None)
     weatherData=WeatherData(config['web']['heweather_key'])
     weather=await weatherData.fetch_weather(locid)
+    location=weather['location']
+    location_str=location['adm1']+'-'+location['adm2']
+    if location['name']!=location['adm2']:
+        location_str+='-'+location['name']
     context={
         'header':'天气预报',
-        'title':'天气预报 - 地名',
+        'title':f'天气预报：{location_str}',
+        'location_str':location_str
     }
     context.update(weather)
-    pprint(context)
-    utf8_content=render_string("weather.html",req,context)
+    logger.debug(pformat(context))
     output_encoding=config['web']['encoding']
+    headers={
+        'content-type':f"text/html; charset={output_encoding}"
+    }
+    if 'location' in req.url.query:
+        headers['Set-Cookie']=f'location={locid}; expires=Mon, 17-Jan-2038 23:59:59 GMT; path=/'
     return Response(
-        body=utf8_content.encode(output_encoding,errors='replace'),
-        headers={
-            'content-type':f"text/html; charset={output_encoding}"
-        }
+        body=render_string("weather.html",req,context).encode(output_encoding,errors='replace'),
+        headers=headers
     )
 
