@@ -6,7 +6,7 @@ from aiohttp import web
 from util import Logger
 from util import load_module
 
-from web.index import index
+from web.news import NewsManager
 
 class WebServer(Logger):
     __runner=None
@@ -16,6 +16,7 @@ class WebServer(Logger):
         self.__port=config['web']['port']
         self.__app=web.Application()
         self.__app['config']=config
+        self.__app['newsManager']=NewsManager(config['web']['tianapi_key'])
         aiohttp_jinja2.setup(self.__app,
             loader=FileSystemLoader(config['web']['template_dir']),
             autoescape=True)

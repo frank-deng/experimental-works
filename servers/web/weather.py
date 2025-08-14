@@ -1,7 +1,6 @@
 import asyncio
 import aiohttp
 import logging
-import json
 from urllib.parse import parse_qsl
 from aiohttp.web import Request
 from aiohttp.web import Response
