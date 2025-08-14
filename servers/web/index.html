@@ -40,7 +40,7 @@
     {% for item in news %}
     <tr>
         <td width='10px'></td>
-	<td><img src='/static/BULLET3.GIF'/> <a href='news.asp?id={{item['id']}}'>{{item['title']}}</a></td>
+	<td><img src='/static/BULLET3.GIF'/> <a href='news.asp?id={{item['id']}}'>{{item['title']|safe}}</a></td>
     </tr>
     {% endfor %}
 </table><p align='center'><img src='/static/CONTLINE.GIF'></p>
