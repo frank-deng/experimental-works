@@ -41,6 +41,10 @@ module="web.weather:weather"
 path="/news.asp"
 module="web.news:news_handler"
 
+[[web.routes]]
+path="/news_images/{image_key}.jpg"
+module="web.news:news_image_handler"
+
 [mail.pop3]
 host="0.0.0.0"
 port=8110
