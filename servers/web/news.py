@@ -144,6 +144,7 @@ async def news_image_handler(req:Request):
                 logger.error(response.text())
     if image_data is None:
         raise aiohttp.web.HTTPNotFound()
-    image_data=await asyncio.to_thread(downscale_image,image_data,(480,960))
+    image_max_size=tuple(config['web'].get('image_max_size',[360,960]))
+    image_data=await asyncio.to_thread(downscale_image,image_data,image_max_size)
     return Response(body=image_data)
 
