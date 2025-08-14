@@ -3,6 +3,7 @@ import aiohttp
 import logging
 import hashlib
 import base64
+from lxml import html
 from aiohttp.web import Request
 from aiohttp.web import Response
 from aiohttp_jinja2 import render_string
@@ -39,8 +40,45 @@ class NewsManager(Logger):
             newsLink=self.__newsLinks.get(newsid,None)
         if newsLink is None:
             return None
+        data=await self.__fetch('htmltext/index',{'url':newsLink})
+        tree=html.fromstring(data['result']['content'])
+        content=[]
+        for item in tree.xpath('//p'):
+            imgs=item.xpath('./img')
+            for img in imgs:
+                src=img.get('src')
+                if src:
+                    content.append({'type':'image','src':src})
+            text=item.text_content().strip()
+            if text:
+                content.append({'type':'text','content':item.text_content()})
+        return {
+            'title':data['result']['title'],
+            'content':content
+        }
+
+async def news_detail(req:Request):
+    config=req.app['config']
+    news=await req.app['newsManager'].newsDetail(req.url.query['id'])
+    if news is None:
+        return Response(text='404 Not Found')
+    context={
+        'header':'今日热点',
+        'title':'今日热点',
+        'news_title':news['title'],
+        'news_content':news['content'],
+    }
+    encoding=config['web']['encoding']
+    return Response(
+        body=render_string("news.html",req,context).encode(encoding,errors='replace'),
+        headers={
+            'content-type':f"text/html; charset={encoding}"
+        }
+    )
 
 async def news_handler(req:Request):
+    if 'id' in req.url.query:
+        return await news_detail(req)
     config=req.app['config']
     context={
         'header':'今日热点',

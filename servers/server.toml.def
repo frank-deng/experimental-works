@@ -12,7 +12,7 @@ modules=[
 [web]
 host="0.0.0.0"
 port=8180
-encoding="gb2312"
+encoding="gbk"
 template_dir="web"
 links=[
 	{label="我的博客",link="blogs"},
@@ -36,6 +36,10 @@ module="web.weather:select_city"
 [[web.routes]]
 path="/weather.asp"
 module="web.weather:weather"
+
+[[web.routes]]
+path="/news.asp"
+module="web.news:news_handler"
 
 [mail.pop3]
 host="0.0.0.0"
