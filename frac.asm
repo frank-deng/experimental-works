@@ -1,28 +1,28 @@
 org 100h
 
-;;;;;;;;mov ax,3
-;;;;;;;;mov bx,2
-;;;;;;;;mov cx,7
-;;;;;;;;mov dx,6
-;;;;;;;;mov bp,3
-;;;;;;;;call fraccalc
-;;;;;;;;call print_frac
+mov ax,3
+mov bx,2
+mov cx,7
+mov dx,6
+mov bp,3
+call fraccalc
+call print_frac
 
-;;;;;;;;mov ax,3
-;;;;;;;;mov bx,2
-;;;;;;;;mov cx,7
-;;;;;;;;mov dx,6
-;;;;;;;;mov bp,2
-;;;;;;;;call fraccalc
-;;;;;;;;call print_frac
+mov ax,3
+mov bx,2
+mov cx,7
+mov dx,6
+mov bp,2
+call fraccalc
+call print_frac
 
-;;;;;;;;mov ax,7
-;;;;;;;;mov bx,6
-;;;;;;;;mov cx,3
-;;;;;;;;mov dx,2
-;;;;;;;;mov bp,0
-;;;;;;;;call fraccalc
-;;;;;;;;call print_frac
+mov ax,7
+mov bx,6
+mov cx,3
+mov dx,2
+mov bp,0
+call fraccalc
+call print_frac
 
 mov ax,3
 mov bx,2
