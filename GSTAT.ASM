@@ -6,6 +6,8 @@ mov ax,0
 mov ds,ax
 push bp
 mov ax,[si]
+cmp ax,2
+je do_process_nums
 cmp ax,0
 je do_initnums
 cmp ax,1
@@ -25,13 +27,12 @@ jmp main_finish
 
 do_initnums:
 mov ax,[si+2]
-mov bx,[si+4]
 mov cx,[si+6]
 mov di,[si+8]
+mov si,[si+4]
 mov ds,ax
 mov es,cx
-mov si,bx
-mov cx,0
+xor cx,cx
 initnums_loop:
 cmp cx,9999
 ja main_finish
@@ -90,6 +91,50 @@ pop dx
 pop cx
 pop bx
 ret
+
+;ans,guess,table_len,ds,si,es,di
+do_process_nums:
+mov ax,[si+2]
+mov bx,[si+4]
+call comp
+mov [si],ax
+cmp ax,0x40
+je main_finish
+push ds
+push si
+push ax
+mov bp,sp
+mov word[bp],0
+mov dx,ax
+mov bx,[si+4]
+mov di,[si+14]
+mov cx,[si+6]
+mov ax,[si+12]
+mov es,ax
+mov ax,[si+8]
+mov si,[si+10]
+mov ds,ax
+proc_loop:
+mov ax,[si]
+cmp ax,bx
+je proc_next_num
+call comp
+cmp ax,dx
+jne proc_next_num
+mov ax,[si]
+mov es:[di],ax
+inc di
+inc di
+inc word[bp]
+proc_next_num:
+inc si
+inc si
+loop proc_loop
+pop ax
+pop si
+pop ds
+mov [si+2],ax
+jmp main_finish
 
 comp:
 cmp ax,bx
