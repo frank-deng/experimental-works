@@ -1,50 +1,24 @@
 org 0h
-push si
-mov si,0
-push ds
-mov ax,0
-mov ds,ax
-push bp
-mov ax,[si]
-cmp ax,2
-je do_process_nums
-cmp ax,1
-je do_comp
-main_finish:
-pop bp
-pop ds
-pop si
-retf
-
-do_comp:
-mov ax,[si+2]
-mov bx,[si+4]
-call comp
-mov [si],ax
-jmp main_finish
-
 ;ans,guess,table_len,ds,si,es,di
-do_process_nums:
-mov ax,[si+2]
-mov bx,[si+4]
+push bp
+mov bp,sp
+sub sp,4
+mov word[bp-2],0
+mov ax,[bp+6]
+mov bx,[bp+8]
 call comp
-mov [si],ax
 cmp ax,0x40
 je main_finish
 push ds
-push si
-push ax
-mov bp,sp
-mov word[bp],0
 mov dx,ax
-mov bx,[si+4]
-mov di,[si+14]
-mov cx,[si+6]
-mov ax,[si+12]
-mov es,ax
-mov ax,[si+8]
-mov si,[si+10]
+mov si,[bp+10]
+mov cx,[si]
+mov ax,[bp+12]
 mov ds,ax
+mov si,[bp+14]
+mov ax,[bp+16]
+mov es,ax
+mov di,[bp+18]
 proc_loop:
 mov ax,[si]
 cmp ax,bx
@@ -56,16 +30,19 @@ mov ax,[si]
 mov es:[di],ax
 inc di
 inc di
-inc word[bp]
+inc word[bp-2]
 proc_next_num:
 inc si
 inc si
 loop proc_loop
-pop ax
-pop si
 pop ds
-mov [si+2],ax
-jmp main_finish
+mov ax,[bp-2]
+mov si,[bp+10]
+mov [si],ax
+main_finish:
+mov sp,bp
+pop bp
+retf 14
 
 comp:
 cmp ax,bx
