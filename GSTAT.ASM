@@ -8,8 +8,6 @@ push bp
 mov ax,[si]
 cmp ax,2
 je do_process_nums
-cmp ax,0
-je do_initnums
 cmp ax,1
 je do_comp
 main_finish:
@@ -24,73 +22,6 @@ mov bx,[si+4]
 call comp
 mov [si],ax
 jmp main_finish
-
-do_initnums:
-mov ax,[si+2]
-mov cx,[si+6]
-mov di,[si+8]
-mov si,[si+4]
-mov ds,ax
-mov es,cx
-xor cx,cx
-initnums_loop:
-cmp cx,9999
-ja main_finish
-mov ax,cx
-call int2bcd
-jc initnums_nextnum
-mov es:[di],ax
-inc di
-inc di
-initnums_nextnum:
-mov [si],ax
-inc si
-inc si
-inc cx
-jmp initnums_loop
-
-int2bcd:
-push bx
-push cx
-push dx
-mov bx,10
-xor dx,dx
-div bx
-mov cl,dl
-xor dx,dx
-div bx
-mov ch,dl
-xor dx,dx
-div bx
-mov bl,dl
-mov bh,al
-mov ah,al
-shl ah,4
-or ah,dl
-mov al,ch
-shl al,4
-or al,cl
-cmp bh,bl
-je int2bcd_dupdigit
-cmp bh,ch
-je int2bcd_dupdigit
-cmp bh,cl
-je int2bcd_dupdigit
-cmp bl,ch
-je int2bcd_dupdigit
-cmp bl,cl
-je int2bcd_dupdigit
-cmp ch,cl
-je int2bcd_dupdigit
-clc
-jmp int2bcd_finish
-int2bcd_dupdigit:
-stc
-int2bcd_finish:
-pop dx
-pop cx
-pop bx
-ret
 
 ;ans,guess,table_len,ds,si,es,di
 do_process_nums:
