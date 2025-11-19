@@ -1,18 +1,19 @@
 DEFINT A-Z
-TYPE WaveHeaderType
-  RiffID           AS STRING * 4 'should be 'RIFF'
-  RiffLength       AS LONG 'rept. chunk id and size then chunk data
-  WavID            AS STRING * 4 'should be 'WAVE'
-  FmtID            AS STRING * 4
-  FmtLength        AS LONG 'FMT ' chunk - common fields
-  wavformattag     AS INTEGER ' word - format category e.g. 0x0001=PCM
-  Channels         AS INTEGER ' word - number of Channels 1=mono 2=stereo
-  SamplesPerSec    AS LONG    'dword - sampling rate e.g. 44100Hz
-  avgBytesPerSec   AS LONG    'dword - to estimate buffer size
-  blockalign       AS INTEGER ' word - buffer size must be int. multiple of this
-  FmtSpecific      AS INTEGER ' word
-  DataID           AS STRING * 4
-  DataLength       AS LONG
+
+TYPE WAVHeaderType
+  RIFFID AS STRING*4 'should be 'RIFF'
+  RIFFLEN AS LONG 'rept. chunk id and size then chunk data
+  WAVID AS STRING*4 'should be 'WAVE'
+  FMTID AS STRING*4
+  FMTLEN AS LONG 'FMT ' chunk - common fields
+  FMTTAG AS INTEGER ' word - format category e.g. 0x0001=PCM
+  CHANNELS AS INTEGER ' word - number of Channels 1=mono 2=stereo
+  FREQ AS LONG 'dword - sampling rate e.g. 44100Hz
+  BYTESSEC AS LONG 'dword - to estimate buffer size
+  ALIGN AS INTEGER ' word - buffer size must be int. multiple of this
+  FMTSPEC AS INTEGER ' word
+  DATAID AS STRING*4
+  DATALEN AS LONG
 END TYPE
 
 TYPE SBType
@@ -27,15 +28,102 @@ TYPE SBType
   ADDPORT AS INTEGER
   LENPORT AS INTEGER
   MODEREG AS INTEGER
+  S16 AS INTEGER
 END TYPE
 
-COMMON SHARED SB AS SBType
+CONST BUFLEN=2048
+
+TYPE PLAYWAVType
+  FILENUM AS INTEGER
+  STAT AS INTEGER
+  HDR AS WAVHeaderType
+  BUF AS STRING*BUFLEN
+  BUFADDR AS LONG
+END TYPE
+
+CONST WAVHeaderSize=45
+COMMON SHARED SB AS SBType,PWAV AS PLAYWAVType
 
 CALL InitSoundCard(SB):IF SB.STAT<>1 THEN PRINT "No sound.";SB.STAT:END
-CAll SetMode(SB,0)
 PRINT "OK"
-CALL ResetDSP(SB)
+CALL LoadWAV(PWAV,SB,"SONG1.WAV")
+IF PWAV.FILENUM<=0 OR PWAV.STAT<0 THEN
+  PRINT "Failed to load wav file"
+ELSE
+  WHILE INKEY$=""
+    CALL PlayWAVTask(PWAV,SB)
+  WEND
+END IF
+CALL ResetDSP(SB):PRINT SB.STAT
+CLOSE
 END
+
+SUB LoadWAV(PWAV AS PLAYWAVType,SB AS SBType,WAVFILE AS STRING)
+  STATIC S16
+  PWAV.STAT=0
+  PWAV.FILENUM=FREEFILE
+  PWAV.BUFADDR=INT2ULONG&(VARSEG(PWAV.BUF))*16+INT2ULONG&(VARPTR(PWAV.BUF))
+  OPEN WAVFILE FOR BINARY AS PWAV.FILENUM
+  IF LOF(PWAV.FILENUM)=0 THEN
+    CLOSE PWAV.FILENUM:KILL WAVFILE:PWAV.FILENUM=-1:EXIT SUB
+  END IF
+  GET PWAV.FILENUM,1,PWAV.HDR
+  IF UCASE$(PWAV.HDR.RIFFID)<>"RIFF" THEN PWAV.STAT=-1:EXIT SUB
+  IF UCASE$(PWAV.HDR.WAVID)<>"WAVE" THEN PWAV.STAT=-2:EXIT SUB
+  IF PWAV.HDR.FMTTAG<>1 THEN PWAV.STAT=-3:EXIT SUB 'Not PCM format
+  REM WAV File must remove all meta data
+  IF UCASE$(PWAV.HDR.DATAID)<>"DATA" THEN PWAV.STAT=-4:EXIT SUB
+  IF PWAV.HDR.FMTSPEC=16 THEN CALL SetMode(SB,1) ELSE CALL SetMode(SB,0)
+  PWAV.STAT=0
+END SUB
+
+SUB PlayWAVTask(PWAV AS PLAYWAVType,SB AS SBType)
+  LN=BUFLEN-1
+  IF PWAV.STAT<>0 AND DMADone(SB)=0 THEN EXIT SUB
+  PWAV.STAT=1
+  GET PWAV.FILENUM,,PWAV.BUF
+  IF SB.S16 THEN
+    OUT &HD8,0 'clear flip flop
+    OUT &HD6,SB.MODEREG
+    OUT SB.ADDPORT,(PWAV.BUFADDR\2) AND 255
+    OUT SB.ADDPORT,(PWAV.BUFADDR\512) AND 255
+    OUT SB.PGPORT,PWAV.BUFADDR\131072
+    OUT SB.LENPORT,(BUFLEN\2) AND 255
+    OUT SB.LENPORT,(BUFLEN\512) AND 255
+    OUT &HD4, SB.HDMA-4
+  ELSE
+    OUT &HA,&H4+SB.DMA
+    OUT &HC,&H0
+    OUT &HB,SB.MODEREG
+    OUT SB.ADDPORT,(PWAV.BUFADDR) AND 255
+    OUT SB.ADDPORT,(PWAV.BUFADDR\256) AND 255
+    OUT SB.PGPORT,PWAV.BUFADDR\65536
+    OUT SB.LENPORT,(LN\2) AND 255
+    OUT SB.LENPORT,(LN\512) AND 255
+    OUT &HA,SB.DMA
+  END IF
+  CALL WriteDSP(SB,&H41)
+  CALL WriteDSP(SB,PWAV.HDR.FREQ\256)
+  CALL WriteDSP(SB,PWAV.HDR.FREQ AND 255)
+  print PWAV.HDR.CHANNELS
+  IF SB.S16 THEN
+    CALL WriteDSP(SB,&HB0) '16 bit DAC, single cycle, FIFO off
+    IF PWAV.HDR.CHANNELS=2 THEN 'subtract 10h for unsigned
+      CALL WriteDSP(SB,&H30) '30h=Mode byte for 16 bit signed stereo
+    ELSE
+      CALL WriteDSP(SB,&H10) '10h=Mode byte for 16 bit signed mono
+    END IF
+  ELSE
+    CALL WriteDSP(SB,&HC0) '8 bit DAC, single cycle, FIFO off
+    IF PWAV.HDR.CHANNELS=2 THEN
+      CALL WriteDSP(SB,&H20) '20h=Mode byte for 8 bit unsigned stereo
+    ELSE
+      CALL WriteDSP(SB,&H0)  '0h=Mode byte for 8 bit unsigned mono
+    END IF
+  END IF
+  CALL WriteDSP(SB,(BUFLEN\2) AND 255)
+  CALL WriteDSP(SB,(BUFLEN\512) AND 255)
+END SUB
 
 SUB InitSoundCard(SB AS SBType)
   STATIC ENV$
@@ -53,16 +141,20 @@ SUB InitSoundCard(SB AS SBType)
         SB.HDMA=VAL(MID$(ENV$,I+1,1))
     END SELECT
   NEXT I
+  IF SB.DMA<0 OR SB.DMA>3 OR SB.HDMA<4 OR SB.HDMA>7 THEN
+    SB.STAT=0:EXIT SUB 'Invalid Parameter
+  END IF
   CALL ResetDSP(SB)
-  IF SB.STAT=0 THEN EXIT SUB 'No sound card
+  IF SB.STAT=-1 THEN EXIT SUB 'No sound card
   CALL WriteDSP(SB,&HE1)
   SB.VER0=ReadDSP(SB)
   SB.VER1=ReadDSP(SB)
-  IF SB.VER0<4 THEN SB.STAT=-1:EXIT SUB 'Pre-SB16 sound card not supported
+  IF SB.VER0<4 THEN SB.STAT=-2:EXIT SUB 'Pre-SB16 sound card not supported
 END SUB
 
 SUB SetMode(SB AS SBType,S16 AS INTEGER)
   IF S16>0 THEN
+    SB.S16=1
     SELECT CASE SB.HDMA
       CASE 4
         SB.PGPORT=&H0:SB.ADDPORT=&HC0:SB.LENPORT=&HC2:SB.MODEREG=&H48
@@ -76,6 +168,7 @@ SUB SetMode(SB AS SBType,S16 AS INTEGER)
         EXIT SUB
     END SELECT
   ELSE
+    SB.S16=0
     SELECT CASE SB.DMA
       CASE 0
         SB.PGPORT=&H87:SB.ADDPORT=&H0:SB.LENPORT=&H1:SB.MODEREG=&H48
@@ -114,7 +207,7 @@ SUB WriteDSP(SB AS SBType,BYTE AS INTEGER)
 END SUB
 
 FUNCTION ReadDSP(SB AS SBType)
-  STATIC DSPIN
+  STATIC DSPIN AS INTEGER
   WAIT (SB.BASEPORT+&HE),&H80
   DO: DSPIN=INP(SB.BASEPORT+10): LOOP UNTIL DSPIN<>&HAA
   ReadDSP=DSPIN
@@ -124,4 +217,18 @@ SUB WriteMixer(SB AS SBType,CMD AS INTEGER,VALUE AS INTEGER)
   OUT SB.BASEPORT+4,CMD
   OUT SB.BASEPORT+5,VALUE
 END SUB
+
+FUNCTION DMADone(SB AS SBType)
+  STATIC LO AS INTEGER,HI AS INTEGER,ACK AS INTEGER
+  LO=INP(SB.LENPORT):HI=INP(SB.LENPORT)
+  IF HI=255 AND LO=255 THEN
+    ACK=INP(Baseport%+&HF):DMADone=-1
+  ELSE
+    DMADone=0
+  END IF
+END FUNCTION
+
+FUNCTION INT2ULONG&(V AS INTEGER)
+  IF V<0 THEN INT2ULONG&=CLNG(V+65536) ELSE INT2ULONG&=CLNG(V)
+END FUNCTION
 
