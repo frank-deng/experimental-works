@@ -1,0 +1,127 @@
+DEFINT A-Z
+TYPE WaveHeaderType
+  RiffID           AS STRING * 4 'should be 'RIFF'
+  RiffLength       AS LONG 'rept. chunk id and size then chunk data
+  WavID            AS STRING * 4 'should be 'WAVE'
+  FmtID            AS STRING * 4
+  FmtLength        AS LONG 'FMT ' chunk - common fields
+  wavformattag     AS INTEGER ' word - format category e.g. 0x0001=PCM
+  Channels         AS INTEGER ' word - number of Channels 1=mono 2=stereo
+  SamplesPerSec    AS LONG    'dword - sampling rate e.g. 44100Hz
+  avgBytesPerSec   AS LONG    'dword - to estimate buffer size
+  blockalign       AS INTEGER ' word - buffer size must be int. multiple of this
+  FmtSpecific      AS INTEGER ' word
+  DataID           AS STRING * 4
+  DataLength       AS LONG
+END TYPE
+
+TYPE SBType
+  STAT AS INTEGER
+  VER0 AS INTEGER
+  VER1 AS INTEGER
+  BASEPORT AS INTEGER
+  IRQ AS INTEGER
+  DMA AS INTEGER
+  HDMA AS INTEGER
+  PGPORT AS INTEGER
+  ADDPORT AS INTEGER
+  LENPORT AS INTEGER
+  MODEREG AS INTEGER
+END TYPE
+
+COMMON SHARED SB AS SBType
+
+CALL InitSoundCard(SB):IF SB.STAT<>1 THEN PRINT "No sound.";SB.STAT:END
+CAll SetMode(SB,0)
+PRINT "OK"
+CALL ResetDSP(SB)
+END
+
+SUB InitSoundCard(SB AS SBType)
+  STATIC ENV$
+  SB.BASEPORT=220:SB.IRQ=5:SB.DMA=1:SB.HDMA=5
+  ENV$=UCASE$(ENVIRON$("BLASTER"))
+  FOR I=1 TO LEN(ENV$)
+    SELECT CASE MID$(ENV$,I,1)
+      CASE "A"
+        SB.BASEPORT=VAL("&H"+MID$(ENV$,I+1,3))
+      CASE "I"
+        SB.IRQ=VAL(MID$(ENV$,I+1,1))
+      CASE "D"
+        SB.DMA=VAL(MID$(ENV$,I+1,1))
+      CASE "H"
+        SB.HDMA=VAL(MID$(ENV$,I+1,1))
+    END SELECT
+  NEXT I
+  CALL ResetDSP(SB)
+  IF SB.STAT=0 THEN EXIT SUB 'No sound card
+  CALL WriteDSP(SB,&HE1)
+  SB.VER0=ReadDSP(SB)
+  SB.VER1=ReadDSP(SB)
+  IF SB.VER0<4 THEN SB.STAT=-1:EXIT SUB 'Pre-SB16 sound card not supported
+END SUB
+
+SUB SetMode(SB AS SBType,S16 AS INTEGER)
+  IF S16>0 THEN
+    SELECT CASE SB.HDMA
+      CASE 4
+        SB.PGPORT=&H0:SB.ADDPORT=&HC0:SB.LENPORT=&HC2:SB.MODEREG=&H48
+      CASE 5
+        SB.PGPORT=&H8B:SB.ADDPORT=&HC4:SB.LENPORT=&HC6:SB.MODEREG=&H49
+      CASE 6
+        SB.PGPORT=&H89:SB.ADDPORT=&HC8:SB.LENPORT=&HCA:SB.MODEREG=&H4A
+      CASE 7
+        SB.PGPORT=&H8A:SB.ADDPORT=&HCC:SB.LENPORT=&HCE:SB.MODEREG=&H4B
+      CASE ELSE
+        EXIT SUB
+    END SELECT
+  ELSE
+    SELECT CASE SB.DMA
+      CASE 0
+        SB.PGPORT=&H87:SB.ADDPORT=&H0:SB.LENPORT=&H1:SB.MODEREG=&H48
+      CASE 1
+        SB.PGPORT=&H83:SB.ADDPORT=&H2:SB.LENPORT=&H3:SB.MODEREG=&H49
+      CASE 2
+        SB.PGPORT=&H81:SB.ADDPORT=&H4:SB.LENPORT=&H5:SB.MODEREG=&H4A
+      CASE 3
+        SB.PGPORT=&H82:SB.ADDPORT=&H6:SB.LENPORT=&H7:SB.MODEREG=&H4B
+      CASE ELSE
+        EXIT SUB
+    END SELECT
+  END IF
+END SUB
+
+SUB ResetDSP(SB AS SBType)
+  SB.STAT=0
+  OUT SB.BASEPORT+&H6,1:CT=0
+  DO
+    OUT SB.BASEPORT+&H6,0
+    STAT=INP(SB.BASEPORT+&HE)
+    STAT=INP(SB.BASEPORT+&HA)
+    IF STAT=&HAA THEN SB.STAT=1:EXIT DO
+    CT=CT+1
+  LOOP WHILE CT<100
+END SUB
+
+SUB WriteDAC(SB AS SBType,BYTE AS INTEGER)
+  CALL WriteDSP(SB,&H10)
+  CALL WriteDSP(SB,BYTE)
+END SUB
+
+SUB WriteDSP(SB AS SBType,BYTE AS INTEGER)
+  DO: LOOP WHILE INP(SB.BASEPORT+12) AND &H80
+  OUT SB.BASEPORT+12,BYTE
+END SUB
+
+FUNCTION ReadDSP(SB AS SBType)
+  STATIC DSPIN
+  WAIT (SB.BASEPORT+&HE),&H80
+  DO: DSPIN=INP(SB.BASEPORT+10): LOOP UNTIL DSPIN<>&HAA
+  ReadDSP=DSPIN
+END FUNCTION
+
+SUB WriteMixer(SB AS SBType,CMD AS INTEGER,VALUE AS INTEGER)
+  OUT SB.BASEPORT+4,CMD
+  OUT SB.BASEPORT+5,VALUE
+END SUB
+
