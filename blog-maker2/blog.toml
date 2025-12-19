@@ -1,6 +1,6 @@
 encoding="GB2312"
 markdownPath="posts"
-defaultLayout="post"
+defaultLayout="post.html"
 outputPath="dist"
 font.ascii="Times New Roman"
 font.cjk="宋体"
