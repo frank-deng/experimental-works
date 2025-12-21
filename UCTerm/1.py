@@ -14,8 +14,16 @@ class Main:
 
     def run(self):
         self.__tl.fill((0,0,0,0))
-        self.__gl.fill((0x70,0,0))
-        self.__font.render_to(self.__tl,(0,0),'中西文超级终端',(255,255,255,255))
+        self.__tl.fill((0xa8,0xa8,0xa8,255),(0,16*24,640,16))
+        for i in range(24):
+            self.__font.render_to(self.__tl,(0,i*16),'中西文超级终端',(255,255,255,255))
+        self.__font.render_to(self.__tl,(8,16*24),'全角 ',(0,0,0,255))
+        self.__font.render_to(self.__tl,(8*6,16*24),'【英文】',(0,0,0xa8,255))
+        self.__font.render_to(self.__tl,(8*(80-8),16*24),'12:34:56',(0,0,0xa8,255))
+        self.__font.render_to(self.__tl,(8*18,16*24),'中西文超级终端〖UCTerm 0.1〗',(0,0,0,255))
+        self.__font.render_to(self.__tl,(8*18+8*16,16*24),'UCTerm 0.1',(0xa8,0,0,255))
+
+        #self.__gl.fill((0x70,0,0))
         self.__scr.blit(self.__gl,(0,0))
         self.__scr.blit(self.__tl,(0,0))
         pygame.display.flip()
