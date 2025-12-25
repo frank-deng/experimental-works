@@ -40,7 +40,8 @@ class FontManager:
                 (code>=0x0590 and code<=0x109f) or\
                 (code>=0x1780 and code<=0x1cff) or\
                 (code>=0xfb50 and code<=0xfdff) or\
-                (code>=0xfe70 and code<=0xfeff):
+                (code>=0xfe70 and code<=0xfeff) or\
+                code<0x20:
                 continue
             ch=code
             font.load_char(ch,freetype.FT_LOAD_RENDER|freetype.FT_LOAD_TARGET_MONO)
@@ -61,16 +62,8 @@ class FontManager:
         self.__load_hzk16()
         self.__load_asc16()
 
-    def get(self,char,part=0):
-        if char not in self.__bitmap:
-            return b'\0'*16
-        bitmap_grp=self.__bitmap[char]
-        bitmap=None
-        if len(bitmap_grp)>1:
-            bitmap=bitmap_grp[part]
-        else:
-            bitmap=bitmap_grp[0]
-        return bitmap
+    def get(self,char):
+        return self.__bitmap.get(char,None)
 
 
 class TextLayer(FontManager):
@@ -87,13 +80,7 @@ class TextLayer(FontManager):
         self.__textRam=array.array('H',[0]*(160*50))
         self.__colorRam=array.array('H',[0]*(160*50))
         self.__attrRam=array.array('B',[0]*(160*50))
-        self.__counter=0
-        self.__row=0
-        self.__col=0
-        self.__stride=80
-        self.__mode=self.MODE_80_25
-        self.__fg=7
-        self.__bg=None
+        self.mode=self.MODE_80_25
 
     @property
     def mode(self):
@@ -104,66 +91,129 @@ class TextLayer(FontManager):
         self.__counter=0
         self.__row=0
         self.__col=0
+        self.__fg=7
+        self.__bg=None
+        self.__inverse=False
+        self.__blink=False
+        self.__underline=False
+        self.__strike=False
         for i in range(160*50):
             self.__textRam[i]=0
             self.__colorRam[i]=7
             self.__attrRam[i]=0
         if mode==self.MODE_80_25:
-            self.__stride=80
+            self.__cols=80
+            self.__rows=25
         elif mode==self.MODE_160_50:
-            self.__stride=160
+            self.__cols=160
+            self.__rows=50
         else:
             raise ValueError(f'Invalid mode {mode}')
+        self.__mode=mode
 
-    def onFrame(self):
-        self.__counter=(self.__counter+1) % 60
+    def __write_ram(self,char,part=0):
+        offset=self.__row*self.__cols+self.__col
+        self.__textRam[offset]=char
+        attr=0
+        if part:
+            attr|=self.ATTR_RIGHT_PART
+        self.__attrRam[offset]=attr
+        self.__col+=1
+        if self.__col>=self.__cols:
+            self.__col=0
+            self.__row=(self.__row+1)%self.__rows
 
-    def render(self,char):
-        self.render_to(self.__surface,self.get(ord(char),0),(0,0),(255,255,255,255))
-        self.render_to(self.__surface,self.get(ord(char),1),(8,0),(255,255,255,255))
-        print(self.get(ord('A'),0))
-        self.render_to(self.__surface,self.get(ord('A'),0),(16,0),(255,255,255,255))
+    def __get_bitmap_pos(self,row,col):
+        offset=row*self.__cols+col
+        bitmap_grp=self.get(self.__textRam[offset])
+        if bitmap_grp is None:
+            return None
+        attr=self.__attrRam[offset]
+        if (attr & self.ATTR_RIGHT_PART) and len(bitmap_grp)>0:
+            return bitmap_grp[1]
+        else:
+            return bitmap_grp[0]
 
-    def render_to(self,surface,bitmap,pos,fg,bg=None):
-        x0,y0=pos
-        if fg is None:
-            fg=(0,0,0,0)
-        if bg is None:
-            bg=(0,0,0,0)
-        for y in range(y0,y0+16):
-            i=7
-            for x in range(x0,x0+8):
-                if (1<<i) & bitmap[y]:
-                    surface.set_at((x,y),fg)
+    def __draw_bitmap(self,bitmap,x0,y0,fg,bg=None):
+        for y in range(16):
+            for x in range(8):
+                if (1<<(7-x)) & bitmap[y]:
+                    if fg is not None:
+                        self.__surface.set_at((x0+x,y0+y),fg)
                 else:
-                    surface.set_at((x,y),bg)
-                i=i-1
+                    if bg is not None:
+                        self.__surface.set_at((x0+x,y0+y),bg)
         return True
 
+    def text(self,s):
+        for ch in s:
+            ch=ord(ch)
+            bitmap=self.get(ch)
+            self.__write_ram(ch)
+            if len(bitmap)>1:
+                self.__write_ram(ch,1)
+
+    def render(self):
+        self.__counter=(self.__counter+1) % 60
+        for y in range(self.__rows):
+            for x in range(self.__cols):
+                bitmap=self.__get_bitmap_pos(y,x)
+                if bitmap is None:
+                    continue
+                self.__draw_bitmap(bitmap,x*8,y*16,(255,255,255,255))
+
+    @property
+    def pos(self):
+        return (self.__row,self.__col)
+        
+    @pos.setter
+    def pos(self,val):
+        self.__row,self.__col=val
+
+    @property
+    def row(self):
+        return self.__row
+
+    @row.setter
+    def row(self,v):
+        self.__row=v
+
+    @property
+    def col(self):
+        return self.__col
+
+    @col.setter
+    def row(self,v):
+        self.__col=v
+
+
+
 class Main:
+    FPS=120
     __running=True
     def __init__(self):
         pygame.init()
         self.__scr = pygame.display.set_mode((640, 400))
+        self.__clock=pygame.time.Clock()
         self.__gl=pygame.Surface((640,400))
         self.__tl=TextLayer(self.__scr)
 
     def run(self):
-        #self.__tl.fill((0,0,0,0))
-        #self.__tl.fill((0xa8,0xa8,0xa8,255),(0,16*24,640,16))
-
-        self.__scr.fill((0x70,0,0))
-        self.__scr.blit(self.__gl,(0,0))
-        self.__tl.render('我')
-        pygame.display.flip()
         while self.__running:
+            self.__scr.fill((0x70,0,0))
+            self.__scr.blit(self.__gl,(0,0))
+            for i in range(20):
+                self.__tl.text('我的Python')
+
+            self.__tl.render()
+            pygame.display.flip()
             for event in pygame.event.get():
                 if event.type == pygame.QUIT:
                     self.__running = False
                 elif event.type == pygame.KEYDOWN:
-                    if event.key == pygame.K_ESCAPE:
+                    if event.key in (pygame.K_ESCAPE,pygame.K_q):
                         self.__running = False
-            time.sleep(0)
+            self.__clock.tick(self.FPS)
 
 
 if __name__=='__main__':
