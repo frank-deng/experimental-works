@@ -92,7 +92,8 @@ class TextLayer(FontManager):
         self.__row=0
         self.__col=0
         self.__fg=7
-        self.__bg=None
+        self.__bg=0
+        self.__colorKey=0
         self.__inverse=False
         self.__blink=False
         self.__underline=False
@@ -145,10 +146,20 @@ class TextLayer(FontManager):
     def __write_ram(self,char,part=0):
         offset=self.__row*self.__cols+self.__col
         self.__textRam[offset]=char
+        self.__colorRam[offset]=(self.__bg<<8)|self.__fg
         attr=0
-        if part:
+        if part==1:
             attr|=self.ATTR_RIGHT_PART
+        if self.__inverse:
+            attr|=self.ATTR_INVERSE
+        if self.__blink:
+            attr|=self.ATTR_BLINK
+        if self.__underline:
+            attr|=self.ATTR_UNDERLINE
+        if self.__strike:
+            attr|=self.ATTR_STRIKE
         self.__attrRam[offset]=attr
+
         self.__col+=1
         if self.__col>=self.__cols:
             self.__col=0
@@ -156,14 +167,24 @@ class TextLayer(FontManager):
 
     def __get_bitmap_pos(self,row,col):
         offset=row*self.__cols+col
+        attr=self.__attrRam[offset]
+        if (attr & self.ATTR_BLINK) and self.__counter>30:
+            return None
         bitmap_grp=self.get(self.__textRam[offset])
         if bitmap_grp is None:
             return None
-        attr=self.__attrRam[offset]
+        bitmap=None
         if (attr & self.ATTR_RIGHT_PART) and len(bitmap_grp)>0:
-            return bitmap_grp[1]
+            bitmap=bitmap_grp[1][:]
         else:
-            return bitmap_grp[0]
+            bitmap=bitmap_grp[0][:]
+        if attr & self.ATTR_INVERSE:
+            bitmap=bytes([(~v)&0xff for v in bitmap])
+        if attr & self.ATTR_UNDERLINE:
+            bitmap[15]=0xff
+        if attr & self.ATTR_STRIKE:
+            bitmap[7]=0xff
+        return bitmap
 
     def __draw_bitmap(self,bitmap,x0,y0,fg,bg=None):
         for y in range(16):
@@ -175,6 +196,14 @@ class TextLayer(FontManager):
                     if bg is not None:
                         self.__surface.set_at((x0+x,y0+y),bg)
         return True
+
+    def __get_color(self,idx):
+        if idx==self.__colorKey:
+            return None
+        try:
+            return self.__palette[idx]
+        except KeyError:
+            return None
 
     def text(self,s):
         for ch in s:
@@ -191,7 +220,11 @@ class TextLayer(FontManager):
                 bitmap=self.__get_bitmap_pos(y,x)
                 if bitmap is None:
                     continue
-                self.__draw_bitmap(bitmap,x*8,y*16,(255,255,255,255))
+                color=self.__colorRam[y*self.__cols+x]
+                bg=(color>>8) & 0xff
+                fg=color & 0xff
+                self.__draw_bitmap(bitmap,x*8,y*16,
+                    self.__get_color(fg),self.__get_color(bg))
 
     @property
     def pos(self):
@@ -217,6 +250,21 @@ class TextLayer(FontManager):
     def row(self,v):
         self.__col=v
 
+    @property
+    def fg(self):
+        return self.__fg
+
+    @fg.setter
+    def row(self,v):
+        self.__fg=v
+
+    @property
+    def bg(self):
+        return self.__bg
+
+    @bg.setter
+    def row(self,v):
+        self.__bg=v
 
 
 class Main:
