@@ -62,13 +62,13 @@ class FontManager:
         self.__load_hzk16()
         self.__load_asc16()
 
-    def get(self,char):
-        return self.__bitmap.get(char,None)
+    def get(self,charCode):
+        return self.__bitmap.get(charCode,None)
 
 
 class TextLayer(FontManager):
     MODE_80_25=0
-    MODE_160_50=1
+    MODE_80_30=1
     ATTR_RIGHT_PART=1
     ATTR_INVERSE=2
     ATTR_BLINK=4
@@ -77,9 +77,9 @@ class TextLayer(FontManager):
     def __init__(self,surface):
         super().__init__()
         self.__surface=surface
-        self.__textRam=array.array('H',[0]*(160*50))
-        self.__colorRam=array.array('H',[0]*(160*50))
-        self.__attrRam=array.array('B',[0]*(160*50))
+        self.__textRam=array.array('H',[0]*(80*30))
+        self.__colorRam=array.array('H',[0]*(80*30))
+        self.__attrRam=array.array('B',[0]*(80*30))
         self.mode=self.MODE_80_25
 
     @property
@@ -97,18 +97,49 @@ class TextLayer(FontManager):
         self.__blink=False
         self.__underline=False
         self.__strike=False
-        for i in range(160*50):
+        for i in range(80*30):
             self.__textRam[i]=0
             self.__colorRam[i]=7
             self.__attrRam[i]=0
         if mode==self.MODE_80_25:
             self.__cols=80
             self.__rows=25
-        elif mode==self.MODE_160_50:
-            self.__cols=160
-            self.__rows=50
+        elif mode==self.MODE_80_30:
+            self.__cols=80
+            self.__rows=30
         else:
             raise ValueError(f'Invalid mode {mode}')
+        self.__palette=[
+            (0,0,0,0xff),
+            (0x80,0,0,0xff),
+            (0,0x80,0,0xff),
+            (0x80,0x80,0,0xff),
+            (0x80,0,0,0xff),
+            (0x80,0,0x80,0xff),
+            (0,0x80,0x80,0xff),
+            (0xc0,0xc0,0xc0,0xff),
+            (0x80,0x80,0x80,0xff),
+            (0xff,0,0,0xff),
+            (0,0xff,0,0xff),
+            (0xff,0xff,0,0xff),
+            (0xff,0,0,0xff),
+            (0xff,0,0xff,0xff),
+            (0,0xff,0xff,0xff),
+            (0xff,0xff,0xff,0xff),
+        ]
+        channelValConv=(0,95,135,175,215,255)
+        for b in range(len(channelValConv)):
+            for g in range(len(channelValConv)):
+                for r in range(len(channelValConv)):
+                    self.__palette.append((
+                        channelValConv[r],
+                        channelValConv[g],
+                        channelValConv[b],
+                        0xff
+                    ))
+        for i in range(24):
+            v=(i+1)*10
+            self.__palette.append((v,v,v,0xff))
         self.__mode=mode
 
     def __write_ram(self,char,part=0):
