@@ -88,13 +88,12 @@ class TextController(FontManager):
 
     def __draw_bitmap(self,bitmap,x0,y0,fg,bg=None):
         for y in range(16):
-            for x in range(8):
-                if (1<<(7-x)) & bitmap[y]:
-                    if fg is not None:
-                        self.__pixels[x0+x,y0+y]=fg
-                else:
-                    if bg is not None:
-                        self.__pixels[x0+x,y0+y]=bg
+            if fg!=self.__colorKey:
+                rect=pygame.Rect(0,fg*256+bitmap[y],8,1)
+                self.__surface.blit(self.__template,(x0,y0+y),area=rect)
+            if bg!=self.__colorKey:
+                rect=pygame.Rect(0,bg*256+(~bitmap[y]&0xff),8,1)
+                self.__surface.blit(self.__template,(x0,y0+y),area=rect)
         return True
 
     def __get_color(self,idx):
@@ -109,11 +108,11 @@ class TextController(FontManager):
         offset=y*self._cols+x
         attr=self._attrRam[offset]
         bitmap=None
-        if not(attr & self.ATTR_BLINK) or self.__counter<=0x10:
+        if not(attr & self.ATTR_BLINK) or self.__counter<=0x8:
             bitmap=self.__get_bitmap_pos(y,x)
         color=self._colorRam[y*self._cols+x]
-        bg=self.__get_color((color>>8) & 0xff)
-        fg=self.__get_color(color & 0xff)
+        bg=(color>>8) & 0xff
+        fg=color & 0xff
         if bitmap is not None:
             self.__draw_bitmap(bitmap,x*8,y*16,fg,bg)
         elif bg is not None:
@@ -122,25 +121,34 @@ class TextController(FontManager):
             self.__surface.fill(fg,(x*8,y*16+15,8,1))
         if attr & self.ATTR_STRIKE and fg is not None:
             self.__surface.fill(fg,(x*8,y*16+7,8,1))
-        if self.__cursorRow==y and self.__cursorCol==x and (self.__counter & 0x7)>4:
+        if self.__cursorRow==y and self.__cursorCol==x and (self.__counter & 1):
             self.__surface.fill(fg,(x*8,y*16+self.__cursorTop,
                 8,self.__cursorBottom-self.__cursorTop+1))
+
+    def __write_template(self,idx,color):
+        pixels=pygame.PixelArray(self.__template)
+        for v in range(256):
+            for i in range(8):
+                pixels[i,v+idx*256]=(color if ((1<<(7-i)) & v) else (0,0,0,0))
+        del pixels
 
     def __init__(self,surface):
         super().__init__()
         self.__surface=surface
+        self.__template=pygame.Surface((8,65536),pygame.SRCALPHA,32)
+        self.__template.fill((0,0,0,0))
         self._textRam=array.array('H',[0]*(80*30))
         self._colorRam=array.array('H',[0]*(80*30))
         self._attrRam=array.array('B',[0]*(80*30))
         self.mode=self.MODE_80_25
 
     def render(self):
-        self.__pixels=pygame.PixelArray(self.__surface)
+        #self.__pixels=pygame.PixelArray(self.__surface)
         for y in range(self._rows):
             for x in range(self._cols):
                 self.__render_cell(x,y)
-        del self.__pixels
-        self.__counter=(self.__counter+1)&0x1f
+        #del self.__pixels
+        self.__counter=(self.__counter+1)&0xf
 
     @property
     def mode(self):
@@ -197,6 +205,8 @@ class TextController(FontManager):
         for i in range(24):
             v=(i+1)*10
             self.__palette.append((v,v,v,0xff))
+        for i in range(len(self.__palette)):
+            self.__write_template(i,self.__palette[i])
         self.__mode=mode
 
     @property
@@ -323,20 +333,18 @@ class TextLayer(TextController):
 
 
 class Main:
-    FPS=60
+    FPS=16
     __running=True
     def __init__(self):
         pygame.init()
-        self.__scr = pygame.display.set_mode((640,400))
+        print(pygame.display.Info())
+        self.__scr = pygame.display.set_mode((640,400),
+            pygame.HWSURFACE|pygame.DOUBLEBUF|pygame.FULLSCREEN)
         self.__clock=pygame.time.Clock()
-        self.__gl=pygame.Surface((640,400))
+        self.__gl=pygame.Surface((640,400),pygame.SRCALPHA,32)
         self.__tl=TextLayer(self.__scr)
 
     def run(self):
-        self.__tl.pos=(24,0)
-        self.__tl.fg=0
-        self.__tl.bg=7
-        self.__tl.text(' '*80)
         self.__tl.fg=7
         self.__tl.bg=0
         self.__tl.pos=(0,0)
@@ -346,9 +354,13 @@ class Main:
             else:
                 self.__tl.blink=False
             self.__tl.text('我的Python')
-        self.__gl.fill((0x70,0,0,0xff))
+        self.__tl.blink=False
+        self.__tl.pos=(24,0)
+        self.__tl.fg=0
+        self.__tl.bg=7
+        self.__tl.text(' '*80)
         while self.__running:
-            self.__scr.blit(self.__gl,(0,0))
+            self.__scr.fill((0,0,0,0))
             self.__tl.render()
             pygame.display.flip()
             for event in pygame.event.get():
