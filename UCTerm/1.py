@@ -70,29 +70,20 @@ class TextController(FontManager):
     MODE_80_25=0
     MODE_80_30=1
     ATTR_RIGHT_PART=1
-    ATTR_INVERSE=2
-    ATTR_BLINK=4
-    ATTR_UNDERLINE=8
-    ATTR_STRIKE=16
+    ATTR_BLINK=2
+    ATTR_UNDERLINE=4
+    ATTR_STRIKE=8
     def __get_bitmap_pos(self,row,col):
         offset=row*self._cols+col
-        attr=self._attrRam[offset]
-        if (attr & self.ATTR_BLINK) and self.__counter>30:
-            return None
         bitmap_grp=self.get(self._textRam[offset])
         if bitmap_grp is None:
             return None
         bitmap=None
+        attr=self._attrRam[offset]
         if (attr & self.ATTR_RIGHT_PART) and len(bitmap_grp)>0:
-            bitmap=bitmap_grp[1][:]
+            bitmap=bitmap_grp[1]
         else:
-            bitmap=bitmap_grp[0][:]
-        if attr & self.ATTR_INVERSE:
-            bitmap=bytes([(~v)&0xff for v in bitmap])
-        if attr & self.ATTR_UNDERLINE:
-            bitmap[15]=0xff
-        if attr & self.ATTR_STRIKE:
-            bitmap[7]=0xff
+            bitmap=bitmap_grp[0]
         return bitmap
 
     def __draw_bitmap(self,bitmap,x0,y0,fg,bg=None):
@@ -114,6 +105,28 @@ class TextController(FontManager):
         except KeyError:
             return None
 
+    def __render_cell(self,x,y):
+        offset=y*self._cols+x
+        attr=self._attrRam[offset]
+        bitmap=None
+        if not(attr & self.ATTR_BLINK) or self.__counter<=0x10:
+            bitmap=self.__get_bitmap_pos(y,x)
+        color=self._colorRam[y*self._cols+x]
+        bg=(color>>8) & 0xff
+        fg=color & 0xff
+        if bitmap is not None:
+            self.__draw_bitmap(bitmap,x*8,y*16,
+                self.__get_color(fg),self.__get_color(bg))
+        else:
+            self.__surface.fill(bg,(x*8,y*16,8,16))
+        if attr & self.ATTR_UNDERLINE:
+            self.__surface.fill(fg,(x*8,y*16+15,8,1))
+        if attr & self.ATTR_STRIKE:
+            self.__surface.fill(fg,(x*8,y*16+7,8,1))
+        if self.__cursorRow==y and self.__cursorCol==x and (self.__counter & 0x7)>4:
+            self.__surface.fill(fg,(x*8,y*16+self.__cursorTop,
+                8,self.__cursorBottom-self.__cursorTop+1))
+
     def __init__(self,surface):
         super().__init__()
         self.__surface=surface
@@ -122,26 +135,11 @@ class TextController(FontManager):
         self._attrRam=array.array('B',[0]*(80*30))
         self.mode=self.MODE_80_25
 
-    def default_attr(self):
-        self.__fg=7
-        self.__bg=0
-        self.__inverse=False
-        self.__blink=False
-        self.__underline=False
-        self.__strike=False
-
     def render(self):
-        self.__counter=(self.__counter+1) % 60
         for y in range(self._rows):
             for x in range(self._cols):
-                bitmap=self.__get_bitmap_pos(y,x)
-                if bitmap is None:
-                    continue
-                color=self._colorRam[y*self._cols+x]
-                bg=(color>>8) & 0xff
-                fg=color & 0xff
-                self.__draw_bitmap(bitmap,x*8,y*16,
-                    self.__get_color(fg),self.__get_color(bg))
+                self.__render_cell(x,y)
+        self.__counter=(self.__counter+1)&0x1f
 
     @property
     def mode(self):
@@ -151,15 +149,19 @@ class TextController(FontManager):
     def mode(self,mode):
         self.__counter=0
         self.__colorKey=0
+        self.__cursorRow=0
+        self.__cursorCol=0
+        self.__cursorBlink=True
+        self.__cursorTop=0
+        self.__cursorBottom=15
         for i in range(80*30):
             self._textRam[i]=0
             self._colorRam[i]=7
             self._attrRam[i]=0
+        self._cols=80
         if mode==self.MODE_80_25:
-            self._cols=80
             self._rows=25
         elif mode==self.MODE_80_30:
-            self._cols=80
             self._rows=30
         else:
             raise ValueError(f'Invalid mode {mode}')
@@ -204,17 +206,37 @@ class TextController(FontManager):
     def colorkey(self,v):
         self.__colorKey=v
 
+    def cursor_pos(self,row,col):
+        self.__cursorRow,self.__cursorCol=row,col
+
+    @property
+    def cursor_row(self):
+        return self.__cursorRow
+
+    @property
+    def cursor_col(self):
+        return self.__cursorCol
+
+    def cursor_style(self,**v):
+        if 'top' in v:
+            self.__cursorTop=v['top']
+        if 'bottom' in v:
+            self.__cursorBottom=v['bottom']
+        if 'blink' in v:
+            self.__cursorBlink=v['blink']
+
 
 class TextLayer(TextController):
     def __write_ram(self,char,part=0):
         offset=self.__row*self._cols+self.__col
         self._textRam[offset]=char
-        self._colorRam[offset]=(self.__bg<<8)|self.__fg
+        if self.__inverse:
+            self._colorRam[offset]=(self.__fg<<8)|self.__bg
+        else:
+            self._colorRam[offset]=(self.__bg<<8)|self.__fg
         attr=0
         if part==1:
             attr|=self.ATTR_RIGHT_PART
-        if self.__inverse:
-            attr|=self.ATTR_INVERSE
         if self.__blink:
             attr|=self.ATTR_BLINK
         if self.__underline:
@@ -252,7 +274,7 @@ class TextLayer(TextController):
 
     @property
     def pos(self):
-        return (self.__row,self.__col)
+        return self.__row,self.__col
         
     @pos.setter
     def pos(self,val):
@@ -290,21 +312,21 @@ class TextLayer(TextController):
     def bg(self,v):
         self.__bg=v
 
-    @inverse.setter:
-    def inverse(self,v):
-        self.__inverse=v
+    @property
+    def blink(self):
+        return self.__blink
 
-    @blink.setter:
+    @blink.setter
     def blink(self,v):
         self.__blink=v
 
 
 class Main:
-    FPS=120
+    FPS=60
     __running=True
     def __init__(self):
         pygame.init()
-        self.__scr = pygame.display.set_mode((640, 400))
+        self.__scr = pygame.display.set_mode((640,400))
         self.__clock=pygame.time.Clock()
         self.__gl=pygame.Surface((640,400))
         self.__tl=TextLayer(self.__scr)
@@ -318,9 +340,13 @@ class Main:
         self.__tl.bg=0
         self.__tl.pos=(0,0)
         for i in range(10):
+            if i&1:
+                self.__tl.blink=True
+            else:
+                self.__tl.blink=False
             self.__tl.text('我的Python')
+        self.__gl.fill((0x70,0,0,0xff))
         while self.__running:
-            self.__scr.fill((0x70,0,0))
             self.__scr.blit(self.__gl,(0,0))
             self.__tl.render()
             pygame.display.flip()
