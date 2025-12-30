@@ -112,16 +112,15 @@ class TextController(FontManager):
         if not(attr & self.ATTR_BLINK) or self.__counter<=0x10:
             bitmap=self.__get_bitmap_pos(y,x)
         color=self._colorRam[y*self._cols+x]
-        bg=(color>>8) & 0xff
-        fg=color & 0xff
+        bg=self.__get_color((color>>8) & 0xff)
+        fg=self.__get_color(color & 0xff)
         if bitmap is not None:
-            self.__draw_bitmap(bitmap,x*8,y*16,
-                self.__get_color(fg),self.__get_color(bg))
-        else:
-            self.__surface.fill(bg,(x*8,y*16,8,16))
-        if attr & self.ATTR_UNDERLINE:
+            self.__draw_bitmap(bitmap,x*8,y*16,fg,bg)
+        elif bg is not None:
+            self.__surface.fill(bg,(x*8,y*16+15,8,1))
+        if attr & self.ATTR_UNDERLINE and fg is not None:
             self.__surface.fill(fg,(x*8,y*16+15,8,1))
-        if attr & self.ATTR_STRIKE:
+        if attr & self.ATTR_STRIKE and fg is not None:
             self.__surface.fill(fg,(x*8,y*16+7,8,1))
         if self.__cursorRow==y and self.__cursorCol==x and (self.__counter & 0x7)>4:
             self.__surface.fill(fg,(x*8,y*16+self.__cursorTop,
