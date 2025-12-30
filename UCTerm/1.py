@@ -91,10 +91,10 @@ class TextController(FontManager):
             for x in range(8):
                 if (1<<(7-x)) & bitmap[y]:
                     if fg is not None:
-                        self.__surface.set_at((x0+x,y0+y),fg)
+                        self.__pixels[x0+x,y0+y]=fg
                 else:
                     if bg is not None:
-                        self.__surface.set_at((x0+x,y0+y),bg)
+                        self.__pixels[x0+x,y0+y]=bg
         return True
 
     def __get_color(self,idx):
@@ -135,9 +135,11 @@ class TextController(FontManager):
         self.mode=self.MODE_80_25
 
     def render(self):
+        self.__pixels=pygame.PixelArray(self.__surface)
         for y in range(self._rows):
             for x in range(self._cols):
                 self.__render_cell(x,y)
+        del self.__pixels
         self.__counter=(self.__counter+1)&0x1f
 
     @property
@@ -338,7 +340,7 @@ class Main:
         self.__tl.fg=7
         self.__tl.bg=0
         self.__tl.pos=(0,0)
-        for i in range(10):
+        for i in range(120):
             if i&1:
                 self.__tl.blink=True
             else:
