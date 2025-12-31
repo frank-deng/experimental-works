@@ -44,14 +44,14 @@ class Screen:
     
     def __create_rect_vao(self):
         # 矩形数据：位置和颜色（使用两个三角形绘制）
+        dx,dy=-(self.width>>1),-(self.height>>1)
         vertices = np.array([
-            # 位置     颜色
-            -0.5,-0.5,  1.0, 0.0, 0.0,
-            0.5,-0.5,  0.0, 1.0, 0.0,
-            0.5,0.5,  0.0, 0.0, 1.0,
-            -0.5,0.5,  1.0, 1.0, 0.0,
+            dx,dy,  1.0, 0.0, 0.0,
+            self.width+dx,dy,  0.0, 1.0, 0.0,
+            self.width+dx,self.height+dy,  0.0, 0.0, 1.0,
+            dx,self.height,  1.0, 1.0, 0.0,
         ], dtype=np.float32)
-        indices = np.array([0, 1, 2, 0, 2, 3], dtype=np.uint32)  # 两个三角形索引
+        indices = np.array([0, 1, 2, 0, 2, 3], dtype=np.uint32)
 
         vao = glGenVertexArrays(1)
         vbo = glGenBuffers(1)
@@ -81,11 +81,11 @@ class Screen:
         glUseProgram(self.__shader)
         proj_loc = glGetUniformLocation(self.__shader, "projection")
         glUniformMatrix4fv(proj_loc, 1, GL_FALSE,
-            self.__class__.__ortho(-1,1,-1,1,-1,1))
+            self.__class__.__ortho(-(width>>1),width>>1,height>>1,-(height>>1),-1,1))
         self.__rect_vao=self.__create_rect_vao()
 
     def update(self):
-        glClearColor(0, 0, 0, 1)
+        glClearColor(1, 1, 1, 1)
         glClear(GL_COLOR_BUFFER_BIT)
         glBindVertexArray(self.__rect_vao)
         glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, None)
