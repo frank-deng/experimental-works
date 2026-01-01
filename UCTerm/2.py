@@ -51,10 +51,10 @@ class Screen:
                     texture_data[y,x]=[255,0,0,255]
                 elif x==1 or x==638 or y==1 or y==398:
                     texture_data[y,x]=[255,255,255,255]
-                elif x&1==0:
-                    texture_data[y, x] = [0, 0, 255, 255]
+                elif y&1==0:
+                    texture_data[y,x] = [255,0,0,255]
                 else:
-                    texture_data[y, x] = [255,255,0,255]
+                    texture_data[y,x] = [0,255,0,255]
 
         # 生成纹理
         texture_id=glGenTextures(1)
@@ -83,7 +83,7 @@ class Screen:
             dx,dy,0.0,0.0,
             self.width+dx,dy,1.0,0.0,
             self.width+dx,self.height+dy,1.0,1.0,
-            dx,self.height,0.0,1.0,
+            dx,self.height+dy,0.0,1.0,
         ], dtype=np.float32)
         indices = np.array([0, 1, 2, 0, 2, 3], dtype=np.uint32)
 
@@ -122,7 +122,7 @@ class Screen:
         glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA)
 
     def update(self):
-        glClearColor(1, 1, 1, 1)
+        glClearColor(0, 0, 0, 1)
         glClear(GL_COLOR_BUFFER_BIT)
         glActiveTexture(GL_TEXTURE0)
         glBindTexture(GL_TEXTURE_2D, self.__texture_id)
