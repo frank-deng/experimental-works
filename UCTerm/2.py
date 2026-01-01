@@ -18,38 +18,72 @@ class Screen:
         vertex_shader="""
         #version 330 core
         layout(location = 0) in vec2 position;
-        layout(location = 1) in vec3 color;
-        out vec3 fragColor;
+        layout(location = 1) in vec2 texCoord;
+        out vec2 TexCoord;
         uniform mat4 projection;
         void main()
         {
             gl_Position = projection * vec4(position, 0.0, 1.0);
-            fragColor = color;
+            TexCoord = texCoord;
         }
         """
         # 片段着色器
         fragment_shader="""
         #version 330 core
-        in vec3 fragColor;
+        in vec2 TexCoord;
         out vec4 outColor;
+        uniform sampler2D textureSampler;
         void main()
         {
-            outColor = vec4(fragColor, 1.0);
+            outColor = texture(textureSampler, TexCoord);
         }
         """
         return compileProgram(
             compileShader(vertex_shader,GL_VERTEX_SHADER),
             compileShader(fragment_shader,GL_FRAGMENT_SHADER)
         )
+
+    def __create_texture(self):
+        texture_data=np.zeros((400,640,4),dtype=np.uint8)
+        for y in range(400):
+            for x in range(640):
+                if x==0 or x==639 or y==0 or y==399:
+                    texture_data[y,x]=[255,0,0,255]
+                elif x==1 or x==638 or y==1 or y==398:
+                    texture_data[y,x]=[255,255,255,255]
+                elif x&1==0:
+                    texture_data[y, x] = [0, 0, 255, 255]
+                else:
+                    texture_data[y, x] = [255,255,0,255]
+
+        # 生成纹理
+        texture_id=glGenTextures(1)
+        glBindTexture(GL_TEXTURE_2D,texture_id)
+
+        # 设置纹理参数
+        glTexParameteri(GL_TEXTURE_2D,GL_TEXTURE_WRAP_S,GL_CLAMP_TO_EDGE)
+        glTexParameteri(GL_TEXTURE_2D,GL_TEXTURE_WRAP_T,GL_CLAMP_TO_EDGE)
+        glTexParameteri(GL_TEXTURE_2D,GL_TEXTURE_MIN_FILTER,GL_LINEAR)
+        glTexParameteri(GL_TEXTURE_2D,GL_TEXTURE_MAG_FILTER,GL_LINEAR)
+
+        # 加载纹理数据
+        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, 640, 400, 0,
+            GL_RGBA, GL_UNSIGNED_BYTE, texture_data)
+
+        # 生成mipmap（可选）
+        #glGenerateMipmap(GL_TEXTURE_2D)
+
+        glBindTexture(GL_TEXTURE_2D, 0)
+        return texture_id
     
     def __create_rect_vao(self):
         # 矩形数据：位置和颜色（使用两个三角形绘制）
         dx,dy=-(self.width>>1),-(self.height>>1)
         vertices = np.array([
-            dx,dy,  1.0, 0.0, 0.0,
-            self.width+dx,dy,  0.0, 1.0, 0.0,
-            self.width+dx,self.height+dy,  0.0, 0.0, 1.0,
-            dx,self.height,  1.0, 1.0, 0.0,
+            dx,dy,0.0,0.0,
+            self.width+dx,dy,1.0,0.0,
+            self.width+dx,self.height+dy,1.0,1.0,
+            dx,self.height,0.0,1.0,
         ], dtype=np.float32)
         indices = np.array([0, 1, 2, 0, 2, 3], dtype=np.uint32)
 
@@ -63,11 +97,9 @@ class Screen:
         glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, ebo)
         glBufferData(GL_ELEMENT_ARRAY_BUFFER, indices.nbytes, indices, GL_STATIC_DRAW)
 
-        # 位置属性
-        glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, 5 * 4, ctypes.c_void_p(0))
+        glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, 4 * 4, ctypes.c_void_p(0))
         glEnableVertexAttribArray(0)
-        # 颜色属性
-        glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 5 * 4, ctypes.c_void_p(2 * 4))
+        glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 4 * 4, ctypes.c_void_p(2 * 4))
         glEnableVertexAttribArray(1)
 
         glBindVertexArray(0)
@@ -83,12 +115,21 @@ class Screen:
         glUniformMatrix4fv(proj_loc, 1, GL_FALSE,
             self.__class__.__ortho(-(width>>1),width>>1,height>>1,-(height>>1),-1,1))
         self.__rect_vao=self.__create_rect_vao()
+        self.__texture_id=self.__create_texture()
+        glUseProgram(self.__shader)
+        glUniform1i(glGetUniformLocation(self.__shader, "textureSampler"), 0)
+        glEnable(GL_BLEND)
+        glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA)
 
     def update(self):
         glClearColor(1, 1, 1, 1)
         glClear(GL_COLOR_BUFFER_BIT)
+        glActiveTexture(GL_TEXTURE0)
+        glBindTexture(GL_TEXTURE_2D, self.__texture_id)
         glBindVertexArray(self.__rect_vao)
         glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, None)
+        glBindVertexArray(0)
+        glBindTexture(GL_TEXTURE_2D, 0)
         pygame.display.flip()
 
 class Main:
