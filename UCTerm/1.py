@@ -1,8 +1,9 @@
 import pygame
+import numpy as np
 import freetype
 import array
 
-class FontManager:
+class FontLoader:
     def __load_asc16(self):
         fontData=None
         with open('asc16','rb') as f:
@@ -12,7 +13,8 @@ class FontManager:
         for code in range(0x100):
             try:
                 ch=ord(bytes([code]).decode('cp437'))
-                self.__bitmap[ch]=(fontData[code*16:code*16+16],)
+                row,col=((ch>>8)&0xff)*16, (ch&0xff)*2
+                self.__texture_data[row:row+16,col]=np.frombuffer(fontData[code*16:code*16+16],dtype=np.uint8)
             except UnicodeDecodeError:
                 pass
 
@@ -20,13 +22,15 @@ class FontManager:
         fontData=None
         with open('CCLIBJ.DOT','rb') as f:
             fontData=f.read()
+        if fontData is None:
+            raise RuntimeError('Failed to load font CCLIBJ.DOT')
         for qu in range(3):
             for wei in range(94):
                 try:
                     ch=ord(bytes((qu+0xa1,wei+0xa1)).decode('gb2312'))
                     offset=(qu*94+wei)*32
-                    bitmap=fontData[offset:offset+32]
-                    self.__bitmap[ch]=(bytes(bitmap[0::2]),bytes(bitmap[1::2]))
+                    row,col=((ch>>8)&0xff)*16, (ch&0xff)*2
+                    self.__texture_data[row:row+16,col:col+2]=np.frombuffer(fontData[offset:offset+32],dtype=np.uint8).reshape(16,2)
                 except UnicodeDecodeError:
                     pass
 
@@ -41,27 +45,46 @@ class FontManager:
                 (code>=0xfe70 and code<=0xfeff) or\
                 code<0x20:
                 continue
+            row,col=((code>>8)&0xff)*16, (code&0xff)*2
             ch=code
             font.load_char(ch,freetype.FT_LOAD_RENDER|freetype.FT_LOAD_TARGET_MONO)
             bitmap=font.glyph.bitmap
             if bitmap.width not in (8,16):
                 continue
-            if bitmap.width==8:
-                self.__bitmap[ch]=(bytes(bitmap.buffer[0::bitmap.pitch]),)
-                continue
-            self.__bitmap[ch]=(
-                bytes(bitmap.buffer[0::bitmap.pitch]),
-                bytes(bitmap.buffer[1::bitmap.pitch]),
-            )
+            self.__texture_data[row:row+16,col]=np.frombuffer(bytes(bitmap.buffer[0::bitmap.pitch]),dtype=np.uint8)
+            if bitmap.width==16:
+                self.__texture_data[row:row+16,col+1]=np.frombuffer(bytes(bitmap.buffer[1::bitmap.pitch]),dtype=np.uint8)
 
-    def __init__(self):
-        self.__bitmap={}
+    def __load_font_data(self):
+        self.__texture_data=np.zeros((4096,512),dtype=np.uint8)
         self.__load_unifont()
         self.__load_hzk16()
         self.__load_asc16()
 
-    def get(self,charCode):
-        return self.__bitmap.get(charCode,None)
+    def __init__(self):
+        self.__texture_id=None
+        self.__load_font_data()
+
+    @property
+    def texture_id(self):
+        return self.__texture_id
+
+    @property
+    def texture_data(self):
+        return self.__texture_data
+
+class FontManager(FontLoader):
+    def __init__(self):
+        super().__init__()
+
+    def get(self,ch):
+        row,col=((ch>>8)&0xff)*16, (ch&0xff)*2
+        left_part=self.texture_data[row:row+16,col].tobytes()
+        right_part=self.texture_data[row:row+16,col+1].tobytes()
+        if any(right_part):
+            return (left_part,right_part)
+        else:
+            return (left_part,)
 
 
 class TextController(FontManager):
