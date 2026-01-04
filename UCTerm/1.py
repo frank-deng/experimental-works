@@ -1,7 +1,5 @@
 import pygame
 import freetype
-import sys
-import time
 import array
 
 class FontManager:

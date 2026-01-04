@@ -1,8 +1,77 @@
+import freetype
 import pygame
 import numpy as np
 from OpenGL.GL import *
 from OpenGL.GLU import *
 from OpenGL.GL.shaders import *
+
+
+class FontLoader:
+    def __load_asc16(self):
+        fontData=None
+        with open('asc16','rb') as f:
+            fontData=f.read()
+        if fontData is None:
+            raise RuntimeError('Failed to load font ASC16')
+        for code in range(0x100):
+            try:
+                ch=ord(bytes([code]).decode('cp437'))
+                row,col=((ch>>8)&0xff)*16, (ch&0xff)*2
+                self.__texture_data[row:row+16,col]=np.frombuffer(fontData[code*16:code*16+16],dtype=np.uint8)
+            except UnicodeDecodeError:
+                pass
+
+    def __load_hzk16(self):
+        fontData=None
+        with open('CCLIBJ.DOT','rb') as f:
+            fontData=f.read()
+        if fontData is None:
+            raise RuntimeError('Failed to load font CCLIBJ.DOT')
+        for qu in range(3):
+            for wei in range(94):
+                try:
+                    ch=ord(bytes((qu+0xa1,wei+0xa1)).decode('gb2312'))
+                    offset=(qu*94+wei)*32
+                    row,col=((ch>>8)&0xff)*16, (ch&0xff)*2
+                    self.__texture_data[row:row+16,col:col+2]=np.frombuffer(fontData[offset:offset+32],dtype=np.uint8).reshape(16,2)
+                except UnicodeDecodeError:
+                    pass
+
+    def __load_unifont(self):
+        font=freetype.Face('unifont.pcf')
+        font.set_pixel_sizes(0,16)
+        for code in range(0x10000):
+            if (code>=0xd800 and code<=0xf8ff) or\
+                (code>=0x0590 and code<=0x109f) or\
+                (code>=0x1780 and code<=0x1cff) or\
+                (code>=0xfb50 and code<=0xfdff) or\
+                (code>=0xfe70 and code<=0xfeff) or\
+                code<0x20:
+                continue
+            row,col=((code>>8)&0xff)*16, (code&0xff)*2
+            ch=code
+            font.load_char(ch,freetype.FT_LOAD_RENDER|freetype.FT_LOAD_TARGET_MONO)
+            bitmap=font.glyph.bitmap
+            if bitmap.width not in (8,16):
+                continue
+            self.__texture_data[row:row+16,col]=np.frombuffer(bytes(bitmap.buffer[0::bitmap.pitch]),dtype=np.uint8)
+            if bitmap.width==16:
+                self.__texture_data[row:row+16,col+1]=np.frombuffer(bytes(bitmap.buffer[1::bitmap.pitch]),dtype=np.uint8)
+
+    def __load_font_data(self):
+        self.__texture_data=np.zeros((4096,512),dtype=np.uint8)
+        self.__load_unifont()
+        self.__load_hzk16()
+        self.__load_asc16()
+
+    def __init__(self):
+        self.__texture_id=None
+        self.__load_font_data()
+
+    @property
+    def texture_id(self):
+        return self.__texture_id
+
 
 class Screen:
     @staticmethod
@@ -118,6 +187,7 @@ class Screen:
         glUniform1i(glGetUniformLocation(self.__shader, "textureSampler"), 0)
         glEnable(GL_BLEND)
         glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA)
+        fontLoader=FontLoader()
 
     def update(self):
         glClearColor(0, 0, 0, 1)
