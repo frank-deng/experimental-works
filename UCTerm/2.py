@@ -70,6 +70,18 @@ class FontLoader:
 
     @property
     def texture_id(self):
+        if self.__texture_id is not None:
+            return self.__texture_id
+        self.__texture_id=glGenTextures(1)
+        glBindTexture(GL_TEXTURE_2D,self.__texture_id)
+        glTexParameteri(GL_TEXTURE_2D,GL_TEXTURE_WRAP_S,GL_CLAMP_TO_EDGE)
+        glTexParameteri(GL_TEXTURE_2D,GL_TEXTURE_WRAP_T,GL_CLAMP_TO_EDGE)
+        glTexParameteri(GL_TEXTURE_2D,GL_TEXTURE_MIN_FILTER,GL_NEAREST)
+        glTexParameteri(GL_TEXTURE_2D,GL_TEXTURE_MAG_FILTER,GL_NEAREST)
+        glTexImage2D(GL_TEXTURE_2D,0,GL_R8UI,512,4096,0,
+            GL_RED_INTEGER,GL_UNSIGNED_BYTE,
+            self.__texture_data.tobytes())
+        glBindTexture(GL_TEXTURE_2D, 0)
         return self.__texture_id
 
 
@@ -96,7 +108,6 @@ class Screen:
             TexCoord = texCoord;
         }
         """
-        # 片段着色器
         fragment_shader="""
         #version 330 core
         in vec2 TexCoord;
@@ -105,6 +116,42 @@ class Screen:
         void main()
         {
             outColor = texture(textureSampler, TexCoord);
+        }
+        """
+        return compileProgram(
+            compileShader(vertex_shader,GL_VERTEX_SHADER),
+            compileShader(fragment_shader,GL_FRAGMENT_SHADER)
+        )
+
+    def __create_shader_textlayer(self):
+        vertex_shader="""
+        #version 330 core
+        layout(location = 0) in vec2 position;
+        layout(location = 1) in vec2 texCoord;
+        out vec2 uv;
+        uniform mat4 projection;
+        void main()
+        {
+            gl_Position = projection * vec4(position, 0.0, 1.0);
+            uv = texCoord;
+        }
+        """
+        fragment_shader="""
+        #version 330 core
+        in vec2 uv;
+        out vec4 outColor;
+        uniform vec2 resolution;
+        uniform ivec2 cell_size;
+        void main()
+        {
+            ivec2 scrpos=ivec2(uv*resolution);
+            if((scrpos.x & 1)!=0){
+                outColor=vec4(1.0,0.0,0.0,1.0);
+            }else if((scrpos.y & 1)!=0){
+                outColor=vec4(0.0,1.0,0.0,1.0);
+            }else{
+                outColor=vec4(0.0,0.0,0.0,0.0);
+            }
         }
         """
         return compileProgram(
@@ -172,11 +219,13 @@ class Screen:
         glBindVertexArray(0)
         return vao
 
-    def __init__(self,width=640,height=400):
+    def __init__(self,vw=640,vh=400,width=640,height=400):
         self.width=width
         self.height=height
-        glViewport(0,0,width,height)
+        glViewport(0,0,vw,vh)
         self.__shader=self.__create_shader()
+        self.__shader_text=self.__create_shader_textlayer()
+
         glUseProgram(self.__shader)
         proj_loc = glGetUniformLocation(self.__shader, "projection")
         glUniformMatrix4fv(proj_loc, 1, GL_FALSE,
@@ -187,17 +236,40 @@ class Screen:
         glUniform1i(glGetUniformLocation(self.__shader, "textureSampler"), 0)
         glEnable(GL_BLEND)
         glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA)
+
+        glUseProgram(self.__shader_text)
+        proj_loc = glGetUniformLocation(self.__shader_text, "projection")
+        glUniformMatrix4fv(proj_loc, 1, GL_FALSE,
+            self.__class__.__ortho(-1,1,-1,1,-1,1))
         fontLoader=FontLoader()
+        self.__font_texture_id=fontLoader.texture_id
+        glEnable(GL_BLEND)
+        glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA)
+
+        error = glGetError()
+        if error != GL_NO_ERROR:
+            print(f"OpenGL error during initialization: {error}")
 
     def update(self):
         glClearColor(0, 0, 0, 1)
         glClear(GL_COLOR_BUFFER_BIT)
+        glUseProgram(self.__shader)
         glActiveTexture(GL_TEXTURE0)
         glBindTexture(GL_TEXTURE_2D, self.__texture_id)
         glBindVertexArray(self.__rect_vao)
         glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, None)
+
+        glUseProgram(self.__shader_text)
+        glActiveTexture(GL_TEXTURE0)
+        glBindTexture(GL_TEXTURE_2D, self.__font_texture_id)
+        glBindVertexArray(self.__rect_vao)
+        glUniform2f(glGetUniformLocation(self.__shader_text,'resolution'),self.width,self.height)
+        glUniform2i(glGetUniformLocation(self.__shader_text,'cell_size'),8,16)
+        #glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, None)
+
         glBindVertexArray(0)
         glBindTexture(GL_TEXTURE_2D, 0)
+        glUseProgram(0)
         pygame.display.flip()
 
 class Main:
@@ -208,10 +280,10 @@ class Main:
         pygame.display.gl_set_attribute(pygame.GL_CONTEXT_MAJOR_VERSION, 3)
         pygame.display.gl_set_attribute(pygame.GL_CONTEXT_MINOR_VERSION, 3)
         pygame.display.gl_set_attribute(pygame.GL_CONTEXT_PROFILE_MASK, pygame.GL_CONTEXT_PROFILE_CORE)
-        pygame.display.set_mode((640,400),
+        pygame.display.set_mode((1024,600),
             pygame.OPENGL|pygame.DOUBLEBUF)
         self.__clock=pygame.time.Clock()
-        self.__scr=Screen(640,400)
+        self.__scr=Screen(1024,600,640,400)
 
     def run(self):
         while self.__running:
