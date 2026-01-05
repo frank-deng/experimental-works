@@ -170,39 +170,13 @@ class GLUtil:
 
 
 class Layer:
-    def _create_shader(self):
-        return GLUtil.shader_fullscr_texture()
-
     def __init__(self,width,height):
         self.width=width
         self.height=height
-        self._shader=self._create_shader()
-        glUseProgram(self._shader)
-        glUniformMatrix4fv(
-            glGetUniformLocation(self._shader,"projection"),
-            1,GL_FALSE,GLUtil.ortho()
-        )
         self._texture,self._fbo=GLUtil.create_texture(width,height)
-        self._vao=GLUtil.vao_fullscr()
-        error = glGetError()
-        if error != GL_NO_ERROR:
-            raise RuntimeError(f"OpenGL error during initialization: {error}")
 
-    def _render(self):
+    def update(self):
         pass
-
-    def render(self):
-        glUseProgram(self._shader)
-        glBindFramebuffer(GL_FRAMEBUFFER, self._fbo)
-        glFramebufferTexture2D(GL_FRAMEBUFFER,GL_COLOR_ATTACHMENT0, 
-            GL_TEXTURE_2D,self._texture,0)
-        glViewport(0, 0, self.width, self.height)
-        glClearColor(0, 0, 0, 1)
-        glClear(GL_COLOR_BUFFER_BIT)
-        self._render()
-        glBindVertexArray(self._vao)
-        glDrawArrays(GL_TRIANGLE_STRIP, 0, 4)
-        glBindFramebuffer(GL_FRAMEBUFFER, 0)
 
     @property
     def texture(self):
@@ -231,13 +205,17 @@ class GraphicLayer(Layer):
         super().__init__(width,height)
         self.__init_layer()
 
-    def render(self):
-        pass
-
 
 class TextLayer(Layer):
     def __init__(self,width,height):
         super().__init__(width,height)
+        self._shader=self._create_shader()
+        glUseProgram(self._shader)
+        glUniformMatrix4fv(
+            glGetUniformLocation(self._shader,"projection"),
+            1,GL_FALSE,GLUtil.ortho()
+        )
+        self._vao=GLUtil.vao_fullscr()
 
     def _create_shader(self):
         vertex_shader="""
@@ -261,9 +239,9 @@ class TextLayer(Layer):
         void main()
         {
             ivec2 scrpos=ivec2(uv*resolution);
-            if((scrpos.x & 1)!=0){
+            if(((scrpos.x+1) % 8)==0){
                 outColor=vec4(1.0,0.0,0.0,1.0);
-            }else if((scrpos.y & 1)!=0){
+            }else if(((scrpos.y+1) % 16)==0){
                 outColor=vec4(0.0,1.0,0.0,1.0);
             }else{
                 outColor=vec4(0.0,0.0,0.0,0.0);
@@ -275,9 +253,20 @@ class TextLayer(Layer):
             compileShader(fragment_shader,GL_FRAGMENT_SHADER)
         )
 
-    def _render(self):
+    def update(self):
+        glUseProgram(self._shader)
+        glBindFramebuffer(GL_FRAMEBUFFER, self._fbo)
+        glFramebufferTexture2D(GL_FRAMEBUFFER,GL_COLOR_ATTACHMENT0, 
+            GL_TEXTURE_2D,self._texture,0)
+        glViewport(0, 0, self.width, self.height)
+        glClearColor(0, 0, 0, 1)
+        glClear(GL_COLOR_BUFFER_BIT)
         glUniform2f(glGetUniformLocation(self._shader,'resolution'),self.width,self.height)
         glUniform2i(glGetUniformLocation(self._shader,'cell_size'),8,16)
+        glBindVertexArray(self._vao)
+        glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, None)
+        glBindFramebuffer(GL_FRAMEBUFFER, 0)
+
 
 
 class Screen:
@@ -292,24 +281,25 @@ class Screen:
             glGetUniformLocation(self.__shader,"projection"),
             1,GL_FALSE,GLUtil.ortho()
         )
-        glEnable(GL_BLEND)
-        glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA)
         self.__vao=GLUtil.vao_fullscr()
 
     def update(self):
-        self.__tLayer.render()
+        self.__gLayer.update()
+        self.__tLayer.update()
 
         glUseProgram(self.__shader)
         glViewport(0,0,self._vw,self._vh)
-
+        glEnable(GL_BLEND)
+        glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA)
         glClearColor(0, 0, 0, 1)
         glClear(GL_COLOR_BUFFER_BIT)
         glActiveTexture(GL_TEXTURE0)
         glBindVertexArray(self.__vao)
         glBindTexture(GL_TEXTURE_2D, self.__gLayer.texture)
         glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, None)
-        #glBindTexture(GL_TEXTURE_2D, self.__tLayer.texture)
-        #glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, None)
+        glBindVertexArray(self.__vao)
+        glBindTexture(GL_TEXTURE_2D, self.__tLayer.texture)
+        glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, None)
         glBindVertexArray(0)
         glBindTexture(GL_TEXTURE_2D, 0)
         glUseProgram(0)
