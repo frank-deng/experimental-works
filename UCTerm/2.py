@@ -179,8 +179,7 @@ class GraphicLayer(Layer):
         texture_data=np.zeros((self.height,self.width,4),dtype=np.uint8)
         for y in range(self.height):
             for x in range(self.width):
-                #texture_data[y,x] = [255*(1-y/self.height),255*(y/self.height),0,255]
-                texture_data[y,x] = [255,0,0,255]
+                texture_data[y,x] = [0,0,255*(((self.height-y)/self.height)/2+0.5),255]
 
         glBindTexture(GL_TEXTURE_2D,self._texture)
         glTexImage2D(GL_TEXTURE_2D,0,GL_RGBA,self.width,self.height,0,
@@ -189,23 +188,13 @@ class GraphicLayer(Layer):
             
     def __init__(self,width,height):
         super().__init__(width,height)
+
+    def update(self):
         self.__init_layer2()
 
 
 class TextLayer(Layer):
-    def __init__(self,width,height):
-        super().__init__(width,height)
-        self._shader=self._create_shader()
-        glUseProgram(self._shader)
-        glUniformMatrix4fv(
-            glGetUniformLocation(self._shader,"projection"),
-            1,GL_FALSE,GLUtil.ortho()
-        )
-        self._vao=GLUtil.vao_fullscr()
-        fontLoader=FontLoader()
-        self.__font_texture=fontLoader.texture
-
-    def _create_shader(self):
+    def __create_shader(self):
         vertex_shader="""
         #version 330 core
         layout(location = 0) in vec2 position;
@@ -215,7 +204,7 @@ class TextLayer(Layer):
         void main()
         {
             gl_Position = projection * vec4(position, 0.0, 1.0);
-            uv = texCoord;
+            uv = vec2(texCoord.x+1.0,texCoord.y+1.0);
         }
         """
         fragment_shader="""
@@ -223,17 +212,22 @@ class TextLayer(Layer):
         in vec2 uv;
         out vec4 outColor;
         uniform vec2 resolution;
-        uniform ivec2 cell_size;
-        void main()
-        {
-            ivec2 scrpos=ivec2(uv*resolution);
-            ivec2 celladdr=scrpos/cell_size;
-            ivec2 cellxy=scrpos%cell_size;
-
-            if(((scrpos.x+1) % 8)==0){
+        uniform uvec2 cell_size;
+        uniform usampler2D font;
+        void main() {
+            uvec2 scrpos=uvec2(uv*resolution);
+            uvec2 celladdr=scrpos/cell_size;
+            uvec2 cellxy=scrpos%cell_size;
+            ivec2 fontSize=textureSize(font,0);
+            int fonty=int(fontSize.y)-1-int(cellxy.y);
+            ivec2 fontxy=ivec2(int(64),fonty);
+            uint char_row=texelFetch(font,fontxy,0).r;
+            outColor=vec4(0.0,0.0,0.0,0.0);
+            if (cellxy.x==7U || cellxy.y==0U){
                 outColor=vec4(1.0,0.0,0.0,1.0);
-            }else if(((scrpos.y+1) % 16)==0){
-                outColor=vec4(0.0,1.0,0.0,1.0);
+            //}else if((1<<(int(cell_size.x)-1-int(cellxy.x)) & int(char_row))!=0){
+            }else if((1<<(int(cellxy.x)) & int(char_row))!=0){
+                outColor=vec4(1.0,1.0,1.0,1.0);
             }else{
                 outColor=vec4(0.0,0.0,0.0,0.0);
             }
@@ -244,18 +238,34 @@ class TextLayer(Layer):
             compileShader(fragment_shader,GL_FRAGMENT_SHADER)
         )
 
+    def __init__(self,width,height):
+        super().__init__(width,height)
+        self.__shader=self.__create_shader()
+        glUseProgram(self.__shader)
+        glUniformMatrix4fv(
+            glGetUniformLocation(self.__shader,"projection"),
+            1,GL_FALSE,GLUtil.ortho()
+        )
+        self.__vao=GLUtil.vao_fullscr()
+        fontLoader=FontLoader()
+        self.__font_texture=fontLoader.texture
+        glUniform1i(glGetUniformLocation(self.__shader,"font"),0)
+        glUniform2f(glGetUniformLocation(self.__shader,'resolution'),self.width,self.height)
+        glUniform2ui(glGetUniformLocation(self.__shader,'cell_size'),8,16)
+
     def update(self):
-        glUseProgram(self._shader)
+        glUseProgram(self.__shader)
         glBindFramebuffer(GL_FRAMEBUFFER, self._fbo)
         glFramebufferTexture2D(GL_FRAMEBUFFER,GL_COLOR_ATTACHMENT0, 
             GL_TEXTURE_2D,self._texture,0)
         glViewport(0, 0, self.width, self.height)
         glClearColor(0, 0, 0, 0)
         glClear(GL_COLOR_BUFFER_BIT)
-        glUniform2f(glGetUniformLocation(self._shader,'resolution'),self.width,self.height)
-        glUniform2i(glGetUniformLocation(self._shader,'cell_size'),8,16)
-        glBindVertexArray(self._vao)
+        glActiveTexture(GL_TEXTURE0)
+        glBindTexture(GL_TEXTURE_2D, self.__font_texture)
+        glBindVertexArray(self.__vao)
         glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, None)
+        glBindTexture(GL_TEXTURE_2D, 0)
         glBindFramebuffer(GL_FRAMEBUFFER, 0)
 
 
