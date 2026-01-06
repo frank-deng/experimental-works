@@ -220,7 +220,6 @@ class TextLayer(Layer):
             uvec2 celladdr=scrpos/cell_size;
             uvec2 cellxy=scrpos%cell_size;
             uvec4 charinfo=texelFetch(textram,ivec2(celladdr),0);
-            //uvec4 charinfo=uvec4(uint(0x30)+(uint(celladdr.y)%10U),0,0,0);
             int fonty=int(charinfo.g*cell_size.y+cellxy.y);
             int fontx=int(charinfo.r*2U+(charinfo.b&1U));
             uint char_row=texelFetch(font,ivec2(fontx,fonty),0).r;
@@ -268,10 +267,10 @@ class TextLayer(Layer):
         glUniform2f(glGetUniformLocation(self.__shader,'resolution'),self.width,self.height)
         glUniform2ui(glGetUniformLocation(self.__shader,'cell_size'),8,16)
         self.__textram,self.__textram_texture=self.__init_textram()
-        self.__textram[0,0]=[121,0,0,0]
-        self.__textram[0,1]=[121,0,0,0]
-        self.__textram[1,0]=[121,0,0,0]
-        self.__textram[1,1]=[121,0,0,0]
+        height,width,_=self.__textram.shape
+        for row in range(height):
+            for col in range(width):
+                self.__textram[row,col]=[0x30+(row+col)%10,0,0,0]
 
     def update(self):
         glUseProgram(self.__shader)
@@ -286,8 +285,8 @@ class TextLayer(Layer):
         glActiveTexture(GL_TEXTURE1)
         glBindTexture(GL_TEXTURE_2D, self.__textram_texture)
         height,width,_=self.__textram.shape
-        glTexImage2D(GL_TEXTURE_2D,0,GL_RGBA,width,height,0,
-            GL_RGBA,GL_UNSIGNED_BYTE,self.__textram)
+        glTexImage2D(GL_TEXTURE_2D,0,GL_RGBA8UI,width,height,0,
+            GL_RGBA_INTEGER,GL_UNSIGNED_BYTE,self.__textram)
         glBindVertexArray(self.__vao)
         glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, None)
         glBindTexture(GL_TEXTURE_2D, 0)
