@@ -204,7 +204,7 @@ class TextLayer(Layer):
         void main()
         {
             gl_Position = projection * vec4(position, 0.0, 1.0);
-            uv = vec2(texCoord.x+1.0,texCoord.y+1.0);
+            uv = vec2(texCoord.x+1.0,-texCoord.y+1.0);
         }
         """
         fragment_shader="""
@@ -219,14 +219,13 @@ class TextLayer(Layer):
             uvec2 celladdr=scrpos/cell_size;
             uvec2 cellxy=scrpos%cell_size;
             ivec2 fontSize=textureSize(font,0);
-            int fonty=int(fontSize.y)-1-int(cellxy.y);
-            ivec2 fontxy=ivec2(int(64),fonty);
+            int fonty=int(cellxy.y);
+            ivec2 fontxy=ivec2(int(121*2),fonty);
             uint char_row=texelFetch(font,fontxy,0).r;
             outColor=vec4(0.0,0.0,0.0,0.0);
-            if (cellxy.x==7U || cellxy.y==0U){
+            if (cellxy.x==7U || cellxy.y==15U){
                 outColor=vec4(1.0,0.0,0.0,1.0);
-            //}else if((1<<(int(cell_size.x)-1-int(cellxy.x)) & int(char_row))!=0){
-            }else if((1<<(int(cellxy.x)) & int(char_row))!=0){
+            }else if((1<<(int(cell_size.x)-1-int(cellxy.x)) & int(char_row))!=0){
                 outColor=vec4(1.0,1.0,1.0,1.0);
             }else{
                 outColor=vec4(0.0,0.0,0.0,0.0);
@@ -317,10 +316,10 @@ class Screen:
         self.__vao=GLUtil.vao_fullscr()
         self.__gLayer=GraphicLayer(width,height)
         self.__tLayer=TextLayer(width,height)
-        self.__gLayer.update()
-        self.__tLayer.update()
 
     def update(self):
+        self.__gLayer.update()
+        self.__tLayer.update()
         glUseProgram(self.__shader)
         glViewport(0,0,self._vw,self._vh)
         glActiveTexture(GL_TEXTURE0)
