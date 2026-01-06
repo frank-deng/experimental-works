@@ -69,7 +69,7 @@ class FontLoader:
         self.__load_font_data()
 
     @property
-    def texture_id(self):
+    def texture(self):
         if self.__texture_id is not None:
             return self.__texture_id
         self.__texture_id=glGenTextures(1)
@@ -78,7 +78,8 @@ class FontLoader:
         glTexParameteri(GL_TEXTURE_2D,GL_TEXTURE_WRAP_T,GL_CLAMP_TO_EDGE)
         glTexParameteri(GL_TEXTURE_2D,GL_TEXTURE_MIN_FILTER,GL_NEAREST)
         glTexParameteri(GL_TEXTURE_2D,GL_TEXTURE_MAG_FILTER,GL_NEAREST)
-        glTexImage2D(GL_TEXTURE_2D,0,GL_R8UI,512,4096,0,
+        height,width=self.__texture_data.shape
+        glTexImage2D(GL_TEXTURE_2D,0,GL_R8UI,width,height,0,
             GL_RED_INTEGER,GL_UNSIGNED_BYTE,
             self.__texture_data.tobytes())
         glBindTexture(GL_TEXTURE_2D, 0)
@@ -102,6 +103,8 @@ class GLUtil:
         glTexParameteri(GL_TEXTURE_2D,GL_TEXTURE_WRAP_T,GL_CLAMP_TO_EDGE)
         glTexParameteri(GL_TEXTURE_2D,GL_TEXTURE_MIN_FILTER,GL_LINEAR)
         glTexParameteri(GL_TEXTURE_2D,GL_TEXTURE_MAG_FILTER,GL_LINEAR)
+        glEnable(GL_BLEND);
+        glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
         glTexImage2D(GL_TEXTURE_2D,0,GL_RGBA,width,height,0,GL_RGBA,
             GL_UNSIGNED_BYTE,None)
         fbo = glGenFramebuffers(1)
@@ -176,7 +179,8 @@ class GraphicLayer(Layer):
         texture_data=np.zeros((self.height,self.width,4),dtype=np.uint8)
         for y in range(self.height):
             for x in range(self.width):
-                texture_data[y,x] = [255*(1-y/self.height),255*(y/self.height),0,255]
+                #texture_data[y,x] = [255*(1-y/self.height),255*(y/self.height),0,255]
+                texture_data[y,x] = [255,0,0,255]
 
         glBindTexture(GL_TEXTURE_2D,self._texture)
         glTexImage2D(GL_TEXTURE_2D,0,GL_RGBA,self.width,self.height,0,
@@ -198,6 +202,8 @@ class TextLayer(Layer):
             1,GL_FALSE,GLUtil.ortho()
         )
         self._vao=GLUtil.vao_fullscr()
+        fontLoader=FontLoader()
+        self.__font_texture=fontLoader.texture
 
     def _create_shader(self):
         vertex_shader="""
@@ -221,6 +227,9 @@ class TextLayer(Layer):
         void main()
         {
             ivec2 scrpos=ivec2(uv*resolution);
+            ivec2 celladdr=scrpos/cell_size;
+            ivec2 cellxy=scrpos%cell_size;
+
             if(((scrpos.x+1) % 8)==0){
                 outColor=vec4(1.0,0.0,0.0,1.0);
             }else if(((scrpos.y+1) % 16)==0){
@@ -271,12 +280,10 @@ class Screen:
         out vec4 outColor;
         uniform sampler2D graphicLayer;
         uniform sampler2D textLayer;
-        uniform float mixFactor;
         void main() {
             vec4 color1 = texture(graphicLayer, TexCoord);
             vec4 color2 = texture(textLayer, TexCoord);
-            outColor = vec4(mix(color1.rgb, color2.rgb, color2.a),
-                max(color1.a, color2.a));
+            outColor = mix(color1, color2, color2.a);
         }
         """
         return compileProgram(
@@ -286,8 +293,8 @@ class Screen:
 
     def __init__(self,vw=640,vh=400,width=640,height=400):
         self._vw,self._vh=vw,vh
-        self.__gLayer=GraphicLayer(width,height)
-        self.__tLayer=TextLayer(width,height)
+        glTexParameteri(GL_TEXTURE_2D,GL_TEXTURE_MAG_FILTER,GL_LINEAR)
+        glEnable(GL_BLEND);
         self.__shader=self.__class__.__create_shader()
         self.__texture,self.__fbo=GLUtil.create_texture(width,height)
         glUseProgram(self.__shader)
@@ -297,18 +304,15 @@ class Screen:
         )
         glUniform1i(glGetUniformLocation(self.__shader,"graphicLayer"),0)
         glUniform1i(glGetUniformLocation(self.__shader,"textLayer"),1)
-        glUniform1f(glGetUniformLocation(self.__shader,"mixFactor"),0.5)
         self.__vao=GLUtil.vao_fullscr()
+        self.__gLayer=GraphicLayer(width,height)
+        self.__tLayer=TextLayer(width,height)
         self.__gLayer.update()
         self.__tLayer.update()
-        #glEnable(GL_BLEND)
-        #glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA)
 
     def update(self):
         glUseProgram(self.__shader)
         glViewport(0,0,self._vw,self._vh)
-        #glClearColor(0, 0, 0, 1)
-        #glClear(GL_COLOR_BUFFER_BIT)
         glActiveTexture(GL_TEXTURE0)
         glBindTexture(GL_TEXTURE_2D, self.__gLayer.texture)
         glActiveTexture(GL_TEXTURE1)
@@ -325,7 +329,7 @@ class Screen:
         pygame.display.flip()
 
 class Main:
-    FPS=30
+    FPS=60
     __running=True
     def __init__(self):
         pygame.init()
