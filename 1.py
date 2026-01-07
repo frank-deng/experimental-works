@@ -11,12 +11,9 @@ class NewsManager:
     __host='https://news.china.com'
     @staticmethod
     def __newsListSort(a,b):
-        hrefA,hrefB=a['href'],b['href']
+        keyA,keyB=a['key'],b['key']
         dateA,dateB=a['date'],b['date']
-        matchA=re.search(r'(\d+).html$',hrefA)
-        matchB=re.search(r'(\d+).html$',hrefB)
-        valA,valB=matchA[1],matchB[1]
-        if dateA<dateB or valA<valB:
+        if dateA<dateB or keyA<keyB:
             return 1
         else:
             return -1
@@ -41,20 +38,22 @@ class NewsManager:
             if href in href_set:
                 continue
             title=item.text_content().strip()
-            if not href or not title or href=='#':
-                continue
-            linkinfo=urlparse(href)
-            if not re.search(r'\d{6,}\.html$',linkinfo.path):
+            if not href or not title or href=='#' or href in href_set:
                 continue
             href_set.add(href)
             if not self.__rp.can_fetch('',href):
                 continue
-            datestr=linkinfo.path.split('/')[-2]
-            date_news=datetime.strptime(datestr,"%Y%m%d").date()
+            linkinfo=urlparse(href)
+            match=re.search(r'(20(\d{2}[01]\d[0-3]\d))/(\d+)\.html$',linkinfo.path)
+            if not match:
+                continue
+            date_str,key=match[1],match[3]
+            date_news=datetime.strptime(date_str,"%Y%m%d").date()
             date_limit=datetime.now().date()-timedelta(days=30)
             if date_news<date_limit:
                 continue
             res.append({
+                'key':int(key),
                 'href':href,
                 'date':date_news,
                 'title':title
