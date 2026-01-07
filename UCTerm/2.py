@@ -205,6 +205,7 @@ class TextRender(GraphicRender):
         uniform vec2 resolution;
         uniform uvec2 cell_size;
         uniform uint blink;
+        uniform uvec4 cursor;
         uniform usampler2D bg;
         uniform usampler2D font;
         uniform usampler2D textram;
@@ -233,7 +234,7 @@ class TextRender(GraphicRender):
             int fonty=int(charinfo.g*cell_size.y+cellxy.y);
             int fontx=int(charinfo.r*2U+(charinfo.b&1U));
             uint char_row=texelFetch(font,ivec2(fontx,fonty),0).r;
-            bool fgDisp=((1<<(int(cell_size.x)-1-int(cellxy.x)) & int(char_row))!=0);
+            bool fgDisp=((1<<int(cell_size.x-1U-cellxy.x)) & int(char_row))!=0;
             if ((attrinfo.b&1U)!=0U && cellxy.y==cell_size.y-1U){
                 fgDisp=true;
             }
@@ -242,6 +243,9 @@ class TextRender(GraphicRender):
             }
             if((blink&1U)==0U && (attrinfo.b&4U)!=0U){
                 fgDisp=false;
+            }
+            if (celladdr.x==cursor.r && celladdr.y==cursor.g && cellxy.y>=cursor.b && cellxy.y<=cursor.a && (blink&2U)!=0U){
+                fgDisp=!fgDisp;
             }
             if(fgDisp){
                 outColor=getcolor(attrinfo.r,bgcolor);
@@ -348,9 +352,9 @@ class TextRender(GraphicRender):
         glUniform2f(glGetUniformLocation(self.__shader,'resolution'),self.width,self.height)
         glUniform2ui(glGetUniformLocation(self.__shader,'cell_size'),8,16)
         self.__gl_blink=glGetUniformLocation(self.__shader,"blink")
-        self.__gl_cursor_pos=glGetUniformLocation(self.__shader,"cursor_pos")
-        self.__gl_cursor_attr=glGetUniformLocation(self.__shader,"cursor_attr")
+        self.__gl_cursor=glGetUniformLocation(self.__shader,"cursor")
         self.__counter=0
+        self._cursor=[2,3,0,15]
 
         height,width,_=self.__textram.shape
         for row in range(height>>1):
@@ -389,9 +393,12 @@ class TextRender(GraphicRender):
         glActiveTexture(GL_TEXTURE3)
         glBindTexture(GL_TEXTURE_2D, self.__palette_texture)
         blinkVal=1
-        if self.__counter>32:
+        if self.__counter>0x1f:
             blinkVal=0
+        if self.__counter&0xf>0x7:
+            blinkVal|=2
         glUniform1ui(self.__gl_blink,blinkVal)
+        glUniform4ui(self.__gl_cursor,*self._cursor)
         glBindVertexArray(self._vao)
         glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, None)
         glBindTexture(GL_TEXTURE_2D, 0)
