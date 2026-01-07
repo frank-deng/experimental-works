@@ -5,16 +5,18 @@ from urllib.parse import urlparse
 from urllib.robotparser import RobotFileParser
 import re
 from functools import cmp_to_key
+from datetime import datetime, timedelta
 
 class NewsManager:
     __host='https://news.china.com'
     @staticmethod
     def __newsListSort(a,b):
         hrefA,hrefB=a['href'],b['href']
+        dateA,dateB=a['date'],b['date']
         matchA=re.search(r'(\d+).html$',hrefA)
         matchB=re.search(r'(\d+).html$',hrefB)
         valA,valB=matchA[1],matchB[1]
-        if valA<valB:
+        if dateA<dateB or valA<valB:
             return 1
         else:
             return -1
@@ -47,8 +49,14 @@ class NewsManager:
             href_set.add(href)
             if not self.__rp.can_fetch('',href):
                 continue
+            datestr=linkinfo.path.split('/')[-2]
+            date_news=datetime.strptime(datestr,"%Y%m%d").date()
+            date_limit=datetime.now().date()-timedelta(days=30)
+            if date_news<date_limit:
+                continue
             res.append({
                 'href':href,
+                'date':date_news,
                 'title':title
             })
 
@@ -57,7 +65,9 @@ class NewsManager:
 async def main():
     print('-'*50)
     newsManager=NewsManager()
-    for item in await newsManager.newsList():
+    newsList=await newsManager.newsList()
+    for item in newsList:
         print(item)
+    print('Count',len(newsList))
 
 asyncio.run(main())
