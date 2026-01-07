@@ -234,6 +234,12 @@ class TextRender(GraphicRender):
             int fontx=int(charinfo.r*2U+(charinfo.b&1U));
             uint char_row=texelFetch(font,ivec2(fontx,fonty),0).r;
             bool fgDisp=((1<<(int(cell_size.x)-1-int(cellxy.x)) & int(char_row))!=0);
+            if ((attrinfo.b&1U)!=0U && cellxy.y==cell_size.y-1U){
+                fgDisp=true;
+            }
+            if ((attrinfo.b&2U)!=0U && cellxy.y==(cell_size.y/2U-1U)){
+                fgDisp=true;
+            }
             if((blink&1U)==0U && (attrinfo.b&4U)!=0U){
                 fgDisp=false;
             }
@@ -353,8 +359,9 @@ class TextRender(GraphicRender):
         self.__textram[height>>1,0,0]=14
         for row in range(height>>1,height):
             for col in range(width):
+                self.__textram[row,col,2]|=3
                 if col&1==0:
-                    self.__textram[row,col,2]=4
+                    self.__textram[row,col,2]|=4
 
         glBindTexture(GL_TEXTURE_2D, self.__textram_texture)
         height,width,_=self.__textram.shape
