@@ -204,6 +204,7 @@ class TextRender(GraphicRender):
         out vec4 outColor;
         uniform vec2 resolution;
         uniform uvec2 cell_size;
+        uniform uint blink;
         uniform usampler2D bg;
         uniform usampler2D font;
         uniform usampler2D textram;
@@ -223,11 +224,20 @@ class TextRender(GraphicRender):
             uvec2 cellxy=scrpos%cell_size;
             uvec4 charinfo=texelFetch(textram,ivec2(celladdr),0);
             uvec4 attrinfo=texelFetch(textram,ivec2(int(celladdr.x),int(celladdr.y+rows)),0);
+            uvec4 bgcolor=texelFetch(bg,ivec2(scrpos),0);
+            if(charinfo.r==0U && charinfo.g==0U){
+                outColor=getcolor(attrinfo.g,bgcolor);
+                return;
+            }
+
             int fonty=int(charinfo.g*cell_size.y+cellxy.y);
             int fontx=int(charinfo.r*2U+(charinfo.b&1U));
             uint char_row=texelFetch(font,ivec2(fontx,fonty),0).r;
-            uvec4 bgcolor=texelFetch(bg,ivec2(scrpos),0);
-            if((1<<(int(cell_size.x)-1-int(cellxy.x)) & int(char_row))!=0){
+            bool fgDisp=((1<<(int(cell_size.x)-1-int(cellxy.x)) & int(char_row))!=0);
+            if((blink&1U)==0U && (attrinfo.b&4U)!=0U){
+                fgDisp=false;
+            }
+            if(fgDisp){
                 outColor=getcolor(attrinfo.r,bgcolor);
             }else{
                 outColor=getcolor(attrinfo.g,bgcolor);
@@ -319,7 +329,6 @@ class TextRender(GraphicRender):
         self.__font_texture=FontLoader().texture
         self.__textram,self.__textram_texture=self.__init_textram()
         self.__palette,self.__palette_texture=self.__init_palette()
-
         self.__shader=self.__create_shader()
         glUseProgram(self.__shader)
         glUniformMatrix4fv(
@@ -332,10 +341,20 @@ class TextRender(GraphicRender):
         glUniform1i(glGetUniformLocation(self.__shader,"palette"),3)
         glUniform2f(glGetUniformLocation(self.__shader,'resolution'),self.width,self.height)
         glUniform2ui(glGetUniformLocation(self.__shader,'cell_size'),8,16)
+        self.__gl_blink=glGetUniformLocation(self.__shader,"blink")
+        self.__gl_cursor_pos=glGetUniformLocation(self.__shader,"cursor_pos")
+        self.__gl_cursor_attr=glGetUniformLocation(self.__shader,"cursor_attr")
+        self.__counter=0
+
         height,width,_=self.__textram.shape
         for row in range(height>>1):
             for col in range(width):
                 self.__textram[row,col]=[0x30+(row+col)%10,0,0,0]
+        self.__textram[height>>1,0,0]=14
+        for row in range(height>>1,height):
+            for col in range(width):
+                if col&1==0:
+                    self.__textram[row,col,2]=4
 
         glBindTexture(GL_TEXTURE_2D, self.__textram_texture)
         height,width,_=self.__textram.shape
@@ -362,6 +381,10 @@ class TextRender(GraphicRender):
         glBindTexture(GL_TEXTURE_2D, self.__textram_texture)
         glActiveTexture(GL_TEXTURE3)
         glBindTexture(GL_TEXTURE_2D, self.__palette_texture)
+        blinkVal=1
+        if self.__counter>32:
+            blinkVal=0
+        glUniform1ui(self.__gl_blink,blinkVal)
         glBindVertexArray(self._vao)
         glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, None)
         glBindTexture(GL_TEXTURE_2D, 0)
@@ -372,6 +395,7 @@ class TextRender(GraphicRender):
         glActiveTexture(GL_TEXTURE0)
         glBindTexture(GL_TEXTURE_2D, 0)
         glBindFramebuffer(GL_FRAMEBUFFER, 0)
+        self.__counter=(self.__counter+1)&0x3f
 
 
 class Screen(TextRender):
