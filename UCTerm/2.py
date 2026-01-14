@@ -6,6 +6,11 @@ from OpenGL.GLU import *
 from OpenGL.GL.shaders import *
 
 
+class CharData:
+    def __init__(self,**kwargs):
+        self.full_width=kwargs['full_width']
+
+
 class FontLoader:
     def __load_asc16(self):
         fontData=None
@@ -55,8 +60,11 @@ class FontLoader:
             if bitmap.width not in (8,16):
                 continue
             self.__texture_data[row:row+16,col]=np.frombuffer(bytes(bitmap.buffer[0::bitmap.pitch]),dtype=np.uint8)
+            full_width=False
             if bitmap.width==16:
                 self.__texture_data[row:row+16,col+1]=np.frombuffer(bytes(bitmap.buffer[1::bitmap.pitch]),dtype=np.uint8)
+                full_width=True
+            self.__char_data[code]=CharData(full_width=full_width)
 
     def __load_font_data(self):
         self.__texture_data=np.zeros((4096,512),dtype=np.uint8)
@@ -66,6 +74,7 @@ class FontLoader:
 
     def __init__(self):
         self.__texture_id=None
+        self.__char_data={}
         self.__load_font_data()
 
     @property
@@ -84,6 +93,11 @@ class FontLoader:
             self.__texture_data.tobytes())
         glBindTexture(GL_TEXTURE_2D, 0)
         return self.__texture_id
+
+    def full_width(self,code):
+        if code not in self.__char_data:
+            return None
+        return self.__char_data[code].full_width
 
 
 class RenderBase:
@@ -200,6 +214,9 @@ class TextRender(GraphicRender):
         """
         fragment_shader="""
         #version 330 core
+        const uint ATTR_UNDERLINE=1U;
+        const uint ATTR_STRIKE=2U;
+        const uint ATTR_BLINK=4U;
         in vec2 uv;
         out vec4 outColor;
         uniform vec2 resolution;
@@ -235,13 +252,13 @@ class TextRender(GraphicRender):
             int fontx=int(charinfo.r*2U+(charinfo.b&1U));
             uint char_row=texelFetch(font,ivec2(fontx,fonty),0).r;
             bool fgDisp=((1<<int(cell_size.x-1U-cellxy.x)) & int(char_row))!=0;
-            if ((attrinfo.b&1U)!=0U && cellxy.y==cell_size.y-1U){
+            if ((attrinfo.b&ATTR_UNDERLINE)!=0U && cellxy.y==cell_size.y-1U){
                 fgDisp=true;
             }
-            if ((attrinfo.b&2U)!=0U && cellxy.y==(cell_size.y/2U-1U)){
+            if ((attrinfo.b&ATTR_STRIKE)!=0U && cellxy.y==(cell_size.y/2U-1U)){
                 fgDisp=true;
             }
-            if((blink&1U)==0U && (attrinfo.b&4U)!=0U){
+            if((blink&1U)==0U && (attrinfo.b&ATTR_BLINK)!=0U){
                 fgDisp=false;
             }
             if (celladdr.x==cursor.r && celladdr.y==cursor.g && cellxy.y>=cursor.b && cellxy.y<=cursor.a && (blink&2U)!=0U){
