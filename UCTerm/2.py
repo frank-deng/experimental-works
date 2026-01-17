@@ -100,7 +100,7 @@ class FontLoader:
         return self.__char_data[code].full_width
 
 
-class RenderBase:
+class GLUtil:
     @staticmethod
     def ortho(left=-1, right=1, bottom=1, top=-1, near=-1, far=1):
         return np.array([
@@ -119,11 +119,9 @@ class RenderBase:
             -1,1,0.0,1.0,
         ], dtype=np.float32)
         indices = np.array([0, 1, 2, 0, 2, 3], dtype=np.uint32)
-
         vao = glGenVertexArrays(1)
         vbo = glGenBuffers(1)
         ebo = glGenBuffers(1)
-
         glBindVertexArray(vao)
         glBindBuffer(GL_ARRAY_BUFFER, vbo)
         glBufferData(GL_ARRAY_BUFFER, vertices.nbytes, vertices, GL_STATIC_DRAW)
@@ -138,12 +136,38 @@ class RenderBase:
         glBindVertexArray(0)
         return vao
 
+
+class Layer:
+    def __create_texture_fbo(self):
+        texture_id=glGenTextures(1)
+        glBindTexture(GL_TEXTURE_2D,texture_id)
+        glTexParameteri(GL_TEXTURE_2D,GL_TEXTURE_WRAP_S,GL_CLAMP_TO_EDGE)
+        glTexParameteri(GL_TEXTURE_2D,GL_TEXTURE_WRAP_T,GL_CLAMP_TO_EDGE)
+        glTexParameteri(GL_TEXTURE_2D,GL_TEXTURE_MIN_FILTER,GL_LINEAR)
+        glTexParameteri(GL_TEXTURE_2D,GL_TEXTURE_MAG_FILTER,GL_LINEAR)
+        glTexImage2D(GL_TEXTURE_2D,0,GL_RGBA8,self.width,self.height,0,
+            GL_RGBA,GL_UNSIGNED_BYTE,None)
+        fbo = glGenFramebuffers(1)
+        glBindFramebuffer(GL_FRAMEBUFFER, fbo)
+        glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0,
+            GL_TEXTURE_2D, texture_id, 0)
+        glBindFramebuffer(GL_FRAMEBUFFER, 0)
+        glBindTexture(GL_TEXTURE_2D, 0)
+        return texture_id,fbo
+
     def __init__(self,width,height):
         self.width,self.height=width,height
-        self._vao=self.__class__.vao_fullscr()
+        self._texture,self._fbo=self.__create_texture_fbo()
+
+    def update(self):
+        pass
+
+    @property
+    def texture(self):
+        return self._texture
 
 
-class GraphicRender(RenderBase):
+class GraphicLayer(Layer):
     def __init_layer1(self):
         texture_data=np.zeros((self.height,self.width,4),dtype=np.uint8)
         for y in range(self.height):
@@ -156,9 +180,9 @@ class GraphicRender(RenderBase):
                     texture_data[y,x] = [0,0,255,255]
                 else:
                     texture_data[y,x] = [255,255,0,255]
-        glBindTexture(GL_TEXTURE_2D,self._graphic_texture)
-        glTexImage2D(GL_TEXTURE_2D,0,GL_RGBA8UI,self.width,self.height,0,
-            GL_RGBA_INTEGER,GL_UNSIGNED_BYTE,texture_data)
+        glBindTexture(GL_TEXTURE_2D,self._texture)
+        glTexImage2D(GL_TEXTURE_2D,0,GL_RGBA8,self.width,self.height,0,
+            GL_RGBA,GL_UNSIGNED_BYTE,texture_data)
         glBindTexture(GL_TEXTURE_2D, 0)
 
     def __init_layer2(self):
@@ -167,38 +191,17 @@ class GraphicRender(RenderBase):
             for x in range(self.width):
                 texture_data[y,x] = [0,0,255*(((self.height-y)/self.height)/2+0.5),255]
 
-        glBindTexture(GL_TEXTURE_2D,self._graphic_texture)
-        glTexImage2D(GL_TEXTURE_2D,0,GL_RGBA8UI,self.width,self.height,0,
-            GL_RGBA_INTEGER,GL_UNSIGNED_BYTE,texture_data)
+        glBindTexture(GL_TEXTURE_2D,self._texture)
+        glTexImage2D(GL_TEXTURE_2D,0,GL_RGBA8,self.width,self.height,0,
+            GL_RGBA,GL_UNSIGNED_BYTE,texture_data)
         glBindTexture(GL_TEXTURE_2D, 0)
 
-    def __create_texture(self):
-        texture_id=glGenTextures(1)
-        glBindTexture(GL_TEXTURE_2D,texture_id)
-        glTexParameteri(GL_TEXTURE_2D,GL_TEXTURE_WRAP_S,GL_CLAMP_TO_EDGE)
-        glTexParameteri(GL_TEXTURE_2D,GL_TEXTURE_WRAP_T,GL_CLAMP_TO_EDGE)
-        glTexParameteri(GL_TEXTURE_2D,GL_TEXTURE_MIN_FILTER,GL_NEAREST)
-        glTexParameteri(GL_TEXTURE_2D,GL_TEXTURE_MAG_FILTER,GL_NEAREST)
-        glTexImage2D(GL_TEXTURE_2D,0,GL_RGBA8UI,self.width,self.height,0,
-            GL_RGBA_INTEGER,GL_UNSIGNED_BYTE,None)
-        fbo = glGenFramebuffers(1)
-        glBindFramebuffer(GL_FRAMEBUFFER, fbo)
-        glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0,
-            GL_TEXTURE_2D, texture_id, 0)
-        glBindTexture(GL_TEXTURE_2D, 0)
-        glBindFramebuffer(GL_FRAMEBUFFER, 0)
-        return texture_id,fbo
-            
     def __init__(self,width,height):
         super().__init__(width,height)
-        self._graphic_texture,self.__fbo=self.__create_texture()
         self.__init_layer2()
 
-    def _update(self):
-        pass
 
-
-class TextRender(GraphicRender):
+class TextLayer(Layer):
     def __create_shader(self):
         vertex_shader="""
         #version 330 core
@@ -223,14 +226,14 @@ class TextRender(GraphicRender):
         uniform uvec2 cell_size;
         uniform uint blink;
         uniform uvec4 cursor;
-        uniform usampler2D bg;
+        uniform sampler2D bg;
         uniform usampler2D font;
         uniform usampler2D textram;
         uniform usampler2D palette;
-        vec4 getcolor(uint idx,uvec4 bgcolor){
+        vec4 getcolor(uint idx,vec4 bgcolor){
             uvec4 color=texelFetch(palette,ivec2(int(idx),0),0);
             if(color.a==0U){
-                return vec4(bgcolor)/255.0;
+                return bgcolor;
             }else{
                 return vec4(color)/255.0;
             }
@@ -242,7 +245,7 @@ class TextRender(GraphicRender):
             uvec2 cellxy=scrpos%cell_size;
             uvec4 charinfo=texelFetch(textram,ivec2(celladdr),0);
             uvec4 attrinfo=texelFetch(textram,ivec2(int(celladdr.x),int(celladdr.y+rows)),0);
-            uvec4 bgcolor=texelFetch(bg,ivec2(scrpos),0);
+            vec4 bgcolor=texelFetch(bg,ivec2(scrpos),0);
             if(charinfo.r==0U && charinfo.g==0U){
                 outColor=getcolor(attrinfo.g,bgcolor);
                 return;
@@ -275,23 +278,6 @@ class TextRender(GraphicRender):
             compileShader(vertex_shader,GL_VERTEX_SHADER),
             compileShader(fragment_shader,GL_FRAGMENT_SHADER)
         )
-
-    def __create_final_texture(self):
-        texture_id=glGenTextures(1)
-        glBindTexture(GL_TEXTURE_2D,texture_id)
-        glTexParameteri(GL_TEXTURE_2D,GL_TEXTURE_WRAP_S,GL_CLAMP_TO_EDGE)
-        glTexParameteri(GL_TEXTURE_2D,GL_TEXTURE_WRAP_T,GL_CLAMP_TO_EDGE)
-        glTexParameteri(GL_TEXTURE_2D,GL_TEXTURE_MIN_FILTER,GL_LINEAR)
-        glTexParameteri(GL_TEXTURE_2D,GL_TEXTURE_MAG_FILTER,GL_LINEAR)
-        glTexImage2D(GL_TEXTURE_2D,0,GL_RGBA,self.width,self.height,0,
-            GL_RGBA,GL_UNSIGNED_BYTE,None)
-        fbo = glGenFramebuffers(1)
-        glBindFramebuffer(GL_FRAMEBUFFER, fbo)
-        glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0,
-            GL_TEXTURE_2D, texture_id, 0)
-        glBindTexture(GL_TEXTURE_2D, 0)
-        glBindFramebuffer(GL_FRAMEBUFFER, 0)
-        return texture_id,fbo
 
     def __init_textram(self):
         data=np.zeros((50,80,4),dtype=np.uint8)
@@ -352,7 +338,6 @@ class TextRender(GraphicRender):
 
     def __init__(self,width,height):
         super().__init__(width,height)
-        self._final_texture,self._fbo=self.__create_final_texture()
         self.__font_texture=FontLoader().texture
         self.__textram,self.__textram_texture=self.__init_textram()
         self.__palette,self.__palette_texture=self.__init_palette()
@@ -360,8 +345,9 @@ class TextRender(GraphicRender):
         glUseProgram(self.__shader)
         glUniformMatrix4fv(
             glGetUniformLocation(self.__shader,"projection"),
-            1,GL_FALSE,self.__class__.ortho()
+            1,GL_FALSE,GLUtil.ortho()
         )
+        self.__vao=GLUtil.vao_fullscr()
         glUniform1i(glGetUniformLocation(self.__shader,"bg"),0)
         glUniform1i(glGetUniformLocation(self.__shader,"font"),1)
         glUniform1i(glGetUniformLocation(self.__shader,"textram"),2)
@@ -394,15 +380,14 @@ class TextRender(GraphicRender):
             GL_RGBA_INTEGER,GL_UNSIGNED_BYTE,self.__palette)
         glBindTexture(GL_TEXTURE_2D, 0)
 
-    def _update(self):
-        super()._update()
+    def update(self,graphic_texture):
         glUseProgram(self.__shader)
         glBindFramebuffer(GL_FRAMEBUFFER, self._fbo)
         glFramebufferTexture2D(GL_FRAMEBUFFER,GL_COLOR_ATTACHMENT0, 
-            GL_TEXTURE_2D,self._final_texture,0)
+            GL_TEXTURE_2D,self._texture,0)
         glViewport(0, 0, self.width, self.height)
         glActiveTexture(GL_TEXTURE0)
-        glBindTexture(GL_TEXTURE_2D, self._graphic_texture)
+        glBindTexture(GL_TEXTURE_2D, graphic_texture)
         glActiveTexture(GL_TEXTURE1)
         glBindTexture(GL_TEXTURE_2D, self.__font_texture)
         glActiveTexture(GL_TEXTURE2)
@@ -416,7 +401,7 @@ class TextRender(GraphicRender):
             blinkVal|=2
         glUniform1ui(self.__gl_blink,blinkVal)
         glUniform4ui(self.__gl_cursor,*self._cursor)
-        glBindVertexArray(self._vao)
+        glBindVertexArray(self.__vao)
         glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, None)
         glBindTexture(GL_TEXTURE_2D, 0)
         glActiveTexture(GL_TEXTURE2)
@@ -429,7 +414,7 @@ class TextRender(GraphicRender):
         self.__counter=(self.__counter+1)&0x3f
 
 
-class Screen(TextRender):
+class Screen:
     @staticmethod
     def __create_shader():
         vertex_shader="""
@@ -459,7 +444,8 @@ class Screen(TextRender):
         )
 
     def __init__(self,vw=640,vh=400,width=640,height=400):
-        super().__init__(width,height)
+        self.__gLayer=GraphicLayer(width,height)
+        self.__tLayer=TextLayer(width,height)
         self._vw,self._vh=vw,vh
         glTexParameteri(GL_TEXTURE_2D,GL_TEXTURE_MAG_FILTER,GL_LINEAR)
         glDisable(GL_BLEND)
@@ -467,16 +453,18 @@ class Screen(TextRender):
         glUseProgram(self.__shader)
         glUniformMatrix4fv(
             glGetUniformLocation(self.__shader,"projection"),
-            1,GL_FALSE,self.__class__.ortho()
+            1,GL_FALSE,GLUtil.ortho()
         )
+        self.__vao=GLUtil.vao_fullscr()
 
     def update(self):
-        self._update()
+        self.__gLayer.update()
+        self.__tLayer.update(self.__gLayer.texture)
         glUseProgram(self.__shader)
         glViewport(0,0,self._vw,self._vh)
         glActiveTexture(GL_TEXTURE0)
-        glBindTexture(GL_TEXTURE_2D, self._final_texture)
-        glBindVertexArray(self._vao)
+        glBindTexture(GL_TEXTURE_2D, self.__tLayer.texture)
+        glBindVertexArray(self.__vao)
         glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, None)
         glBindVertexArray(0)
         glBindTexture(GL_TEXTURE_2D, 0)
