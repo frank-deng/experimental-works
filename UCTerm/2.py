@@ -101,6 +101,7 @@ class FontLoader:
 
 
 class GLUtil:
+    __vao_fullscr=None
     @staticmethod
     def ortho(left=-1, right=1, bottom=1, top=-1, near=-1, far=1):
         return np.array([
@@ -112,6 +113,8 @@ class GLUtil:
 
     @staticmethod
     def vao_fullscr():
+        if GLUtil.__vao_fullscr is not None:
+            return GLUtil.__vao_fullscr
         vertices = np.array([
             -1,-1,0.0,0.0,
             1,-1,1.0,0.0,
@@ -134,6 +137,7 @@ class GLUtil:
         glEnableVertexAttribArray(1)
 
         glBindVertexArray(0)
+        GLUtil.__vao_fullscr=vao
         return vao
 
 

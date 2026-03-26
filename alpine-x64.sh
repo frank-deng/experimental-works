@@ -1,7 +1,7 @@
 #!/bin/bash
 qemu-system-x86_64 \
 -pidfile $PREFIX/tmp/alpine-x86_64.pid \
--machine q35 -cpu qemu64 -smp 1 -m 512 \
+-machine q35 -cpu qemu64 -smp 2 -m 512 \
 -accel tcg,thread=multi \
 -drive file=/sdcard/devel/alpine-x86_64.qcow2,index=0 \
 -netdev user,id=network0,hostfwd=tcp:127.0.0.1:2333-:23,dns=8.8.8.8 \
