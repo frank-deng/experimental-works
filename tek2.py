@@ -14,11 +14,11 @@ def pos(x,y):
 sys.stdout.buffer.write(b'\x1b\x0c\x1d')
 sys.stdout.buffer.flush()
 start_time=time.time()
-while time.time()-start_time<5:
+while time.time()-start_time<8:
     sys.stdout.buffer.write(pos(random.randint(1,1023),random.randint(1,779)))
     sys.stdout.buffer.flush()
-    time.sleep(0.8)
-time.sleep(1)
+    time.sleep(0)
+time.sleep(5)
 sys.stdout.buffer.write(b'\x18')
 sys.stdout.buffer.flush()
 
