@@ -7,26 +7,6 @@ from aiohttp import web
 from util import Logger
 from util import load_module
 
-class StaticWithIndex(Logger):
-    def __init__(self,route_param):
-        self.__route_param=route_param
-
-    async def __call__(self,req):
-        config=req.app['config']
-        rootdir=os.path.abspath(self.__route_param['rootdir'])
-        path=req.match_info['path'].strip().strip('/')
-        path=os.path.abspath(os.path.join(rootdir,path))
-        self.logger.debug(f'{rootdir}\n{path}')
-        if not path.startswith(rootdir):
-            raise web.HTTPForbidden()
-        if os.path.isfile(path):
-            return web.FileResponse(path)
-        for index_file in self.__route_param.get('index',['index.html']):
-            index_path=os.path.join(path,index_file)
-            if os.path.isfile(index_path):
-                return web.FileResponse(index_path)
-        raise web.HTTPNotFound()
-
 
 @web.middleware
 async def iconv_middleware(request,handler):
