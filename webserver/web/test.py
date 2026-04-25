@@ -7,8 +7,10 @@ from aiohttp.web import Response
 from aiohttp_jinja2 import render_template
 from datetime import datetime
 from util.fonttool import FontProcessor
+from . import WebServer
 
 
+@WebServer.get('/basicauth.asp')
 async def basicauth(req:Request):
     config=req.app['config']
     return Response(headers={

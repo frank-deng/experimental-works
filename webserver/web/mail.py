@@ -8,6 +8,7 @@ from aiohttp.web import Response
 from aiohttp_jinja2 import template
 from datetime import datetime
 from util.fonttool import FontProcessor
+from . import WebServer
 
 
 def do_login(userdata_all,username,password):
@@ -24,6 +25,8 @@ def do_login(userdata_all,username,password):
     return 0
 
 
+@WebServer.get('/mail/login.asp')
+@WebServer.post('/mail/login.asp')
 @template('login.html')
 async def login(req:Request):
     logger=logging.getLogger(__name__)
