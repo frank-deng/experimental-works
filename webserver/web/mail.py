@@ -8,6 +8,7 @@ from aiohttp.web import Response
 from aiohttp_jinja2 import template
 from datetime import datetime
 from util.fonttool import FontProcessor
+from mailcenter import MailCenter
 from . import WebServer
 
 
