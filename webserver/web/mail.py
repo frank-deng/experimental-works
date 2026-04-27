@@ -22,9 +22,7 @@ async def mail_index_redirect(req:Request):
 @template('mail_index.html')
 async def mail_index(req:Request):
     logger=logging.getLogger(__name__)
-    session=await get_session(req)
-    if session.get('user') is None:
-        session.invalidate()
+    if req.user is None:
         return HTTPFound('/mail/login.asp')
     return {}
 
@@ -57,12 +55,7 @@ async def login(req:Request):
 
 @WebServer.get('/mail/logout.asp')
 async def logout(req:Request):
-    logger=logging.getLogger(__name__)
-    try:
-        session = await get_session(req)
-        session.invalidate()
-        resp=HTTPFound('/mail/login.asp')
-        return resp
-    except Exception as e:
-        logger.error(e,exc_info=True)
+    session = await get_session(req)
+    session.invalidate()
+    return HTTPFound('/mail/login.asp')
 

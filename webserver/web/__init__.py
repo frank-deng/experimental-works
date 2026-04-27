@@ -50,6 +50,18 @@ async def iconv_middleware(request,handler):
         logger.error(e,exc_info=True)
 
 
+@web.middleware
+async def session_middleware(request,handler):
+    logger=logging.getLogger(__name__)
+    session=await aiohttp_session.get_session(request)
+    user=session.get('user')
+    if user is None:
+        request.user=None
+    else:
+        request.user=user
+    return await handler(request)
+
+
 class OldBrowserCookieStorage(EncryptedCookieStorage):
     COOKIE_NAME='SESSION_ID'
     def __init__(self, *args, **kwargs):
@@ -93,6 +105,7 @@ class WebServer(Logger):
             loader=FileSystemLoader(self.BASE_DIR),
             autoescape=True)
         aiohttp_session.setup(self.__app,OldBrowserCookieStorage(Fernet(Fernet.generate_key())))
+        self.__app.middlewares.append(session_middleware)
         self.__app.router.add_static(self.STATIC_PATH,self.STATIC_DIR)
         for item in self.MODULES:
             try:
