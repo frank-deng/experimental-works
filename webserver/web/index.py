@@ -32,7 +32,7 @@ async def login(req:Request):
             return Response(headers={'Location':'/mail.asp'},status=303)
     return {
         'title':'登录',
-        'header':'邮件中心',
+        'header':'用户登录',
         'username':username,
         'fail':fail_info,
         'post_url':'/login.asp'

@@ -9,7 +9,23 @@ from . import WebServer
 
 @WebServer.get('/mail.asp')
 @WebServer.login_required(redirect=True)
-@template('mail_index.html')
+@template('mail_frame.html')
 async def mail_index(req:Request):
+    return {
+        'title':'邮件中心'
+    }
+
+
+@WebServer.get('/mail_left.asp')
+@WebServer.login_required()
+@template('mail_left.html')
+async def mail_left(req:Request):
+    return {}
+
+
+@WebServer.get('/mail_main.asp')
+@WebServer.login_required()
+@template('mail_main.html')
+async def mail_main(req:Request):
     return {}
 
