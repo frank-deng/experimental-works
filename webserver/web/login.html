@@ -1,6 +1,6 @@
 {% extends "base.html" %}
 {% block content %}
-<form action="/mail/login.asp" method="post">
+<form action="{{post_url}}" method="post">
   <div align='center'>
   <table>
     <tr>
@@ -21,6 +21,5 @@
 {% if fail %}
   <p align='center'><font color='#ff0000'>{{fail}}</font></p>
 {% endif %}
-  <input type="hidden" name="next" value="/dashboard">
 </form>
 {% endblock %}

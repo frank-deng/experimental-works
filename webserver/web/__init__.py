@@ -1,6 +1,6 @@
 import logging
 import os
-import time
+import functools
 from http.cookies import SimpleCookie
 import aiohttp_jinja2
 import aiohttp_session
@@ -8,6 +8,9 @@ from aiohttp_session.cookie_storage import EncryptedCookieStorage
 from cryptography.fernet import Fernet
 from jinja2 import FileSystemLoader
 from aiohttp import web
+from aiohttp import web_exceptions
+from aiohttp.web import HTTPFound
+from aiohttp.web import HTTPForbidden
 from util import Logger
 from util import load_module
 
@@ -46,6 +49,8 @@ async def iconv_middleware(request,handler):
             response.body=body_str.encode(encoding,errors='replace')
             response.headers['content-type']=f"text/html; charset={encoding}"
         return response
+    except web_exceptions.HTTPNotFound as e:
+        raise
     except Exception as e:
         logger.error(e,exc_info=True)
 
@@ -55,7 +60,7 @@ async def session_middleware(request,handler):
     logger=logging.getLogger(__name__)
     session=await aiohttp_session.get_session(request)
     user=session.get('user')
-    if user is None:
+    if not user:
         request.user=None
     else:
         request.user=user
@@ -80,7 +85,7 @@ class OldBrowserCookieStorage(EncryptedCookieStorage):
 
 
 class WebServer(Logger):
-    MODULES=['web.mail', 'web.test']
+    MODULES=['web.index', 'web.mail', 'web.test']
     BASE_DIR='web'
     STATIC_PATH='/static'
     STATIC_DIR='web/static'
@@ -93,6 +98,20 @@ class WebServer(Logger):
     @staticmethod
     def post(path, **kwargs):
         return WebServer._routes.post(path, **kwargs)
+
+    @staticmethod
+    def login_required(redirect=False):
+        def decorator(func):
+            @functools.wraps(func)
+            async def wrapper(request):
+                if hasattr(request,'user') and request.user:
+                    return await func(request)
+                elif redirect:
+                    return HTTPFound(f'/login.asp')
+                else:
+                    return HTTPForbidden(text="Please login first.")
+            return wrapper
+        return decorator
 
     def __init__(self,config):
         self.__runner=None
