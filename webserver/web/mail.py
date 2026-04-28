@@ -23,9 +23,9 @@ async def mail_left(req:Request):
     return {}
 
 
-@WebServer.get('/mail_main.asp')
+@WebServer.get('/mail_list.asp')
 @WebServer.login_required()
-@template('mail_main.html')
+@template('mail_list.html')
 async def mail_main(req:Request):
     return {}
 

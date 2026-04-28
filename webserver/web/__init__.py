@@ -13,6 +13,7 @@ from aiohttp.web import HTTPFound
 from aiohttp.web import HTTPForbidden
 from util import Logger
 from util import load_module
+from . import mailcenter
 
 
 class StaticWithIndex(Logger):
@@ -126,6 +127,7 @@ class WebServer(Logger):
         aiohttp_session.setup(self.__app,OldBrowserCookieStorage(Fernet(Fernet.generate_key())))
         self.__app.middlewares.append(session_middleware)
         self.__app.router.add_static(self.STATIC_PATH,self.STATIC_DIR)
+        mailcenter.setup(self.__app)
         for item in self.MODULES:
             try:
                 load_module(item)

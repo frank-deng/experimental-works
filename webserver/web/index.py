@@ -24,7 +24,7 @@ async def login(req:Request):
         password=form_data.get('password')
         if not username or not password:
             fail_info='用户名和密码不能为空'
-        elif not MailCenter(req.app).auth(username,password):
+        elif not await MailCenter(req.app).auth(username,password):
             fail_info='登录失败'
         else:
             session=await new_session(req)
