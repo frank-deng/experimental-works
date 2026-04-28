@@ -20,6 +20,7 @@ config.py
 *.EXE
 *.bmp
 *.BMP
+*.db
 images/
 resume/resume.html
 .~lock.

@@ -12,17 +12,26 @@ host="0.0.0.0"
 port=8081
 encoding="gbk"
 
-[mail.user.frank]
+[mail.db]
+db_file='mail.db'
+maxsize=10
+minsize=2
+idle_timeout=30
+
+[[mail.users]]
 uid=100
+username="frank"
 password="77646f5a4f3166637627abe998e7a1470fe72d8b430f067dafa86263f1f23f94"
 
-[mail.user."deepseek"]
+[[mail.users]]
 uid=1
+username="deepseek"
 module="mailserver.askbot:MailUserRobotDeepseek"
 deepseek_key="xxx"
 
-[mail.user."erine@mysite.com"]
+[[mail.users]]
 uid=2
+username="erine"
 module="mailserver.askbot:MailUserRobotErine"
 client_id="xxx"
 client_secret="xxx"
