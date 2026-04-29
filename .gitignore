@@ -21,6 +21,8 @@ config.py
 *.bmp
 *.BMP
 *.db
+*.db-shm
+*.db-wal
 images/
 resume/resume.html
 .~lock.

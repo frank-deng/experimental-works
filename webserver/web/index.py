@@ -12,24 +12,7 @@ async def index(req:Request):
     return{}
 
 
-@WebServer.get('/login.asp')
-@WebServer.post('/login.asp')
-@template('login.html')
-async def login(req:Request):
-    username=''
-    fail_info=None
-    if req.method=='POST':
-        form_data=await req.post()
-        username=form_data.get('username','')
-        password=form_data.get('password')
-        if not username or not password:
-            fail_info='用户名和密码不能为空'
-        elif not await MailCenter(req.app).auth(username,password):
-            fail_info='登录失败'
-        else:
-            session=await new_session(req)
-            session["user"]=username
-            return Response(headers={'Location':'/mail.asp'},status=303)
+def login_ctx(username='',fail_info=None):
     return {
         'title':'登录',
         'header':'用户登录',
@@ -37,6 +20,25 @@ async def login(req:Request):
         'fail':fail_info,
         'post_url':'/login.asp'
     }
+
+
+@WebServer.get('/login.asp')
+@WebServer.post('/login.asp')
+@template('login.html')
+async def login(req:Request):
+    if req.method!='POST':
+        return login_ctx('',None)
+    form_data=await req.post()
+    username=form_data.get('username','')
+    password=form_data.get('password')
+    if not username or not password:
+        return login_ctx(username,'用户名和密码不能为空')
+    uid=await MailCenter(req.app).auth(username,password)
+    if uid is None:
+        return login_ctx(username,'登录失败')
+    session=await new_session(req)
+    session["uid"]=uid
+    return Response(headers={'Location':'/mail.asp'},status=303)
 
 
 @WebServer.get('/logout.asp')

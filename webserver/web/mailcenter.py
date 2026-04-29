@@ -4,6 +4,7 @@ from aiosqlitepool import SQLiteConnectionPool
 from util import Logger
 from util import load_module
 
+
 class MailCenterInstance(Logger):
     _setup_script="""
 CREATE TABLE IF NOT EXISTS email (
@@ -13,6 +14,7 @@ CREATE TABLE IF NOT EXISTS email (
     sent_time INTEGER,
     create_time INTEGER NOT NULL,
     update_time INTEGER,
+    status INTEGER NOT NULL,
     title TEXT,
     body TEXT,
     to_orig TEXT,
@@ -59,9 +61,10 @@ CREATE TABLE IF NOT EXISTS attachment (
         return conn
 
     def _load_users(self,users):
-        self._users=users
+        self._users={}
         self._user_login={}
         for item in users:
+            self._users[item['uid']]=item
             if 'password' in item:
                 self._user_login[item['username']]=item
 
@@ -72,9 +75,12 @@ CREATE TABLE IF NOT EXISTS attachment (
 
     async def auth(self,username,password):
         if not username or not password or username not in self._user_login:
-            return False
-        userdata=self._user_login[username]
-        return userdata['password']==hashlib.sha256(password.encode('iso8859-1',errors='ignore')).hexdigest()
+            return None
+        user=self._user_login[username]
+        password_hash=hashlib.sha256(password.encode('iso8859-1',errors='ignore')).hexdigest()
+        if user['password']!=password_hash:
+            return None
+        return user['uid']
 
     async def start(self):
         async with self._pool.connection() as conn:

@@ -60,11 +60,7 @@ async def iconv_middleware(request,handler):
 async def session_middleware(request,handler):
     logger=logging.getLogger(__name__)
     session=await aiohttp_session.get_session(request)
-    user=session.get('user')
-    if not user:
-        request.user=None
-    else:
-        request.user=user
+    request.uid=session.get('uid')
     return await handler(request)
 
 
@@ -105,7 +101,7 @@ class WebServer(Logger):
         def decorator(func):
             @functools.wraps(func)
             async def wrapper(request):
-                if hasattr(request,'user') and request.user:
+                if hasattr(request,'uid') and request.uid:
                     return await func(request)
                 elif redirect:
                     return HTTPFound(f'/login.asp')
