@@ -34,16 +34,18 @@ async def mail_main(req:Request):
 @WebServer.login_required()
 @template('mail_editor.html')
 async def mail_editor(req:Request):
-    email_id=None
-    if 'email_id' in req.url.query:
-        try:
-            email_id=int(req.url.query.get('email_id'))
-        except TypeError:
-            email_id=None
-        except ValueError:
-            email_id=None
+    logger=logging.getLogger(__name__)
+    email=None
+    email_id=req.url.query.get('email_id')
+    if not email_id:
+        return {}
+    email=await MailCenter(req.app).get_email_draft(req.uid,email_id)
     return {
-        'email_id':email_id
+        'email_id':email['id'],
+        'to':email['to_orig'],
+        'cc':email['cc_orig'],
+        'subject':email['subject'],
+        'body':email['body'],
     }
 
 

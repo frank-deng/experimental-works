@@ -1,6 +1,7 @@
 import hashlib
 import aiosqlite
 import time
+import aiosqlite
 from aiosqlitepool import SQLiteConnectionPool
 from util import Logger
 from util import load_module
@@ -72,6 +73,7 @@ INSERT OR IGNORE INTO thread_counter (id, current_id) VALUES (1, 0);
     async def _create_conn(self)->aiosqlite.Connection:
         config_db=self._config['mail']['db']
         conn=await aiosqlite.connect(config_db['db_file'])
+        conn.row_factory=aiosqlite.Row
         busy_timeout=config_db.get('busy_timeout',5000)
         if not isinstance(busy_timeout,int):
             raise ValueError('busy_timeout must be int')
@@ -117,7 +119,7 @@ INSERT OR IGNORE INTO thread_counter (id, current_id) VALUES (1, 0);
         async with self._pool.connection() as conn:
             await conn.execute('UPDATE email SET \
                 to_orig=?,cc_orig=?,subject=?,body=?,update_time=? \
-                WHERE email_id=? AND from_uid=? and send_time is NULL',
+                WHERE id=? AND from_uid=? and sent_time is NULL',
                 (
                     data.get('to',''),
                     data.get('cc',''),
@@ -145,6 +147,14 @@ INSERT OR IGNORE INTO thread_counter (id, current_id) VALUES (1, 0);
             email_id=cursor.lastrowid
             await conn.commit()
         return email_id
+
+    async def get_email_draft(self,uid,email_id):
+        email=None
+        async with self._pool.connection() as conn:
+            cursor=await conn.execute('SELECT * FROM email where from_uid=? \
+                AND id=? AND sent_time is NULL',(uid,email_id))
+            email=await cursor.fetchone()
+        return email
 
     async def save_draft(self,uid,data,email_id=None):
         if email_id is not None:
