@@ -49,10 +49,10 @@ async def mail_editor(req:Request):
     }
 
 
-@WebServer.post('/mail_send.asp')
+@WebServer.post('/mail_editor.asp')
 @WebServer.login_required()
-@template('mail_send.html')
-async def mail_send(req:Request):
+@template('mail_editor.html')
+async def mail_editor_send(req:Request):
     logger=logging.getLogger(__name__)
     config=req.app['config']
     encoding=config['web'].get('encoding')
@@ -71,6 +71,12 @@ async def mail_send(req:Request):
     logger.debug(form_data)
     if 'save_draft' in form_data:
         email_id=await MailCenter(req.app).save_draft(req.uid,form_data,form_data.get('email_id'))
-        return Response(headers={'Location':f'/mail_editor.asp?email_id={email_id}'},status=303)
-    return {}
+        return{
+            'email_id':email_id,
+            'to':form_data.get('to'),
+            'cc':form_data.get('cc'),
+            'subject':form_data.get('subject'),
+            'body':form_data.get('body'),
+        }
+    return Response(headers={'Location':f'/mail_list.asp?folder=sent'},status=303)
 
