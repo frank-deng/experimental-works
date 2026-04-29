@@ -54,9 +54,11 @@ async def mail_send(req:Request):
     logger=logging.getLogger(__name__)
     config=req.app['config']
     encoding=config['web'].get('encoding')
-    form_data=parse_qs(await req.read())
-    for item in form_data:
-        form_data[item]=form_data[item][0].decode(encoding,errors='replace')
+    form_data_raw=parse_qs(await req.read())
+    form_data={}
+    for key_raw in form_data_raw:
+        key=key_raw.decode('iso8859-1')
+        form_data[key]=form_data_raw[key_raw][0].decode(encoding,errors='replace')
     if 'email_id' in form_data:
         try:
             form_data['email_id']=int(form_data['email_id'])

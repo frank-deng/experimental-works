@@ -12,7 +12,7 @@ async def sql_insert_single(conn,table,data:dict):
     placeholders=','.join(['?'] * len(columns))
     values=tuple(data[col] for col in columns)
     sql=f'INSERT INTO {table} ({cols_sql}) VALUES ({placeholders})'
-    return await db.execute(sql,values)
+    return await conn.execute(sql,values)
 
 
 class MailCenterInstance(Logger):
@@ -86,7 +86,7 @@ INSERT OR IGNORE INTO thread_counter (id, current_id) VALUES (1, 0);
         return conn
 
     async def _next_thread_id(self,conn)->int:
-        cursor = await db.execute("UPDATE thread_counter SET current_id = current_id + 1 WHERE id = 1 RETURNING current_id")
+        cursor = await conn.execute("UPDATE thread_counter SET current_id = current_id + 1 WHERE id = 1 RETURNING current_id")
         row = await cursor.fetchone()
         await conn.commit()
         return row[0]
@@ -115,23 +115,32 @@ INSERT OR IGNORE INTO thread_counter (id, current_id) VALUES (1, 0);
 
     async def _update_draft(self,email_id,uid,data):
         async with self._pool.connection() as conn:
-            await conn.execute(
-                'UPDATE email SET to_orig=?,cc_orig=?,subject=?,body=?,update_time=? WHERE email_id=? AND from_uid=? and send_time is NULL',
-                (data['to'],data['cc'],data['subject'],data['body'],time.time(),email_id,uid))
+            await conn.execute('UPDATE email SET \
+                to_orig=?,cc_orig=?,subject=?,body=?,update_time=? \
+                WHERE email_id=? AND from_uid=? and send_time is NULL',
+                (
+                    data.get('to',''),
+                    data.get('cc',''),
+                    data.get('subject',''),
+                    data.get('body',''),
+                    int(time.time()),
+                    email_id,
+                    uid
+                ))
             await conn.commit()
 
     async def _insert_draft(self,uid,data):
         email_id=None
         async with self._pool.connection() as conn:
-            cursor=sql_insert_single('email',{
+            cursor=await sql_insert_single(conn,'email',{
                 'thread_id':await self._next_thread_id(conn),
                 'from_uid':uid,
-                'create_time':time.time(),
+                'create_time':int(time.time()),
                 'status':0,
-                'subject':data['subject'],
-                'body':data['body'],
-                'to_orig':data['to'],
-                'cc_orig':data['cc'],
+                'subject':data.get('subject',''),
+                'body':data.get('body',''),
+                'to_orig':data.get('to',''),
+                'cc_orig':data.get('cc',''),
             })
             email_id=cursor.lastrowid
             await conn.commit()
