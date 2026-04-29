@@ -1,8 +1,18 @@
 import hashlib
 import aiosqlite
+import time
 from aiosqlitepool import SQLiteConnectionPool
 from util import Logger
 from util import load_module
+
+
+async def sql_insert_single(conn,table,data:dict):
+    columns=list(data.keys())
+    cols_sql=','.join(columns)
+    placeholders=','.join(['?'] * len(columns))
+    values=tuple(data[col] for col in columns)
+    sql=f'INSERT INTO {table} ({cols_sql}) VALUES ({placeholders})'
+    return await db.execute(sql,values)
 
 
 class MailCenterInstance(Logger):
@@ -15,7 +25,7 @@ CREATE TABLE IF NOT EXISTS email (
     create_time INTEGER NOT NULL,
     update_time INTEGER,
     status INTEGER NOT NULL,
-    title TEXT,
+    subject TEXT,
     body TEXT,
     to_orig TEXT,
     cc_orig TEXT
@@ -43,7 +53,22 @@ CREATE TABLE IF NOT EXISTS attachment (
     file_name TEXT NOT NULL,
     file_id TEXT NOT NULL
 ) STRICT;
+
+CREATE TABLE IF NOT EXISTS thread_counter (
+    id INTEGER PRIMARY KEY CHECK (id = 1),
+    current_id INTEGER NOT NULL DEFAULT 0
+) STRICT;
+
+INSERT OR IGNORE INTO thread_counter (id, current_id) VALUES (1, 0);
 """
+    def _load_users(self,users):
+        self._users={}
+        self._user_login={}
+        for item in users:
+            self._users[item['uid']]=item
+            if 'password' in item:
+                self._user_login[item['username']]=item
+
     async def _create_conn(self)->aiosqlite.Connection:
         config_db=self._config['mail']['db']
         conn=await aiosqlite.connect(config_db['db_file'])
@@ -60,13 +85,11 @@ CREATE TABLE IF NOT EXISTS attachment (
         await conn.execute("PRAGMA synchronous=NORMAL;")
         return conn
 
-    def _load_users(self,users):
-        self._users={}
-        self._user_login={}
-        for item in users:
-            self._users[item['uid']]=item
-            if 'password' in item:
-                self._user_login[item['username']]=item
+    async def _next_thread_id(self,conn)->int:
+        cursor = await db.execute("UPDATE thread_counter SET current_id = current_id + 1 WHERE id = 1 RETURNING current_id")
+        row = await cursor.fetchone()
+        await conn.commit()
+        return row[0]
 
     def __init__(self,config):
         self._config=config
@@ -89,6 +112,37 @@ CREATE TABLE IF NOT EXISTS attachment (
 
     async def stop(self):
         await self._pool.close()
+
+    async def _update_draft(self,email_id,uid,data):
+        async with self._pool.connection() as conn:
+            await conn.execute(
+                'UPDATE email SET to_orig=?,cc_orig=?,subject=?,body=?,update_time=? WHERE email_id=? AND from_uid=? and send_time is NULL',
+                (data['to'],data['cc'],data['subject'],data['body'],time.time(),email_id,uid))
+            await conn.commit()
+
+    async def _insert_draft(self,uid,data):
+        email_id=None
+        async with self._pool.connection() as conn:
+            cursor=sql_insert_single('email',{
+                'thread_id':await self._next_thread_id(conn),
+                'from_uid':uid,
+                'create_time':time.time(),
+                'status':0,
+                'subject':data['subject'],
+                'body':data['body'],
+                'to_orig':data['to'],
+                'cc_orig':data['cc'],
+            })
+            email_id=cursor.lastrowid
+            await conn.commit()
+        return email_id
+
+    async def save_draft(self,uid,data,email_id=None):
+        if email_id is not None:
+            await self._update_draft(email_id,uid,data)
+        else:
+            email_id=await self._insert_draft(uid,data)
+        return email_id
 
 
 def MailCenter(app):

@@ -23,11 +23,14 @@ def login_ctx(username='',fail_info=None):
 
 
 @WebServer.get('/login.asp')
-@WebServer.post('/login.asp')
 @template('login.html')
 async def login(req:Request):
-    if req.method!='POST':
-        return login_ctx('',None)
+    return login_ctx('',None)
+
+
+@WebServer.post('/login.asp')
+@template('login.html')
+async def do_login(req:Request):
     form_data=await req.post()
     username=form_data.get('username','')
     password=form_data.get('password')
