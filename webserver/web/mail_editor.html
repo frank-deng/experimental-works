@@ -1,0 +1,35 @@
+<html>
+<head>
+  <meta charset='GB2312'/>
+</head>
+<body bgcolor='#ffffff' topmargin='3' leftmargin='8' rightmargin='8' bottommargin='0'>
+<form method="post" action="/mail_send.asp">
+<table>
+  <tr>
+    <td align="right"><label for="to">收件人：</label></td>
+    <td><input type="text" id="to" name="to" size="50" value='{{to}}'></td>
+  </tr>
+  <tr>
+    <td align="right"><label for="cc">抄送：</label></td>
+    <td><input type="text" id="cc" name="cc" size="50" value='{{cc}}'></td>
+  </tr>
+  <tr>
+    <td align="right"><label for="subject">标题：</label></td>
+    <td><input type="text" id="subject" name="subject" size="50" value='{{subject}}'></td>
+  </tr>
+  <tr>
+    <td align="right" valign="top"><label for="body">正文：</label></td>
+    <td><textarea id="body" name="body" rows="8" cols="48">{{body}}</textarea></td>
+  </tr>
+  <tr>
+    <td></td>
+    <td>
+      <input type="submit" name='do_send' value="发送邮件">
+      <input type="submit" name='save_draft' value="保存草稿">
+{% if email_id %}
+<input type="hidden" name='email_id' value="{{email_id}}">
+{% endif %}
+    </td>
+  </tr>
+</table><hr></form></body></html>
+
