@@ -62,11 +62,20 @@ CREATE TABLE IF NOT EXISTS thread_counter (
 
 INSERT OR IGNORE INTO thread_counter (id, current_id) VALUES (1, 0);
 """
+    def __init__(self,config):
+        self._config=config
+        self.pagesize=config['mail'].get('pagesize',30)
+        self._host=config['mail']['host']
+        self._load_users(config['mail']['users'])
+        self._pool=SQLiteConnectionPool(connection_factory=self._create_conn)
+
     def _load_users(self,users):
         self._users={}
+        self._users_by_name={}
         self._user_login={}
         for item in users:
             self._users[item['uid']]=item
+            self._users_by_name[item['username']]=item
             if 'password' in item:
                 self._user_login[item['username']]=item
 
@@ -92,11 +101,6 @@ INSERT OR IGNORE INTO thread_counter (id, current_id) VALUES (1, 0);
         row = await cursor.fetchone()
         await conn.commit()
         return row[0]
-
-    def __init__(self,config):
-        self._config=config
-        self._load_users(config['mail']['users'])
-        self._pool=SQLiteConnectionPool(connection_factory=self._create_conn)
 
     async def auth(self,username,password):
         if not username or not password or username not in self._user_login:
@@ -156,12 +160,42 @@ INSERT OR IGNORE INTO thread_counter (id, current_id) VALUES (1, 0);
             email=await cursor.fetchone()
         return email
 
+    async def get_email_list_draft(self,uid,page):
+        email_list=[]
+        total=0
+        async with self._pool.connection() as conn:
+            cursor=await conn.execute('SELECT COUNT(id) as total FROM email \
+                WHERE sent_time is NULL and from_uid=?',(uid,))
+            total=(await cursor.fetchone())['total']
+            cursor=await conn.execute('SELECT * FROM email where \
+                sent_time is NULL and from_uid=? LIMIT ? OFFSET ?',
+                (uid,self.pagesize,page*self.pagesize))
+            email_list=await cursor.fetchall()
+        return email_list,total
+
     async def save_draft(self,uid,data,email_id=None):
         if email_id is not None:
             await self._update_draft(email_id,uid,data)
         else:
             email_id=await self._insert_draft(uid,data)
         return email_id
+
+    async def delete_draft(self,uid,email_id):
+        email=None
+        async with self._pool.connection() as conn:
+            cursor=await conn.execute('DELETE FROM email where from_uid=? \
+                AND id=? AND sent_time is NULL',(uid,email_id))
+            await conn.commit()
+        return email
+
+    async def get_uid_from_addr(self,addr):
+        items=addr.strip().split('@')
+        if len(items)!=2:
+            return None
+        user,host=items[0],items[1]
+        if host!=self._host or user not in self._user_by_name:
+            return None
+        return self._user_by_name[user]['uid']
 
 
 def MailCenter(app):
