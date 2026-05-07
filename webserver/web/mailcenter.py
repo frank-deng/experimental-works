@@ -57,15 +57,6 @@ CREATE TABLE IF NOT EXISTS maillist (
     status INTEGER NOT NULL
 ) STRICT;
 
-CREATE TABLE IF NOT EXISTS attachment (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    email_id INTEGER NOT NULL,
-    file_size INTEGER NOT NULL,
-    mime_type TEXT,
-    file_name TEXT NOT NULL,
-    file_id TEXT NOT NULL
-) STRICT;
-
 CREATE TABLE IF NOT EXISTS email_id_counter (
     id INTEGER PRIMARY KEY CHECK (id = 1),
     current_id INTEGER NOT NULL DEFAULT 0
