@@ -16,16 +16,27 @@ async def sql_insert_single(conn,table,data:dict):
     return await conn.execute(sql,values)
 
 
+async def sql_insert_multi(conn,table,data:list):
+    columns=list(data[0].keys())
+    cols_sql=','.join(columns)
+    placeholders=','.join(['?'] * len(columns))
+    values=[tuple(item[col] for col in columns) for item in data]
+    sql=f'INSERT INTO {table} ({cols_sql}) VALUES ({placeholders})'
+    return await conn.executemany(sql,values)
+
+
 class MailCenterInstance(Logger):
     _setup_script="""
 CREATE TABLE IF NOT EXISTS email (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
-    thread_id INTEGER NOT NULL,
+    email_id INTEGER NOT NULL,
+    frag_id INTEGER NOT NULL
+) STRICT;
+
+CREATE TABLE IF NOT EXISTS email_frag (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
     from_uid INTEGER NOT NULL,
     sent_time INTEGER,
-    create_time INTEGER NOT NULL,
-    update_time INTEGER,
-    status INTEGER NOT NULL,
     subject TEXT,
     body TEXT,
     to_orig TEXT,
@@ -55,12 +66,12 @@ CREATE TABLE IF NOT EXISTS attachment (
     file_id TEXT NOT NULL
 ) STRICT;
 
-CREATE TABLE IF NOT EXISTS thread_counter (
+CREATE TABLE IF NOT EXISTS email_id_counter (
     id INTEGER PRIMARY KEY CHECK (id = 1),
     current_id INTEGER NOT NULL DEFAULT 0
 ) STRICT;
 
-INSERT OR IGNORE INTO thread_counter (id, current_id) VALUES (1, 0);
+INSERT OR IGNORE INTO email_id_counter (id, current_id) VALUES (1, 0);
 """
     def __init__(self,config):
         self._config=config
@@ -96,8 +107,8 @@ INSERT OR IGNORE INTO thread_counter (id, current_id) VALUES (1, 0);
         await conn.execute("PRAGMA synchronous=NORMAL;")
         return conn
 
-    async def _next_thread_id(self,conn)->int:
-        cursor = await conn.execute("UPDATE thread_counter SET current_id = current_id + 1 WHERE id = 1 RETURNING current_id")
+    async def _next_email_id(self,conn)->int:
+        cursor = await conn.execute("UPDATE email_id_counter SET current_id = current_id + 1 WHERE id = 1 RETURNING current_id")
         row = await cursor.fetchone()
         await conn.commit()
         return row[0]
@@ -119,83 +130,14 @@ INSERT OR IGNORE INTO thread_counter (id, current_id) VALUES (1, 0);
     async def stop(self):
         await self._pool.close()
 
-    async def _update_draft(self,email_id,uid,data):
-        async with self._pool.connection() as conn:
-            await conn.execute('UPDATE email SET \
-                to_orig=?,cc_orig=?,subject=?,body=?,update_time=? \
-                WHERE id=? AND from_uid=? and sent_time is NULL',
-                (
-                    data.get('to',''),
-                    data.get('cc',''),
-                    data.get('subject',''),
-                    data.get('body',''),
-                    int(time.time()),
-                    email_id,
-                    uid
-                ))
-            await conn.commit()
-
-    async def _insert_draft(self,uid,data):
-        email_id=None
-        async with self._pool.connection() as conn:
-            cursor=await sql_insert_single(conn,'email',{
-                'thread_id':await self._next_thread_id(conn),
-                'from_uid':uid,
-                'create_time':int(time.time()),
-                'status':0,
-                'subject':data.get('subject',''),
-                'body':data.get('body',''),
-                'to_orig':data.get('to',''),
-                'cc_orig':data.get('cc',''),
-            })
-            email_id=cursor.lastrowid
-            await conn.commit()
-        return email_id
-
-    async def get_email_draft(self,uid,email_id):
-        email=None
-        async with self._pool.connection() as conn:
-            cursor=await conn.execute('SELECT * FROM email where from_uid=? \
-                AND id=? AND sent_time is NULL',(uid,email_id))
-            email=await cursor.fetchone()
-        return email
-
-    async def get_email_list_draft(self,uid,page):
-        email_list=[]
-        total=0
-        async with self._pool.connection() as conn:
-            cursor=await conn.execute('SELECT COUNT(id) as total FROM email \
-                WHERE sent_time is NULL and from_uid=?',(uid,))
-            total=(await cursor.fetchone())['total']
-            cursor=await conn.execute('SELECT * FROM email where \
-                sent_time is NULL and from_uid=? LIMIT ? OFFSET ?',
-                (uid,self.pagesize,page*self.pagesize))
-            email_list=await cursor.fetchall()
-        return email_list,total
-
-    async def save_draft(self,uid,data,email_id=None):
-        if email_id is not None:
-            await self._update_draft(email_id,uid,data)
-        else:
-            email_id=await self._insert_draft(uid,data)
-        return email_id
-
-    async def delete_draft(self,uid,email_id):
-        email=None
-        async with self._pool.connection() as conn:
-            cursor=await conn.execute('DELETE FROM email where from_uid=? \
-                AND id=? AND sent_time is NULL',(uid,email_id))
-            await conn.commit()
-        return email
-
     async def get_uid_from_addr(self,addr):
         items=addr.strip().split('@')
         if len(items)!=2:
             return None
         user,host=items[0],items[1]
-        if host!=self._host or user not in self._user_by_name:
+        if host!=self._host or user not in self._users_by_name:
             return None
-        return self._user_by_name[user]['uid']
+        return self._users_by_name[user]['uid']
 
 
 def MailCenter(app):

@@ -31,8 +31,6 @@ async def mail_main(req:Request):
     folder=req.url.query.get('folder')
     page=req.url.query.get('page',0)
     email_list,total=[],0
-    if folder=='draft':
-        email_list,total=await MailCenter(req.app).get_email_list_draft(req.uid,page)
     return {
         'email_list':email_list,
         'folder':folder,
@@ -60,11 +58,30 @@ async def mail_editor(req:Request):
     }
 
 
-async def process_mail(forn_data):
-    if 'save_draft' in form_data or 'delete_draft' in form_data:
-        return None
-    to_list=[s.strip() for s in to.split(';')]
-    cc_list=[s.strip() for s in cc.split(';')]
+def __get_recp_list(recp:str):
+    recp_list=[s.strip() for s in recp.split(';')]
+    return [s for s in list(dict.fromkeys(recp_list)) if s]
+
+
+async def __check_email(MailCenter,to,cc,subject,body):
+    issues=[]
+    if not subject:
+        issues.append('标题不能为空')
+    to_list=__get_recp_list(to)
+    cc_list=__get_recp_list(cc)
+    if (len(to_list)+len(cc_list))==0:
+        issues.append('收件人或抄送人必须存在')
+    else:
+        to_dict=dict.fromkeys(to_list)
+        for addr in to_list:
+            if (await MailCenter.get_uid_from_addr(addr)) is None:
+                issues.append(f'收件人{addr}无效')
+        for addr in cc_list:
+            if (await MailCenter.get_uid_from_addr(addr)) is None:
+                issues.append(f'抄送人{addr}无效')
+            elif addr in to_dict:
+                issues.append(f'{addr}不能同时出现在收件人和抄送人中')
+    return issues
 
 
 @WebServer.post('/mail_editor.asp')
@@ -79,26 +96,19 @@ async def mail_editor_send(req:Request):
     for key_raw in form_data_raw:
         key=key_raw.decode('iso8859-1')
         form_data[key]=form_data_raw[key_raw][0].decode(encoding,errors='replace')
-    if 'email_id' in form_data:
-        try:
-            form_data['email_id']=int(form_data['email_id'])
-        except TypeError:
-            form_data['email_id']=None
-        except ValueError:
-            form_data['email_id']=None
-    logger.debug(form_data)
-    if 'save_draft' in form_data:
-        email_id=await MailCenter(req.app).save_draft(req.uid,form_data,form_data.get('email_id'))
+    form_data['subject']=form_data.get('subject','').strip()
+    issues=await __check_email(MailCenter(req.app),form_data.get('to',''),
+        form_data.get('cc',''),form_data.get('subject',''),
+        form_data.get('body',''))
+    if len(issues):
         return{
-            'email_id':email_id,
+            'email_id':form_data.get('email_id',None),
             'to':form_data.get('to',''),
             'cc':form_data.get('cc',''),
             'subject':form_data.get('subject',''),
             'body':form_data.get('body',''),
+            'issues':issues,
         }
-    elif 'delete_draft' in form_data:
-        await MailCenter(req.app).delete_draft(req.uid,form_data.get('email_id'))
-        return{}
-    to_list,cc_list=process_mail(form_data['to'],form_data['cc'])
-    return Response(headers={'Location':'/mail_list.asp?folder=sent'},status=303)
+    return Response(headers={'Location':'/mail_list.asp?folder=sent'},
+                    status=303)
 
