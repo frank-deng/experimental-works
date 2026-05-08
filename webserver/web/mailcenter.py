@@ -167,6 +167,22 @@ CREATE TABLE IF NOT EXISTS recipient (
             ))''',(email_id,uid,email_id,uid))
         return (await cursor.fetchone())['perm']
 
+    async def _get_recipient(self,conn,email_list):
+        placeholders = ','.join('?' * len(email_list))
+        cursor=await conn.execute(f'SELECT email_id,uid,type FROM recipient\
+            WHERE email_id in ({placeholders})',email_list)
+        to,cc={},{}
+        for item in await cursor.fetchall():
+            email_id,uid=item['email_id'],item['uid']
+            if email_id not in to:
+                to[email_id],cc[email_id]={},{}
+            addr=await self.get_addr_from_uid(uid)
+            if item['type']==1: #cc
+                cc[email_id][uid]=addr
+            else:
+                to[email_id][uid]=addr
+        return to,cc
+
     async def mail_detail(self,uid,email_id):
         async with self._pool.connection() as conn:
             if not self._check_permission(conn,uid,email_id):
@@ -175,11 +191,20 @@ CREATE TABLE IF NOT EXISTS recipient (
                 (SELECT email_id_rel FROM email_rel WHERE email_id=?)\
                 ORDER BY id DESC',(email_id,email_id))
             email_list=[{
-                'from_addr':self.get_addr_from_uid(email['from_uid']),
+                'id':email['id'],
+                'from_addr':await self.get_addr_from_uid(email['from_uid']),
                 'subject':email['subject'],
                 'body':email['body'],
                 'sent_time':email['sent_time'],
             } for email in await cursor.fetchall()]
+            to,cc=await self._get_recipient(conn,
+                [item['id'] for item in email_list])
+            for email in email_list:
+                email_id=email['id']
+                email['to']=to[email_id]
+                email['to_str']='; '.join(to[email_id].values())
+                email['cc']=cc[email_id]
+                email['cc_str']='; '.join(cc[email_id].values())
             return email_list
 
 
