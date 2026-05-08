@@ -27,13 +27,13 @@ async def sql_insert_multi(conn,table,data:list):
 
 class MailCenterInstance(Logger):
     _setup_script="""
-CREATE TABLE IF NOT EXISTS email (
+CREATE TABLE IF NOT EXISTS email_rel (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     email_id INTEGER NOT NULL,
-    frag_id INTEGER NOT NULL
+    email_id_rel INTEGER NOT NULL
 ) STRICT;
 
-CREATE TABLE IF NOT EXISTS email_frag (
+CREATE TABLE IF NOT EXISTS email (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     from_uid INTEGER NOT NULL,
     sent_time INTEGER,
@@ -49,13 +49,6 @@ CREATE TABLE IF NOT EXISTS recipient (
     type INTEGER NOT NULL,
     status INTEGER NOT NULL
 ) STRICT;
-
-CREATE TABLE IF NOT EXISTS email_id_counter (
-    id INTEGER PRIMARY KEY CHECK (id = 1),
-    current_id INTEGER NOT NULL DEFAULT 0
-) STRICT;
-
-INSERT OR IGNORE INTO email_id_counter (id, current_id) VALUES (1, 0);
 """
     def __init__(self,config):
         self._config=config
@@ -91,10 +84,6 @@ INSERT OR IGNORE INTO email_id_counter (id, current_id) VALUES (1, 0);
         await conn.execute("PRAGMA synchronous=NORMAL;")
         return conn
 
-    async def _next_email_id(self,conn)->int:
-        await conn.commit()
-        return row[0]
-
     async def auth(self,username,password):
         if not username or not password or username not in self._user_login:
             return None
@@ -121,26 +110,32 @@ INSERT OR IGNORE INTO email_id_counter (id, current_id) VALUES (1, 0);
             return None
         return self._users_by_name[user]['uid']
 
+    async def get_addr_from_uid(self,uid):
+        if uid not in self._users:
+            return None
+        return self._users[uid]['username']+'@'+self._host
+
     async def send(self,from_uid,to_list,cc_list,subject,body,
                    prev_email_id=None):
         async with self._pool.connection() as conn:
             email_list=[]
             if prev_email_id:
-                cursor=await conn.execute("SELECT frag_id from email WHERE email_id=?",(prev_email_id,))
+                cursor=await conn.execute(
+                    "SELECT email_id_rel from email_rel WHERE email_id=?",
+                    (prev_email_id,))
                 email_list+=(await cursor.fetchall()).values()
-            cursor=await conn.execute("UPDATE email_id_counter SET current_id = current_id + 1 WHERE id = 1 RETURNING current_id")
-            email_id = (await cursor.fetchone())[0]
-            frag_id=(await sql_insert_single(conn,'email_frag',{
+            email_id=(await sql_insert_single(conn,'email',{
                 'from_uid':from_uid,
                 'sent_time':int(time.time()),
                 'subject':subject,
                 'body':body,
                 'status':0,
             })).lastrowid
-            email_list.append(frag_id)
-            await conn.executemany(
-                'INSERT INTO email (email_id,frag_id) VALUES (?,?)',
-                [(email_id,frag_id) for frag_id in email_list])
+            if len(email_list):
+                await conn.executemany(
+                    'INSERT INTO email_rel (email_id,email_id_rel)\
+                    VALUES (?,?)',
+                    [(email_id,email_id_rel) for email_id_rel in email_list])
             await sql_insert_multi(conn,'recipient',[{
                 'email_id':email_id,
                 'uid':uid,
@@ -153,6 +148,37 @@ INSERT OR IGNORE INTO email_id_counter (id, current_id) VALUES (1, 0);
                 'status':0,
             } for uid in cc_list])
             await conn.commit()
+
+    async def mail_sent(self,uid):
+        async with self._pool.connection() as conn:
+            cursor_total=await conn.execute('SELECT COUNT(id) as total\
+                FROM email WHERE email.status>=0 AND from_uid=?',(uid,))
+            cursor_data=await conn.execute('SELECT * FROM email\
+                WHERE email.status>=0 AND email.from_uid=?',(uid,))
+            return await cursor_data.fetchall(),\
+                (await cursor_total.fetchone())['total']
+
+    async def _check_permission(self,conn,uid,email_id):
+        cursor=await conn.execute('''SELECT count(id) AS perm FROM email
+            where id=? AND (from_uid=? OR id IN (
+                SELECT email_id FROM recipient WHERE email_id=? AND uid=?
+            ))''',(email_id,uid,email_id,uid))
+        return (await cursor.fetchone())['perm']
+
+    async def mail_detail(self,uid,email_id):
+        async with self._pool.connection() as conn:
+            if not self._check_permission(conn,uid,email_id):
+                return None
+            cursor=await conn.execute('SELECT * FROM email WHERE id=? OR id IN\
+                (SELECT email_id_rel FROM email_rel WHERE email_id=?)\
+                ORDER BY id DESC',(email_id,email_id))
+            email_list=[{
+                'from_addr':self.get_addr_from_uid(email['from_uid']),
+                'subject':email['subject'],
+                'body':email['body'],
+                'sent_time':email['sent_time'],
+            } for email in await cursor.fetchall()]
+            return email_list
 
 
 def MailCenter(app):

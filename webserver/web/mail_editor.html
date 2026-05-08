@@ -32,7 +32,12 @@
   </tr>
 </table><hr></form>
 {% if issues %}{% for item in issues %}
-<p><font color='#FF0000'>{{item}}</font></p>
+<div><font color='#FF0000'>{{item}}</font></div>
+{% endfor %}<hr>{% endif %}
+{% if email_list %}{% for mail in email_list %}
+<p><b>标题：</b>{{mail['subject']}}</p>
+{% if mail['body'] %}<pre>{{mail['body']}}</pre>{% endif %}
+<hr>
 {% endfor %}{% endif %}
 </body></html>
 

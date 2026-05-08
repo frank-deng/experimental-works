@@ -3,14 +3,11 @@
   <meta charset='GB2312'/>
 </head>
 <body bgcolor='#ffffff' topmargin='3' leftmargin='8' rightmargin='8' bottommargin='0'>
-{% if total==0 %}
-没有邮件
-{% else %}
-<ul>
+	<p><a href='mail_editor.asp?action=forward&email_id={{email_id}}'>[转发]</a></p>
 {% for mail in email_list %}
-  <li><a href="/mail_detail.asp?email_id={{mail['id']}}">{{mail['subject'] or '[无标题]'}}</a></li>
+<p><b>标题：</b>{{mail['subject']}}</p>
+{% if mail['body'] %}<pre>{{mail['body']}}</pre>{% endif %}
+<hr>
 {% endfor %}
-</ul>
-{% endif %}
 </body>
 </html>

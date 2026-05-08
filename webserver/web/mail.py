@@ -26,11 +26,13 @@ async def mail_left(req:Request):
 @WebServer.get('/mail_list.asp')
 @WebServer.login_required()
 @template('mail_list.html')
-async def mail_main(req:Request):
+async def mail_list(req:Request):
     logger=logging.getLogger(__name__)
     folder=req.url.query.get('folder')
     page=req.url.query.get('page',0)
     email_list,total=[],0
+    if folder=='sent':
+        email_list,total=await MailCenter(req.app).mail_sent(req.uid)
     return {
         'email_list':email_list,
         'folder':folder,
@@ -39,22 +41,39 @@ async def mail_main(req:Request):
     }
 
 
+@WebServer.get('/mail_detail.asp')
+@WebServer.login_required()
+@template('mail_detail.html')
+async def mail_detail(req:Request):
+    email_id=req.url.query.get('email_id')
+    email_list=await MailCenter(req.app).mail_detail(req.uid,email_id)
+    return {
+        'email_list':email_list,
+        'email_id':email_id
+    }
+
+
 @WebServer.get('/mail_editor.asp')
 @WebServer.login_required()
 @template('mail_editor.html')
 async def mail_editor(req:Request):
     logger=logging.getLogger(__name__)
-    email=None
     email_id=req.url.query.get('email_id')
-    if not email_id:
-        return {}
-    email=await MailCenter(req.app).get_email_draft(req.uid,email_id)
+    action=req.url.query.get('action')
+    to=''
+    cc=''
+    subject=''
+    email_list=None
+    if email_id:
+        email_list=await MailCenter(req.app).mail_detail(req.uid,email_id)
+        subject='Fwd: '+email_list[0]['subject']
     return {
-        'email_id':email['id'],
-        'to':email['to_orig'],
-        'cc':email['cc_orig'],
-        'subject':email['subject'],
-        'body':email['body'],
+        'email_id':email_id,
+        'to':to,
+        'cc':cc,
+        'subject':subject,
+        'body':'',
+        'email_list':email_list
     }
 
 
@@ -109,6 +128,9 @@ async def mail_editor_send(req:Request):
             else:
                 cc_uid[uid]=uid
     if len(issues):
+        email_list=None
+        if email_id:
+            email_list=await MailCenter(req.app).mail_detail(req.uid,email_id)
         return{
             'email_id':email_id,
             'to':form_data.get('to',''),
@@ -116,6 +138,7 @@ async def mail_editor_send(req:Request):
             'subject':subject,
             'body':body,
             'issues':issues,
+            'email_list':email_list,
         }
     await _MailCenter.send(req.uid,to_uid.keys(),cc_uid.keys(),subject,body,
                            email_id)
