@@ -63,32 +63,12 @@ def __get_recp_list(recp:str):
     return [s for s in list(dict.fromkeys(recp_list)) if s]
 
 
-async def __check_email(MailCenter,to,cc,subject,body):
-    issues=[]
-    if not subject:
-        issues.append('标题不能为空')
-    to_list=__get_recp_list(to)
-    cc_list=__get_recp_list(cc)
-    if (len(to_list)+len(cc_list))==0:
-        issues.append('收件人或抄送人必须存在')
-    else:
-        to_dict=dict.fromkeys(to_list)
-        for addr in to_list:
-            if (await MailCenter.get_uid_from_addr(addr)) is None:
-                issues.append(f'收件人{addr}无效')
-        for addr in cc_list:
-            if (await MailCenter.get_uid_from_addr(addr)) is None:
-                issues.append(f'抄送人{addr}无效')
-            elif addr in to_dict:
-                issues.append(f'{addr}不能同时出现在收件人和抄送人中')
-    return issues
-
-
 @WebServer.post('/mail_editor.asp')
 @WebServer.login_required()
 @template('mail_editor.html')
 async def mail_editor_send(req:Request):
     logger=logging.getLogger(__name__)
+    _MailCenter=MailCenter(req.app)
     config=req.app['config']
     encoding=config['web'].get('encoding')
     form_data_raw=parse_qs(await req.read())
@@ -96,19 +76,49 @@ async def mail_editor_send(req:Request):
     for key_raw in form_data_raw:
         key=key_raw.decode('iso8859-1')
         form_data[key]=form_data_raw[key_raw][0].decode(encoding,errors='replace')
-    form_data['subject']=form_data.get('subject','').strip()
-    issues=await __check_email(MailCenter(req.app),form_data.get('to',''),
-        form_data.get('cc',''),form_data.get('subject',''),
-        form_data.get('body',''))
+    to_uid,cc_uid={},{}
+    subject=form_data.get('subject','').strip()
+    body=form_data.get('body','')
+    email_id=form_data.get('email_id',None)
+    issues=[]
+    if not subject:
+        issues.append('标题不能为空')
+    to_list=__get_recp_list(form_data.get('to',''))
+    cc_list=__get_recp_list(form_data.get('cc',''))
+    if (len(to_list)+len(cc_list))==0:
+        issues.append('收件人或抄送人必须存在')
+    else:
+        to_dict=dict.fromkeys(to_list)
+        for addr in to_list:
+            uid=await _MailCenter.get_uid_from_addr(addr)
+            if uid is None:
+                issues.append(f'收件人{addr}无效')
+            elif uid==req.uid:
+                issues.append(f'收件人不能为发件人本人（{addr}）')
+            else:
+                to_uid[uid]=uid
+        for addr in cc_list:
+            if addr in to_dict:
+                issues.append(f'{addr}不能同时出现在收件人和抄送人中')
+                continue
+            uid=await _MailCenter.get_uid_from_addr(addr)
+            if uid is None:
+                issues.append(f'抄送人{addr}无效')
+            elif uid==req.uid:
+                issues.append(f'抄送人不能为发件人本人（{addr}）')
+            else:
+                cc_uid[uid]=uid
     if len(issues):
         return{
-            'email_id':form_data.get('email_id',None),
+            'email_id':email_id,
             'to':form_data.get('to',''),
             'cc':form_data.get('cc',''),
-            'subject':form_data.get('subject',''),
-            'body':form_data.get('body',''),
+            'subject':subject,
+            'body':body,
             'issues':issues,
         }
+    await _MailCenter.send(req.uid,to_uid.keys(),cc_uid.keys(),subject,body,
+                           email_id)
     return Response(headers={'Location':'/mail_list.asp?folder=sent'},
                     status=303)
 

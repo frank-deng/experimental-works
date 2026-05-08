@@ -39,21 +39,14 @@ CREATE TABLE IF NOT EXISTS email_frag (
     sent_time INTEGER,
     subject TEXT,
     body TEXT,
-    to_orig TEXT,
-    cc_orig TEXT
+    status INTEGER NOT NULL
 ) STRICT;
 
 CREATE TABLE IF NOT EXISTS recipient (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     email_id INTEGER NOT NULL,
     uid INTEGER NOT NULL,
-    type INTEGER NOT NULL
-) STRICT;
-
-CREATE TABLE IF NOT EXISTS maillist (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    uid INTEGER NOT NULL,
-    email_id INTEGER NOT NULL,
+    type INTEGER NOT NULL,
     status INTEGER NOT NULL
 ) STRICT;
 
@@ -99,8 +92,6 @@ INSERT OR IGNORE INTO email_id_counter (id, current_id) VALUES (1, 0);
         return conn
 
     async def _next_email_id(self,conn)->int:
-        cursor = await conn.execute("UPDATE email_id_counter SET current_id = current_id + 1 WHERE id = 1 RETURNING current_id")
-        row = await cursor.fetchone()
         await conn.commit()
         return row[0]
 
@@ -129,6 +120,39 @@ INSERT OR IGNORE INTO email_id_counter (id, current_id) VALUES (1, 0);
         if host!=self._host or user not in self._users_by_name:
             return None
         return self._users_by_name[user]['uid']
+
+    async def send(self,from_uid,to_list,cc_list,subject,body,
+                   prev_email_id=None):
+        async with self._pool.connection() as conn:
+            email_list=[]
+            if prev_email_id:
+                cursor=await conn.execute("SELECT frag_id from email WHERE email_id=?",(prev_email_id,))
+                email_list+=(await cursor.fetchall()).values()
+            cursor=await conn.execute("UPDATE email_id_counter SET current_id = current_id + 1 WHERE id = 1 RETURNING current_id")
+            email_id = (await cursor.fetchone())[0]
+            frag_id=(await sql_insert_single(conn,'email_frag',{
+                'from_uid':from_uid,
+                'sent_time':int(time.time()),
+                'subject':subject,
+                'body':body,
+                'status':0,
+            })).lastrowid
+            email_list.append(frag_id)
+            await conn.executemany(
+                'INSERT INTO email (email_id,frag_id) VALUES (?,?)',
+                [(email_id,frag_id) for frag_id in email_list])
+            await sql_insert_multi(conn,'recipient',[{
+                'email_id':email_id,
+                'uid':uid,
+                'type':0,
+                'status':0,
+            } for uid in to_list]+[{
+                'email_id':email_id,
+                'uid':uid,
+                'type':1,
+                'status':0,
+            } for uid in cc_list])
+            await conn.commit()
 
 
 def MailCenter(app):
