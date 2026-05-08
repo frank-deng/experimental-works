@@ -123,7 +123,8 @@ CREATE TABLE IF NOT EXISTS recipient (
                 cursor=await conn.execute(
                     "SELECT email_id_rel from email_rel WHERE email_id=?",
                     (prev_email_id,))
-                email_list+=(await cursor.fetchall()).values()
+                email_list=[item['email_id_rel'] for item in await cursor.fetchall()]
+                email_list.append(prev_email_id)
             email_id=(await sql_insert_single(conn,'email',{
                 'from_uid':from_uid,
                 'sent_time':int(time.time()),
@@ -154,7 +155,8 @@ CREATE TABLE IF NOT EXISTS recipient (
             cursor_total=await conn.execute('SELECT COUNT(id) as total\
                 FROM email WHERE email.status>=0 AND from_uid=?',(uid,))
             cursor_data=await conn.execute('SELECT * FROM email\
-                WHERE email.status>=0 AND email.from_uid=?',(uid,))
+                WHERE email.status>=0 AND email.from_uid=? ORDER BY id DESC',
+                (uid,))
             return await cursor_data.fetchall(),\
                 (await cursor_total.fetchone())['total']
 
