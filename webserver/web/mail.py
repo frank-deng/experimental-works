@@ -6,7 +6,7 @@ from aiohttp_jinja2 import template
 from aiohttp.web import HTTPFound
 from urllib.parse import parse_qs
 from . import WebServer
-from .mailcenter import MailCenter
+from mailcenter import MailCenter
 
 
 @WebServer.get('/mail.asp')

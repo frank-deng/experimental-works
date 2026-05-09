@@ -1,3 +1,5 @@
+import asyncio
+import sys
 import hashlib
 import aiosqlite
 import time
@@ -23,6 +25,41 @@ async def sql_insert_multi(conn,table,data:list):
     values=[tuple(item[col] for col in columns) for item in data]
     sql=f'INSERT INTO {table} ({cols_sql}) VALUES ({placeholders})'
     return await conn.executemany(sql,values)
+
+
+class MailUserRobot(Logger):
+    def __init__(self,mailCenter,config):
+        self._config=config
+        self._task=None
+        self._queue=asyncio.Queue()
+        self._MailCenter=mailCenter
+        self._uid=config['uid']
+
+    async def __aenter__(self):
+        self._task=asyncio.create_task(self._task_main())
+
+    async def __aexit__(self,exc_type,exc_val,exc_tb):
+        if self._task is not None:
+            self._task.cancel()
+            await self._task
+
+    async def _task_main(self):
+        while True:
+            email_id=await self._queue.get()
+            try:
+                await self._handler(email_id)
+            except asyncio.CancelledError:
+                break
+            except Exception as e:
+                self.logger.error(e,exc_info=True)
+            finally:
+                self._queue.task_done()
+
+    async def _handler(self,email_id):
+        pass
+
+    async def append(self,data):
+        await self._queue.put(data)
 
 
 class MailCenterInstance(Logger):
@@ -61,11 +98,15 @@ CREATE TABLE IF NOT EXISTS recipient (
         self._users={}
         self._users_by_name={}
         self._user_login={}
+        self._robot={}
         for item in users:
-            self._users[item['uid']]=item
+            uid=item['uid']
+            self._users[uid]=item
             self._users_by_name[item['username']]=item
             if 'password' in item:
                 self._user_login[item['username']]=item
+            elif 'module' in item:
+                self._robot[uid]=load_module(item['module'])(self,item)
 
     async def _create_conn(self)->aiosqlite.Connection:
         config_db=self._config['mail']['db']
@@ -97,8 +138,15 @@ CREATE TABLE IF NOT EXISTS recipient (
         async with self._pool.connection() as conn:
             await conn.executescript(self._setup_script)
             await conn.commit()
+        await asyncio.gather(*[bot.__aenter__() \
+            for bot in self._robot.values()])
 
     async def stop(self):
+        try:
+            await asyncio.gather(*[bot.__aexit__(*sys.exc_info()) \
+                for bot in self._robot.values()])
+        except Exception as e:
+            self.logger.error(e,exc_info=True)
         await self._pool.close()
 
     async def get_uid_from_addr(self,addr):
@@ -117,6 +165,7 @@ CREATE TABLE IF NOT EXISTS recipient (
 
     async def send(self,from_uid,to_list,cc_list,subject,body,
                    prev_email_id=None):
+        email_id=None
         async with self._pool.connection() as conn:
             email_list=[]
             if prev_email_id:
@@ -149,6 +198,12 @@ CREATE TABLE IF NOT EXISTS recipient (
                 'status':0,
             } for uid in cc_list])
             await conn.commit()
+        if email_id is not None:
+            for uid in to_list:
+                if uid not in self._robot:
+                    continue
+                await self._robot[uid].append(email_id)
+
 
     async def mail_sent(self,uid):
         async with self._pool.connection() as conn:
@@ -192,6 +247,7 @@ CREATE TABLE IF NOT EXISTS recipient (
                 ORDER BY id DESC',(email_id,email_id))
             email_list=[{
                 'id':email['id'],
+                'from_uid':email['from_uid'],
                 'from_addr':await self.get_addr_from_uid(email['from_uid']),
                 'subject':email['subject'],
                 'body':email['body'],
@@ -206,6 +262,13 @@ CREATE TABLE IF NOT EXISTS recipient (
                 email['cc']=cc[email_id]
                 email['cc_str']='; '.join(cc[email_id].values())
             return email_list
+
+    async def mark_read(self,uid,email_id):
+        async with self._pool.connection() as conn:
+            await conn.execute(
+                'UPDATE recipient SET status=1 WHERE uid=? and email_id=?',
+                (uid,email_id))
+            await conn.commit()
 
 
 def MailCenter(app):

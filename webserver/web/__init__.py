@@ -13,7 +13,7 @@ from aiohttp.web import HTTPFound
 from aiohttp.web import HTTPForbidden
 from util import Logger
 from util import load_module
-from . import mailcenter
+import mailcenter
 
 
 class StaticWithIndex(Logger):

@@ -3,7 +3,7 @@ from aiohttp.web import Response
 from aiohttp_jinja2 import template
 from aiohttp_session import get_session, new_session
 from . import WebServer
-from .mailcenter import MailCenter
+from mailcenter import MailCenter
 
 @WebServer.get('/')
 @WebServer.get('/index.asp')
