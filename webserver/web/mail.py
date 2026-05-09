@@ -33,6 +33,8 @@ async def mail_list(req:Request):
     email_list,total=[],0
     if folder=='sent':
         email_list,total=await MailCenter(req.app).mail_sent(req.uid)
+    else:
+        email_list,total=await MailCenter(req.app).mail_recv(req.uid)
     return {
         'email_list':email_list,
         'folder':folder,

@@ -204,6 +204,20 @@ CREATE TABLE IF NOT EXISTS recipient (
                     continue
                 await self._robot[uid].append(email_id)
 
+    async def mail_recv(self,uid):
+        async with self._pool.connection() as conn:
+            cursor_total=await conn.execute('SELECT COUNT(id) as total\
+                FROM recipient WHERE status>=0 AND uid=?',(uid,))
+            cursor_data=await conn.execute('''
+                SELECT
+                    email.id as id,
+                    recipient.type as type,
+                    email.subject as subject
+                FROM email INNER JOIN recipient ON recipient.email_id=email.id
+                WHERE recipient.status>=0 AND recipient.uid=?
+                ORDER BY recipient.id DESC''',(uid,))
+            return await cursor_data.fetchall(),\
+                (await cursor_total.fetchone())['total']
 
     async def mail_sent(self,uid):
         async with self._pool.connection() as conn:
