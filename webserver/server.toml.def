@@ -10,7 +10,11 @@ modules=[
 [web]
 host="0.0.0.0"
 port=8081
-encoding="gbk"
+encoding="gbk
+
+[mail]
+pagesize=30
+host="mysite.com"
 
 [mail.db]
 db_file='mail.db'

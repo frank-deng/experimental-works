@@ -1,5 +1,6 @@
 import asyncio
 import sys
+import re
 import hashlib
 import aiosqlite
 import time
@@ -55,11 +56,34 @@ class MailUserRobot(Logger):
             finally:
                 self._queue.task_done()
 
-    async def _handler(self,email_id):
-        pass
-
     async def append(self,data):
         await self._queue.put(data)
+
+    async def _get_user_type(self,uid):
+        res='user'
+        if self._MailCenter.is_robot(uid):
+            res='assistant'
+        return res
+
+    def _get_conversation(self,email_list):
+        last_user_type=None
+        res=[]
+        for email in reversed(email_list):
+            uid,subject,body=email['from_uid'],email['subject'],email['body']
+            if re.match(r'^(Re:|Fwd:)',subject,re.IGNORECASE):
+                subject=''
+            else:
+                subject+='\n'
+            user_type=self._get_user_type(uid)
+            if last_user_type is None or user_type!=last_user_type:
+                last_user_type=user_type
+                res.append(f'{subject}{body}')
+            else:
+                res[-1]+='\n'+f'{subject}{body}'
+        return res
+
+    async def _handler(self,email_id):
+        pass
 
 
 class MailCenterInstance(Logger):
@@ -125,6 +149,9 @@ CREATE TABLE IF NOT EXISTS recipient (
         await conn.execute("PRAGMA synchronous=NORMAL;")
         return conn
 
+    async def is_robot(self,uid):
+        return uid in self._robot
+
     async def auth(self,username,password):
         if not username or not password or username not in self._user_login:
             return None
@@ -167,37 +194,41 @@ CREATE TABLE IF NOT EXISTS recipient (
                    prev_email_id=None):
         email_id=None
         async with self._pool.connection() as conn:
-            email_list=[]
-            if prev_email_id:
-                cursor=await conn.execute(
-                    "SELECT email_id_rel from email_rel WHERE email_id=?",
-                    (prev_email_id,))
-                email_list=[item['email_id_rel'] for item in await cursor.fetchall()]
-                email_list.append(prev_email_id)
-            email_id=(await sql_insert_single(conn,'email',{
-                'from_uid':from_uid,
-                'sent_time':int(time.time()),
-                'subject':subject,
-                'body':body,
-                'status':0,
-            })).lastrowid
-            if len(email_list):
-                await conn.executemany(
-                    'INSERT INTO email_rel (email_id,email_id_rel)\
-                    VALUES (?,?)',
-                    [(email_id,email_id_rel) for email_id_rel in email_list])
-            await sql_insert_multi(conn,'recipient',[{
-                'email_id':email_id,
-                'uid':uid,
-                'type':0,
-                'status':0,
-            } for uid in to_list]+[{
-                'email_id':email_id,
-                'uid':uid,
-                'type':1,
-                'status':0,
-            } for uid in cc_list])
-            await conn.commit()
+            try:
+                email_list=[]
+                if prev_email_id:
+                    cursor=await conn.execute(
+                        "SELECT email_id_rel from email_rel WHERE email_id=?",
+                        (prev_email_id,))
+                    email_list=[item['email_id_rel'] for item in await cursor.fetchall()]
+                    email_list.append(prev_email_id)
+                email_id=(await sql_insert_single(conn,'email',{
+                    'from_uid':from_uid,
+                    'sent_time':int(time.time()),
+                    'subject':subject,
+                    'body':body,
+                    'status':0,
+                })).lastrowid
+                if len(email_list):
+                    await conn.executemany(
+                        'INSERT INTO email_rel (email_id,email_id_rel)\
+                        VALUES (?,?)',
+                        [(email_id,email_id_rel) for email_id_rel in email_list])
+                await sql_insert_multi(conn,'recipient',[{
+                    'email_id':email_id,
+                    'uid':uid,
+                    'type':0,
+                    'status':0,
+                } for uid in to_list]+[{
+                    'email_id':email_id,
+                    'uid':uid,
+                    'type':1,
+                    'status':0,
+                } for uid in cc_list])
+                await conn.commit()
+            except Exception as e:
+                await conn.rollback()
+                raise
         if email_id is not None:
             for uid in to_list:
                 if uid not in self._robot:
@@ -279,10 +310,14 @@ CREATE TABLE IF NOT EXISTS recipient (
 
     async def mark_read(self,uid,email_id):
         async with self._pool.connection() as conn:
-            await conn.execute(
-                'UPDATE recipient SET status=1 WHERE uid=? and email_id=?',
-                (uid,email_id))
-            await conn.commit()
+            try:
+                await conn.execute(
+                    'UPDATE recipient SET status=1 WHERE uid=? and email_id=?',
+                    (uid,email_id))
+                await conn.commit()
+            except Exception as e:
+                await conn.rollback()
+                raise
 
 
 def MailCenter(app):
