@@ -106,17 +106,17 @@ class SFTPPathIO(aioftp.AbstractPathIO):
             raise IOError("File not open")
         return await self._file.read(size)
 
-    async def write(self, data: bytes) -> int:
+    async def write(self, _, data: bytes) -> int:
         if self._file is None:
             raise IOError("File not open")
         return await self._file.write(data)
 
-    async def seek(self, position: int) -> int:
+    async def seek(self, position: int,_=None) -> int:
         if self._file is None:
             raise IOError("File not open")
         return await self._file.seek(position)
 
-    async def close(self) -> None:
+    async def close(self,_=None) -> None:
         if self._file is not None:
             await self._file.close()
             self._file = None
