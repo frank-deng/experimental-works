@@ -1,22 +1,20 @@
+import logging
 import asyncio
 import aioftp
 import asyncssh
 from pathlib import PurePosixPath
 import io
 from typing import Union, List, AsyncIterable, Any
+from util import Logger
 
 # --- 1. 核心：SFTP 文件操作适配器 ---
 class SFTPPathIO(aioftp.AbstractPathIO):
-    """
-    所有 aioftp 的文件操作，都会被 "翻译" 成对 SFTP 服务器的操作。
-    """
-    def __init__(self, sftp_client, current_dir: PurePosixPath = PurePosixPath("/")):
+    def __init__(self, sftp_client, current_dir: PurePosixPath):
         self._sftp = sftp_client
-        #self._cwd = current_dir
-        self._cwd = PurePosixPath("/data/data/com.termux/files/home/")
+        logging.getLogger(self.__class__.__name__).error(str(current_dir))
+        self._cwd = current_dir
         self._file = None
 
-    # ========= 目录/路径操作（旧方法保留） =========
     async def exists(self, path: Union[str, PurePosixPath]) -> bool:
         full_path = str(self._cwd / path)
         try:
@@ -43,7 +41,9 @@ class SFTPPathIO(aioftp.AbstractPathIO):
 
     async def list(self, path: Union[str, PurePosixPath]) -> AsyncIterable[Any]:
         full_path = str(self._cwd / path)
+        logging.getLogger('aaa').error(f'path {full_path}')
         for attr in await self._sftp.listdir(full_path):
+            logging.getLogger('aaa').error(f'attr {attr}')
             yield attr
 
     async def mkdir(self, path: Union[str, PurePosixPath], *, parents: bool = False) -> None:
@@ -70,7 +70,6 @@ class SFTPPathIO(aioftp.AbstractPathIO):
         full_path = str(self._cwd / path)
         return await self._sftp.stat(full_path)
 
-    # ========= 新增：类文件方法（aioftp 新接口要求） =========
     async def _open(self, path: Union[str, PurePosixPath], mode: str = "rb") -> None:
         """
         打开一个文件，后续的 read/write/seek/close 都基于这个对象。
@@ -125,6 +124,8 @@ class SFTPUserManager(aioftp.AbstractUserManager):
             )
             user.sftp_conn = conn
             user.sftp_client = await conn.start_sftp_client()
+            user.sftp_root = PurePosixPath(await user.sftp_client.realpath('.'))
+            logging.getLogger('aaa').error(user.sftp_root)
             return True
         except Exception as e:
             return False
@@ -140,6 +141,7 @@ class FTP2SFTPBridgeServer(aioftp.Server):
             ),
             data_ports=range(self._config['pasv_port_start'],
                              self._config['pasv_port_end']+1),
+            ipv4_pasv_forced_response_address=self._config.get('pasv_addr'),
             idle_timeout=300,
             maximum_connections=50,
             encoding="utf-8"
@@ -155,41 +157,6 @@ class FTP2SFTPBridgeServer(aioftp.Server):
         await self.close()
 
     def path_io_factory(timeout=None, connection=None, state=None):
-        return SFTPPathIO(connection.user.sftp_client)
+        user=connection.user
+        return SFTPPathIO(user.sftp_client, user.sftp_root)
 
-"""
-    async def dispatcher(self, reader, writer):
-        重写 dispatcher，在连接建立时设置用户管理器。
-        writer.user_manager = self.user_manager
-        await super().dispatcher(reader, writer)
-
-# --- 5. 启动网关 ---
-async def main():
-    启动 FTP-to-SFTP 桥接服务器。
-    # 配置被动模式端口范围
-    data_ports = list(range(60000, 60100))  # 自定义端口范围
-    
-    user_manager = SFTPUserManager(
-        sftp_host="your-sftp-server.com",
-        sftp_port=22
-    )
-
-    server = aioftp.Server(
-        users=user_manager,
-        path_io_factory=SFTPPathIO,  # 关键：注入 SFTP 适配器
-        data_ports=data_ports,       # 限制被动模式端口范围
-        idle_timeout=300,
-        maximum_connections=50,
-        encoding="utf-8"
-    )
-
-    print("FTP-to-SFTP 网关启动中...")
-    print("FTP 服务器监听：0.0.0.0:2121")
-    print(f"SFTP 后端：{user_manager.sftp_host}:{user_manager.sftp_port}")
-    print("请确保防火墙已开放被动模式端口：", data_ports[0], "-", data_ports[-1])
-
-    await server.run(host="0.0.0.0", port=2121)
-
-if __name__ == "__main__":
-    asyncio.run(main())
-        """
