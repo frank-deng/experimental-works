@@ -4,77 +4,95 @@ import aioftp
 import asyncssh
 from pathlib import PurePosixPath
 import io
+import os
 from typing import Union, List, AsyncIterable, Any
 from util import Logger
 
-# --- 1. 核心：SFTP 文件操作适配器 ---
+
+class SFTPStat:
+    def __init__(self,stat,fname):
+        self.st_mtime=stat.mtime
+        self.st_atime=stat.atime
+        self.st_mode=stat.permissions
+        self.st_nlink=1
+        self.st_size=stat.size
+        self.name=fname
+
+
 class SFTPPathIO(aioftp.AbstractPathIO):
-    def __init__(self, sftp_client, current_dir: PurePosixPath):
-        self._sftp = sftp_client
-        logging.getLogger(self.__class__.__name__).error(str(current_dir))
-        self._cwd = current_dir
+    def __init__(self,*,timeout=None,connection=None,state=None):
+        self._conn = connection
         self._file = None
 
-    async def exists(self, path: Union[str, PurePosixPath]) -> bool:
-        full_path = str(self._cwd / path)
+    @property
+    def _sftp(self):
+        return self._conn.user.sftp_client
+
+    @property
+    def _cwd(self):
+        return self._conn.user.base_path
+
+    async def exists(self, path) -> bool:
+        logging.getLogger(self.__class__.__name__).error(f'exists {path}')
+        full_path = str(path)
         try:
             await self._sftp.stat(full_path)
             return True
         except (FileNotFoundError, IOError):
             return False
 
-    async def is_dir(self, path: Union[str, PurePosixPath]) -> bool:
-        full_path = str(self._cwd / path)
+    async def is_dir(self, path) -> bool:
+        full_path = str(self._cwd/path)
         try:
             stat = await self._sftp.stat(full_path)
-            return stat.type == asyncssh.SFTP_FILE_TYPE_DIRECTORY
+            return stat.type == asyncssh.sftp.FILEXFER_TYPE_DIRECTORY
         except (FileNotFoundError, IOError):
             return False
 
-    async def is_file(self, path: Union[str, PurePosixPath]) -> bool:
-        full_path = str(self._cwd / path)
+    async def is_file(self, path) -> bool:
+        full_path = str(path)
         try:
             stat = await self._sftp.stat(full_path)
-            return stat.type == asyncssh.SFTP_FILE_TYPE_REGULAR
+            return stat.type == asyncssh.sftp.FILEXFER_TYPE_REGULAR
         except (FileNotFoundError, IOError):
             return False
 
-    async def list(self, path: Union[str, PurePosixPath]) -> AsyncIterable[Any]:
-        full_path = str(self._cwd / path)
-        logging.getLogger('aaa').error(f'path {full_path}')
+    async def list(self, path) -> AsyncIterable[Any]:
+        full_path = str(self._cwd/path)
+        logging.getLogger(self.__class__.__name__).error(f'list {path}')
         for attr in await self._sftp.listdir(full_path):
-            logging.getLogger('aaa').error(f'attr {attr}')
-            yield attr
+            logging.getLogger(self.__class__.__name__).error(f'list2 {attr}')
+            yield PurePosixPath(attr)
 
-    async def mkdir(self, path: Union[str, PurePosixPath], *, parents: bool = False) -> None:
-        full_path = str(self._cwd / path)
+    async def mkdir(self, path, *, parents: bool = False) -> None:
+        full_path = str(path)
         if parents:
             await self._sftp.makedirs(full_path)
         else:
             await self._sftp.mkdir(full_path)
 
-    async def rmdir(self, path: Union[str, PurePosixPath]) -> None:
-        full_path = str(self._cwd / path)
+    async def rmdir(self, path) -> None:
+        full_path = str(path)
         await self._sftp.rmdir(full_path)
 
-    async def unlink(self, path: Union[str, PurePosixPath]) -> None:
-        full_path = str(self._cwd / path)
+    async def unlink(self, path) -> None:
+        full_path = str(path)
         await self._sftp.unlink(full_path)
 
-    async def rename(self, src: Union[str, PurePosixPath], dst: Union[str, PurePosixPath]) -> None:
-        full_src = str(self._cwd / src)
-        full_dst = str(self._cwd / dst)
+    async def rename(self, src, dst: Union[str, PurePosixPath]) -> None:
+        full_src = str(src)
+        full_dst = str(dst)
         await self._sftp.rename(full_src, full_dst)
 
-    async def stat(self, path: Union[str, PurePosixPath]) -> Any:
-        full_path = str(self._cwd / path)
-        return await self._sftp.stat(full_path)
+    async def stat(self, path) -> Any:
+        full_path = str(self._cwd/path)
+        logging.getLogger(self.__class__.__name__).error(f'stat {full_path}')
+        file_stat=await self._sftp.stat(full_path)
+        logging.getLogger(self.__class__.__name__).error(file_stat)
+        return SFTPStat(file_stat,os.path.basename(full_path))
 
-    async def _open(self, path: Union[str, PurePosixPath], mode: str = "rb") -> None:
-        """
-        打开一个文件，后续的 read/write/seek/close 都基于这个对象。
-        """
-        full_path = str(self._cwd / path)
+    async def _open(self, path, mode: str = "rb") -> None:
+        full_path = str(path)
         if self._file is not None:
             await self._file.close()
         # 根据模式打开文件（简化处理：写入时用 wb+，否则 rb）
@@ -83,7 +101,7 @@ class SFTPPathIO(aioftp.AbstractPathIO):
         else:
             self._file = await self._sftp.open(full_path, "rb")
 
-    async def read(self, size: int = -1) -> bytes:
+    async def read(self, size: int, _=None) -> bytes:
         if self._file is None:
             raise IOError("File not open")
         return await self._file.read(size)
@@ -111,7 +129,10 @@ class SFTPUserManager(aioftp.AbstractUserManager):
 
     async def get_user(self, login: str) -> aioftp.User:
         stat=aioftp.AbstractUserManager.GetUserResponse.PASSWORD_REQUIRED
-        return stat,aioftp.User(login=login),'Password Required'
+        user=aioftp.User(login=login, permissions=[
+            aioftp.Permission("/",readable=True,writable=True)
+        ])
+        return stat,user,'Password Required'
 
     async def authenticate(self, user: aioftp.User, password: str) -> bool:
         try:
@@ -124,10 +145,14 @@ class SFTPUserManager(aioftp.AbstractUserManager):
             )
             user.sftp_conn = conn
             user.sftp_client = await conn.start_sftp_client()
-            user.sftp_root = PurePosixPath(await user.sftp_client.realpath('.'))
-            logging.getLogger('aaa').error(user.sftp_root)
+            base_path=await user.sftp_client.realpath('.')
+            user.home_path='/'
+            user.base_path=PurePosixPath(base_path)
             return True
+        except asyncssh.misc.PermissionDenied:
+            return False
         except Exception as e:
+            logging.getLogger(self.__class__.__name__).error(e,exc_info=True)
             return False
 
 
@@ -141,6 +166,7 @@ class FTP2SFTPBridgeServer(aioftp.Server):
             ),
             data_ports=range(self._config['pasv_port_start'],
                              self._config['pasv_port_end']+1),
+            path_io_factory=SFTPPathIO,
             ipv4_pasv_forced_response_address=self._config.get('pasv_addr'),
             idle_timeout=300,
             maximum_connections=50,
@@ -155,8 +181,4 @@ class FTP2SFTPBridgeServer(aioftp.Server):
 
     async def __aexit__(self,exc_type,exc_val,exc_tb):
         await self.close()
-
-    def path_io_factory(timeout=None, connection=None, state=None):
-        user=connection.user
-        return SFTPPathIO(user.sftp_client, user.sftp_root)
 
