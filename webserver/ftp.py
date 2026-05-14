@@ -2,10 +2,7 @@ import logging
 import asyncio
 import aioftp
 import asyncssh
-import asyncssh
-from asyncssh import FXF_READ,FXF_WRITE,FXF_CREAT,FXF_TRUNC,FXF_APPEND
 from pathlib import PurePosixPath
-import io
 from typing import Union, List, AsyncIterable, Any
 
 
@@ -20,60 +17,119 @@ class SFTPStat:
 
 class SFTPPathIO(aioftp.AbstractPathIO):
     def __init__(self,*,timeout=None,connection=None,state=None):
+        self.logger=logging.getLogger(self.__class__.__name__)
         self._conn = connection
+        self.__cwd=None
 
     @property
     def _sftp(self):
-        return self._conn.user.sftp_client
+        try:
+            return self._conn.user.sftp_client
+        except Exception as e:
+            self.logger.error(e,exc_info=True)
+            raise aioftp.errors.PathIOError
 
     @property
     def _cwd(self):
-        return self._conn.user.base_path
+        try:
+            if self.__cwd is None:
+                self.__cwd=self._conn.user.base_path
+            return self.__cwd
+        except Exception as e:
+            self.logger.error(e,exc_info=True)
+            raise aioftp.errors.PathIOError
+
+    @_cwd.setter
+    def _cwd(self,val):
+        self.__cwd=val
 
     async def exists(self, path) -> bool:
         try:
-            await self._sftp.stat(str(self._cwd/path))
+            await self._sftp.lstat(str(self._cwd/path))
             return True
-        except (FileNotFoundError, IOError):
+        except (asyncssh.sftp.SFTPNoSuchFile):
             return False
+        except Exception as e:
+            self.logger.error(e,exc_info=True)
+            raise aioftp.errors.PathIOError
 
     async def is_dir(self, path) -> bool:
         try:
-            stat = await self._sftp.stat(str(self._cwd/path))
+            stat = await self._sftp.lstat(str(self._cwd/path))
             return stat.type == asyncssh.sftp.FILEXFER_TYPE_DIRECTORY
-        except (FileNotFoundError, IOError):
+        except (asyncssh.sftp.SFTPNoSuchFile):
             return False
+        except Exception as e:
+            self.logger.error(e,exc_info=True)
+            raise aioftp.errors.PathIOError
 
     async def is_file(self, path) -> bool:
         try:
-            stat = await self._sftp.stat(str(self._cwd/path))
+            stat = await self._sftp.lstat(str(self._cwd/path))
             return stat.type == asyncssh.sftp.FILEXFER_TYPE_REGULAR
-        except (FileNotFoundError, IOError):
+        except (asyncssh.sftp.SFTPNoSuchFile):
             return False
+        except Exception as e:
+            self.logger.error(e,exc_info=True)
+            raise aioftp.errors.PathIOError
 
     async def list(self, path) -> AsyncIterable[Any]:
-        for attr in await self._sftp.listdir(str(self._cwd/path)):
-            yield PurePosixPath(attr)
+        try:
+            self._cwd=self._cwd/path
+            for item in await self._sftp.listdir(self._cwd):
+                if item!='.':
+                    yield PurePosixPath(item)
+        except Exception as e:
+            self.logger.error(e,exc_info=True)
+            raise aioftp.errors.PathIOError
 
     async def mkdir(self, path, *, parents: bool = False) -> None:
-        full_path=str(self._cwd/path)
-        if parents:
-            await self._sftp.makedirs(full_path)
-        else:
-            await self._sftp.mkdir(full_path)
+        try:
+            full_path=str(self._cwd/path)
+            if parents:
+                await self._sftp.makedirs(full_path)
+            else:
+                await self._sftp.mkdir(full_path)
+        except Exception as e:
+            self.logger.error(e,exc_info=True)
+            raise aioftp.errors.PathIOError
 
     async def rmdir(self, path) -> None:
-        await self._sftp.rmdir(str(self._cwd/path))
+        try:
+            await self._sftp.rmdir(str(self._cwd/path))
+        except asyncssh.sftp.SFTPNoSuchFile:
+            raise aioftp.errors.PathIOError
+        except Exception as e:
+            self.logger.error(e,exc_info=True)
+            raise aioftp.errors.PathIOError
 
     async def unlink(self, path) -> None:
-        await self._sftp.unlink(str(self._cwd/path))
+        try:
+            await self._sftp.unlink(str(self._cwd/path))
+        except asyncssh.sftp.SFTPNoSuchFile:
+            raise aioftp.errors.PathIOError
+        except Exception as e:
+            self.logger.error(e,exc_info=True)
+            raise aioftp.errors.PathIOError
 
     async def rename(self, src, dst) -> None:
-        await self._sftp.rename(str(self._cwd/src), str(self._cwd/dst))
+        try:
+            await self._sftp.rename(str(self._cwd/src), str(self._cwd/dst))
+        except asyncssh.sftp.SFTPNoSuchFile:
+            raise aioftp.errors.PathIOError
+        except Exception as e:
+            self.logger.error(e,exc_info=True)
+            raise aioftp.errors.PathIOError
 
     async def stat(self, path) -> Any:
-        file_stat=await self._sftp.stat(str(self._cwd/path))
-        return SFTPStat(file_stat)
+        try:
+            file_stat=await self._sftp.stat(str(self._cwd/path))
+            return SFTPStat(file_stat)
+        except asyncssh.sftp.SFTPNoSuchFile:
+            raise aioftp.errors.PathIOError
+        except Exception as e:
+            self.logger.error(e,exc_info=True)
+            raise aioftp.errors.PathIOError
 
     async def _open(self, path, mode: str = "rb"):
         mode_sftp="rb"
@@ -84,30 +140,27 @@ class SFTPPathIO(aioftp.AbstractPathIO):
         try:
             return await self._sftp.open(str(self._cwd/path),mode_sftp)
         except asyncssh.sftp.SFTPNoSuchFile:
-            return None
+            raise aioftp.errors.PathIOError
+        except Exception as e:
+            self.logger.error(e,exc_info=True)
+            raise aioftp.errors.PathIOError
 
     async def read(self, fp, size: int) -> bytes:
-        if fp is None:
-            return b''
         return await fp.read(size)
 
     async def write(self, fp, data: bytes) -> int:
-        if fp is None:
-            return 0
         return await fp.write(data)
 
     async def seek(self, fp, position: int) -> int:
-        if fp is None:
-            return 0
         return await fp.seek(position)
 
     async def close(self, fp) -> None:
-        if fp is not None:
-            await fp.close()
+        await fp.close()
 
 
 class SFTPUserManager(aioftp.AbstractUserManager):
     def __init__(self, sftp_host: str, sftp_port: int):
+        self.logger=logging.getLogger(self.__class__.__name__)
         self._host = sftp_host
         self._port = sftp_port
 
@@ -136,7 +189,7 @@ class SFTPUserManager(aioftp.AbstractUserManager):
         except asyncssh.misc.PermissionDenied:
             return False
         except Exception as e:
-            logging.getLogger(self.__class__.__name__).error(e,exc_info=True)
+            self.logger.error(e,exc_info=True)
             return False
 
     async def notify_logout(self,user):
