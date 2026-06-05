@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-#-*- coding:utf-8-*
+#-*- coding:utf-8-*-
 
 import asyncio,json,os,sys,re,subprocess
 import aiohttp
@@ -36,7 +36,7 @@ class CodeWriterDeepSeek:
             "function":{
                 "name":"file_writer",
                 "strict":True,
-                "description":"往指定文件名写内容，没这个文件的话就新建",
+                "description":"往指定文件名写内容，没这个文件的话就新建。写入的文件必须在当前 git 项目内，否则会报错。",
                 "parameters":{
                     "type":"object",
                     "properties":{
@@ -62,7 +62,15 @@ class CodeWriterDeepSeek:
 
     @staticmethod
     async def file_writer(fpath,content):
-        file_path = Path(fpath)
+        file_path = Path(fpath).resolve()
+        # 校验被写文件是否在 git 项目内
+        try:
+            repo = git.Repo('.', search_parent_directories=True)
+            repo_root = Path(repo.working_tree_dir).resolve()
+            if not str(file_path).startswith(str(repo_root) + os.sep) and str(file_path) != str(repo_root):
+                raise ValueError(f"文件 '{fpath}' 不在当前 git 项目内（仓库根目录: {repo_root}）")
+        except git.exc.InvalidGitRepositoryError:
+            raise ValueError(f"当前目录不在任何 git 仓库中，无法写入 '{fpath}'")
         file_path.parent.mkdir(parents=True, exist_ok=True)
         file_path.write_text(content)
 
@@ -197,4 +205,3 @@ def cli(question):
 
 if '__main__'==__name__:
     cli()
-
