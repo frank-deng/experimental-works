@@ -2,7 +2,18 @@
 import asyncio
 import urwid
 
+def my_get_width(char):
+    b=char.encode('gbk',errors='ignore')
+    return max(1,len(b))
+
+FULLWIDTH_BORDER = {
+    "tlcorner": "┏", "tline": "━", "trcorner": "┓",
+    "lline": "┃", "rline": "┃",
+    "blcorner": "┗", "bline": "━", "brcorner": "┛"
+}
+
 async def main():
+    urwid.util.get_width=my_get_width
     # 用于通知 asyncio 主循环退出
     exit_future = asyncio.Future()
 
@@ -13,12 +24,13 @@ async def main():
     # 构建界面
     menu = urwid.ListBox(urwid.SimpleFocusListWalker([
         urwid.Text("选项1"),
-        urwid.Text("选项2")
+        urwid.Text("选项2"),
+        urwid.Text(str(urwid.util.get_width(FULLWIDTH_BORDER['lline']))),
     ]))
     details = urwid.Text("选中内容将显示在此处")
     layout = urwid.Columns([
-        ('fixed', 20, urwid.LineBox(menu, title="菜单")),
-        ('weight', 1, urwid.LineBox(details, title="详情"))
+        ('fixed', 20, urwid.LineBox(menu, title="菜单",**FULLWIDTH_BORDER)),
+        ('weight', 1, urwid.LineBox(details, title="详情",**FULLWIDTH_BORDER))
     ])
     final_layout = urwid.Frame(
         body=layout,
