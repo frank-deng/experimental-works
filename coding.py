@@ -61,16 +61,12 @@ class CodeWriterDeepSeek:
             return f.read()
 
     @staticmethod
-    asybc def file_writer(fpath,content):
+    async def file_writer(fpath,content):
         file_path = Path(fpath)
         file_path.parent.mkdir(parents=True, exist_ok=True)
         file_path.write_text(content)
 
     def __init__(self):
-        self.TOOL_CALL={
-            'file_reader':CodeWriterDeepSeek.file_reader,
-            'file_writer':CodeWriterDeepSeek.file_writer,
-        }
         env_key='DEEPSEEK_KEY'
         self._key=os.environ.get(env_key)
         if not self._key:
@@ -81,7 +77,7 @@ class CodeWriterDeepSeek:
             'Authorization': 'Bearer '+self._key
         }
     
-    async def call_ai(self,messages,tools):
+    async def _call_ai(self,messages,tools):
         jsonData={
             "model": "deepseek-v4-pro",
             "thinking": {"type": "enabled"},
@@ -95,7 +91,7 @@ class CodeWriterDeepSeek:
                                     json=jsonData) as response:
                 return await response.json()
 
-    async def call_tools(self,tool_calls):
+    async def _call_tools(self,tool_calls):
         res={}
         for tool_call in tool_calls:
             call_id=tool_call['id']
@@ -114,7 +110,7 @@ class CodeWriterDeepSeek:
             }
         ]
         for round_idx in range(max_rounds):
-            res=await self.call_ai(messages,tools)
+            res=await self._call_ai(messages,self.TOOLS)
             last_choice=res['choices'][-1]
             finish_reason=last_choice['finish_reason']
             last_msg=last_choice['message']
@@ -125,7 +121,7 @@ class CodeWriterDeepSeek:
             messages.append(last_msg)
             tool_content={}
             try:
-                tool_content=await self.call_tools(tool_calls)
+                tool_content=await self._call_tools(tool_calls)
             except Exception:
                 raise
             for call_id in tool_content:
