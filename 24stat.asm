@@ -4,17 +4,24 @@ assume cs:code,ds:code,es:code,ss:code
 code segment
 org 100h
 start:
-mov ax,-12345
-lea di,num_str
-call int162str
-
-mov ah,40h
-mov bx,1
-xor ch,ch
-mov cl,byte ptr [num_str]
-lea dx,num_str
-inc dx
-int 21h
+mov ax,8
+mov bx,-3
+call fracdisp
+call newline
+call fracdisp
+call newline
+mov ax,1
+push ax
+mov ax,3
+push ax
+mov ax,1
+push ax
+mov ax,5
+push ax
+mov bx,3
+call frac_oper
+call fracdisp
+call newline
 
 mov ax, 4C00h
 int 21h
@@ -33,19 +40,19 @@ pop bp
 ret 8
 
 frac_mul:
-mov ax,[bp+6]
-imul word ptr[bp+10]
+mov ax,[bp+8]
+imul word ptr[bp+4]
 mov bx,ax
-mov ax,[bp+4]
-imul word ptr[bp+8]
+mov ax,[bp+10]
+imul word ptr[bp+6]
 jmp frac_oper_end
 
 frac_div:
-mov ax,[bp+6]
-imul word ptr[bp+8]
+mov ax,[bp+8]
+imul word ptr[bp+6]
 mov bx,ax
-mov ax,[bp+4]
-imul word ptr[bp+10]
+mov ax,[bp+10]
+imul word ptr[bp+4]
 jmp frac_oper_end
 
 frac_add:
@@ -114,8 +121,64 @@ pop bx
 pop ax
 ret
 
+int16disp:
+push bp
+mov bp,sp
+push ax
+push bx
+push cx
+push dx
+push ds
+push es
+mov bx,ss
+mov ds,bx
+mov es,bx
+mov di,bp
+sub di,8
+call int162str
+mov ah,40h
+mov bx,1
+xor ch,ch
+mov cl,byte ptr [di]
+mov dx,di
+inc dx
+int 21h
+pop es
+pop ds
+pop dx
+pop cx
+pop bx
+pop ax
+pop bp
+ret
+
+fracdisp:
+call int16disp
+push ax
+push dx
+mov ah,02h
+mov dl,'/'
+int 21h
+pop dx
+pop ax
+xchg ax,bx
+call int16disp
+xchg ax,bx
+ret
+
+newline:
+push ax
+push dx
+mov ah,02h
+mov dl,0dh
+int 21h
+mov dl,0ah
+int 21h
+pop dx
+pop ax
+ret
+
 frac_oper_table dw frac_add,frac_sub,frac_mul,frac_div
-num_str db 0,0,0,0,0,0,0,0
 
 code ends
 end start
