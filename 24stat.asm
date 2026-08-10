@@ -4,8 +4,8 @@ assume cs:code,ds:code,es:code,ss:code
 code segment
 org 100h
 start:
-mov ax,8
-mov bx,-3
+mov ax,0
+mov bx,0
 call fracdisp
 call newline
 call fracdisp
@@ -46,6 +46,18 @@ mov bx,1
 call frac_oper
 call fracdisp
 call newline
+mov ax,1
+push ax
+mov ax,0
+push ax
+mov ax,2
+push ax
+mov ax,0
+push ax
+mov bx,0
+call frac_oper
+call fracdisp
+call newline
 
 mov ax, 4C00h
 int 21h
@@ -54,6 +66,10 @@ frac_oper:
 push bp
 mov bp,sp
 push dx
+cmp word ptr[bp+4],0
+je frac_oper_zero
+cmp word ptr[bp+8],0
+je frac_oper_zero
 and bx,3
 shl bx,1
 mov dx,frac_oper_table[bx]
@@ -62,6 +78,11 @@ frac_oper_end:
 pop dx
 pop bp
 ret 8
+
+frac_oper_zero:
+xor ax,ax
+xor bx,bx
+jmp frac_oper_end
 
 frac_mul:
 mov ax,[bp+8]
@@ -203,6 +224,11 @@ pop ax
 ret
 
 frac_oper_table dw frac_add,frac_sub,frac_mul,frac_div
+perm:
+db 0,1,2,3, 0,1,3,2, 0,2,1,3, 0,2,3,1, 0,3,1,2, 0,3,2,1
+db 1,0,2,3, 1,0,3,2, 1,2,0,3, 1,2,3,0, 1,3,0,2, 1,3,2,0
+db 2,0,1,3, 2,0,3,1, 2,1,0,3, 2,1,3,0, 2,3,0,1, 2,3,1,0
+db 3,0,1,2, 3,0,2,1, 3,1,0,2, 3,1,2,0, 3,2,0,1, 3,2,1,0
 
 code ends
 end start
