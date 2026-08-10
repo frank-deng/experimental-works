@@ -22,6 +22,30 @@ mov bx,3
 call frac_oper
 call fracdisp
 call newline
+mov ax,1
+push ax
+mov ax,3
+push ax
+mov ax,2
+push ax
+mov ax,5
+push ax
+mov bx,0
+call frac_oper
+call fracdisp
+call newline
+mov ax,1
+push ax
+mov ax,3
+push ax
+mov ax,2
+push ax
+mov ax,5
+push ax
+mov bx,1
+call frac_oper
+call fracdisp
+call newline
 
 mov ax, 4C00h
 int 21h
@@ -56,26 +80,26 @@ imul word ptr[bp+4]
 jmp frac_oper_end
 
 frac_add:
-mov ax,[bp+4]
-imul word ptr[bp+10]
+mov ax,[bp+10]
+imul word ptr[bp+4]
 mov bx,ax
-mov ax,[bp+6]
-imul word ptr[bp+8]
+mov ax,[bp+8]
+imul word ptr[bp+6]
 add bx,ax
-mov ax,[bp+6]
-imul word ptr[bp+10]
+mov ax,[bp+8]
+imul word ptr[bp+4]
 xchg ax,bx
 jmp frac_oper_end
 
 frac_sub:
-mov ax,[bp+4]
-imul word ptr[bp+10]
+mov ax,[bp+10]
+imul word ptr[bp+4]
 mov bx,ax
-mov ax,[bp+6]
-imul word ptr[bp+8]
+mov ax,[bp+8]
+imul word ptr[bp+6]
 sub bx,ax
-mov ax,[bp+6]
-imul word ptr[bp+10]
+mov ax,[bp+8]
+imul word ptr[bp+4]
 xchg ax,bx
 jmp frac_oper_end
 
