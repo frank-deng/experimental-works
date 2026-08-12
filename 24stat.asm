@@ -11,49 +11,33 @@ call newline
 call fracdisp
 call newline
 mov ax,1
-push ax
-mov ax,3
-push ax
-mov ax,1
-push ax
-mov ax,5
-push ax
 mov bx,3
+mov cx,1
+mov dx,5
+mov si,3
 call frac_oper
 call fracdisp
 call newline
 mov ax,1
-push ax
-mov ax,3
-push ax
-mov ax,2
-push ax
-mov ax,5
-push ax
+mov bx,3
+mov cx,2
+mov dx,5
+mov si,0
+call frac_oper
+call fracdisp
+call newline
+mov ax,1
+mov bx,3
+mov cx,2
+mov dx,5
+mov si,1
+call frac_oper
+call fracdisp
+call newline
+mov ax,1
 mov bx,0
-call frac_oper
-call fracdisp
-call newline
-mov ax,1
-push ax
-mov ax,3
-push ax
-mov ax,2
-push ax
-mov ax,5
-push ax
-mov bx,1
-call frac_oper
-call fracdisp
-call newline
-mov ax,1
-push ax
-mov ax,0
-push ax
-mov ax,2
-push ax
-mov ax,0
-push ax
+mov cx,2
+mov dx,0
 mov bx,0
 call frac_oper
 call fracdisp
@@ -62,67 +46,106 @@ call newline
 mov ax, 4C00h
 int 21h
 
-frac_oper:
+expr_nnnnsss:
 push bp
 mov bp,sp
+push ax
+push bx
+push cx
 push dx
-cmp word ptr[bp+4],0
-je frac_oper_zero
-cmp word ptr[bp+8],0
-je frac_oper_zero
-and bx,3
-shl bx,1
-mov dx,frac_oper_table[bx]
-jmp dx
-frac_oper_end:
-pop dx
-pop bp
-ret 8
+mov cx,1
+xor dh,dh
 
+mov dl,byte ptr[bp+8]
+push dx
+push cx
+mov dl,byte ptr[bp+7]
+push dx
+push cx
+xor bh,bh
+mov bl,byte ptr[bp+6]
+call frac_oper
+
+mov dl,byte ptr[bp+9]
+push dx
+push cx
+push ax
+push bx
+xor bh,bh
+mov bl,byte ptr[bp+5]
+call frac_oper
+
+mov dl,byte ptr[bp+10]
+push dx
+push cx
+push ax
+push bx
+xor bh,bh
+mov bl,byte ptr[bp+5]
+call frac_oper
+
+pop bp
+ret
+
+frac_oper:
+test bx,bx
+jz frac_oper_zero
+test dx,dx
+jz frac_oper_zero
+and si,3
+shl si,1
+mov si,frac_oper_table[si]
+jmp si
 frac_oper_zero:
 xor ax,ax
 xor bx,bx
-jmp frac_oper_end
+ret
 
 frac_mul:
-mov ax,[bp+8]
-imul word ptr[bp+4]
-mov bx,ax
-mov ax,[bp+10]
-imul word ptr[bp+6]
-jmp frac_oper_end
+push dx
+xchg ax,bx
+imul dx
+xchg ax,bx
+imul cx
+pop dx
+ret
 
 frac_div:
-mov ax,[bp+8]
-imul word ptr[bp+6]
-mov bx,ax
-mov ax,[bp+10]
-imul word ptr[bp+4]
-jmp frac_oper_end
+push dx
+imul dx
+xchg ax,bx
+imul cx
+xchg ax,bx
+pop dx
+ret
 
 frac_add:
-mov ax,[bp+10]
-imul word ptr[bp+4]
+mov si,ax
+mov di,dx
+mov ax,cx
+imul bx
+mov cx,ax
+mov ax,bx
+imul di
 mov bx,ax
-mov ax,[bp+8]
-imul word ptr[bp+6]
-add bx,ax
-mov ax,[bp+8]
-imul word ptr[bp+4]
-xchg ax,bx
-jmp frac_oper_end
+mov ax,si
+imul di
+add ax,cx
+ret
 
 frac_sub:
-mov ax,[bp+10]
-imul word ptr[bp+4]
+mov si,ax
+mov di,dx
+mov ax,cx
+imul bx
+mov cx,ax
+mov ax,bx
+imul di
 mov bx,ax
-mov ax,[bp+8]
-imul word ptr[bp+6]
-sub bx,ax
-mov ax,[bp+8]
-imul word ptr[bp+4]
-xchg ax,bx
-jmp frac_oper_end
+mov ax,si
+imul di
+sub ax,cx
+ret
 
 int162str:
 push ax
