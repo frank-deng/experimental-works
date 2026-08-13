@@ -43,47 +43,48 @@ call frac_oper
 call fracdisp
 call newline
 
+mov ax,1
+push ax
+mov ax,2
+push ax
+mov ax,3
+push ax
+mov ax,4
+push ax
+mov ax,0
+push ax
+mov ax,3
+push ax
+mov ax,1
+push ax
+call expr_nnnnsss
+call fracdisp
+call newline
+
 mov ax, 4C00h
 int 21h
 
 expr_nnnnsss:
 push bp
 mov bp,sp
-push ax
-push bx
-push cx
-push dx
-mov cx,1
-xor dh,dh
-
-mov dl,byte ptr[bp+8]
-push dx
-push cx
-mov dl,byte ptr[bp+7]
-push dx
-push cx
-xor bh,bh
-mov bl,byte ptr[bp+6]
+mov ax,word ptr[bp+12]
+mov bx,1
+mov cx,word ptr[bp+10]
+mov dx,1
+mov si,word ptr[bp+8]
 call frac_oper
-
-mov dl,byte ptr[bp+9]
-push dx
-push cx
-push ax
-push bx
-xor bh,bh
-mov bl,byte ptr[bp+5]
+mov cx,ax
+mov dx,bx
+mov ax,word ptr[bp+14]
+mov bx,1
+mov si,word ptr[bp+6]
 call frac_oper
-
-mov dl,byte ptr[bp+10]
-push dx
-push cx
-push ax
-push bx
-xor bh,bh
-mov bl,byte ptr[bp+5]
+mov cx,ax
+mov dx,bx
+mov ax,word ptr[bp+16]
+mov bx,1
+mov si,word ptr[bp+4]
 call frac_oper
-
 pop bp
 ret
 
