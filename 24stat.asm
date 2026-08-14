@@ -66,6 +66,12 @@ call newline
 call expr_abcssds
 call fracdisp
 call newline
+call expr_abscsds
+call fracdisp
+call newline
+call expr_abscdss
+call fracdisp
+call newline
 
 mov ax, 4C00h
 int 21h
@@ -139,6 +145,50 @@ call frac_oper
 pop bp
 ret
 
+expr_abscsds:
+push bp
+mov bp,sp
+mov ax,word ptr[bp+16]
+mov bx,1
+mov cx,word ptr[bp+14]
+mov dx,1
+mov si,word ptr[bp+8]
+call frac_oper
+mov cx,word ptr[bp+12]
+mov dx,1
+mov si,word ptr[bp+6]
+call frac_oper
+mov cx,word ptr[bp+10]
+mov dx,1
+mov si,word ptr[bp+4]
+call frac_oper
+pop bp
+ret
+
+expr_abscdss:
+push bp
+mov bp,sp
+mov ax,word ptr[bp+12]
+mov bx,1
+mov cx,word ptr[bp+10]
+mov dx,1
+mov si,word ptr[bp+6]
+call frac_oper
+push ax
+push bx
+mov ax,word ptr[bp+16]
+mov bx,1
+mov cx,word ptr[bp+14]
+mov dx,1
+mov si,word ptr[bp+8]
+call frac_oper
+pop dx
+pop cx
+mov si,word ptr[bp+4]
+call frac_oper
+pop bp
+ret
+
 frac_oper:
 test bx,bx
 jz frac_oper_zero
@@ -148,27 +198,24 @@ and si,3
 shl si,1
 mov si,frac_oper_table[si]
 jmp si
+
 frac_oper_zero:
 xor ax,ax
 xor bx,bx
 ret
 
 frac_mul:
-push dx
 xchg ax,bx
 imul dx
 xchg ax,bx
 imul cx
-pop dx
 ret
 
 frac_div:
-push dx
 imul dx
 xchg ax,bx
 imul cx
 xchg ax,bx
-pop dx
 ret
 
 frac_add:
