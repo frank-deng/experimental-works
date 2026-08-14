@@ -4,6 +4,11 @@ assume cs:code,ds:code,es:code,ss:code
 code segment
 org 100h
 start:
+mov cx,11187
+xor ax,ax
+mov di,offset map
+rep stosw
+
 mov ax,0
 mov bx,0
 call fracdisp
@@ -43,6 +48,8 @@ call frac_oper
 call fracdisp
 call newline
 
+mov ax,15
+push ax
 mov ax,1
 push ax
 mov ax,2
@@ -57,29 +64,59 @@ mov ax,3
 push ax
 mov ax,1
 push ax
-call expr_abcdsss
-call fracdisp
-call newline
-call expr_abcsdss
-call fracdisp
-call newline
-call expr_abcssds
-call fracdisp
-call newline
-call expr_abscsds
-call fracdisp
-call newline
-call expr_abscdss
-call fracdisp
-call newline
+call enum_expr
 
 mov ax, 4C00h
 int 21h
 
-;a=+16 b=+14 c=+12 d=+10 s0=+8 s1=+6 s2=+4
-expr_abcdsss:
+;idx=+18 a=+16 b=+14 c=+12 d=+10 s0=+8 s1=+6 s2=+4
+enum_expr:
 push bp
 mov bp,sp
+call expr_abcdsss
+call write_res
+call expr_abcsdss
+call write_res
+call expr_abcssds
+call write_res
+call expr_abscsds
+call write_res
+call expr_abscdss
+call write_res
+pop bp
+ret
+
+write_res:
+call fracdisp
+test bx,bx
+jz write_res_end
+cwd
+idiv bx
+test dx,dx
+jnz write_res_end
+cmp ax,1
+jl write_res_end
+cmp ax,99
+jg write_res_end
+call int16disp
+mov dx,226
+mul dx
+mov di,ax
+mov dx,[bp+18]
+mov bx,dx
+mov cl,3
+shl bx,cl
+and bl,0feh
+mov cl,dl
+and cl,15
+mov ax,08000h
+ror ax,cl
+or word ptr[bx+di+map],ax
+write_res_end:
+call newline
+ret
+
+expr_abcdsss:
 mov ax,word ptr[bp+12]
 mov bx,1
 mov cx,word ptr[bp+10]
@@ -98,12 +135,9 @@ mov ax,word ptr[bp+16]
 mov bx,1
 mov si,word ptr[bp+4]
 call frac_oper
-pop bp
 ret
 
 expr_abcsdss:
-push bp
-mov bp,sp
 mov ax,word ptr[bp+14]
 mov bx,1
 mov cx,word ptr[bp+12]
@@ -120,12 +154,9 @@ mov ax,word ptr[bp+16]
 mov bx,1
 mov si,word ptr[bp+4]
 call frac_oper
-pop bp
 ret
 
 expr_abcssds:
-push bp
-mov bp,sp
 mov ax,word ptr[bp+14]
 mov bx,1
 mov cx,word ptr[bp+12]
@@ -142,12 +173,9 @@ mov cx,word ptr[bp+10]
 mov dx,1
 mov si,word ptr[bp+4]
 call frac_oper
-pop bp
 ret
 
 expr_abscsds:
-push bp
-mov bp,sp
 mov ax,word ptr[bp+16]
 mov bx,1
 mov cx,word ptr[bp+14]
@@ -162,12 +190,9 @@ mov cx,word ptr[bp+10]
 mov dx,1
 mov si,word ptr[bp+4]
 call frac_oper
-pop bp
 ret
 
 expr_abscdss:
-push bp
-mov bp,sp
 mov ax,word ptr[bp+12]
 mov bx,1
 mov cx,word ptr[bp+10]
@@ -186,7 +211,6 @@ pop dx
 pop cx
 mov si,word ptr[bp+4]
 call frac_oper
-pop bp
 ret
 
 frac_oper:
@@ -351,6 +375,8 @@ db 0,1,2,3, 0,1,3,2, 0,2,1,3, 0,2,3,1, 0,3,1,2, 0,3,2,1
 db 1,0,2,3, 1,0,3,2, 1,2,0,3, 1,2,3,0, 1,3,0,2, 1,3,2,0
 db 2,0,1,3, 2,0,3,1, 2,1,0,3, 2,1,3,0, 2,3,0,1, 2,3,1,0
 db 3,0,1,2, 3,0,2,1, 3,1,0,2, 3,1,2,0, 3,2,0,1, 3,2,1,0
+fname db "24STAT.CSV",0,0
+map:
 
 code ends
 end start
