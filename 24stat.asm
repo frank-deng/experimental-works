@@ -57,14 +57,21 @@ mov ax,3
 push ax
 mov ax,1
 push ax
-call expr_nnnnsss
+call expr_abcdsss
+call fracdisp
+call newline
+call expr_abcsdss
+call fracdisp
+call newline
+call expr_abcssds
 call fracdisp
 call newline
 
 mov ax, 4C00h
 int 21h
 
-expr_nnnnsss:
+;a=+16 b=+14 c=+12 d=+10 s0=+8 s1=+6 s2=+4
+expr_abcdsss:
 push bp
 mov bp,sp
 mov ax,word ptr[bp+12]
@@ -83,6 +90,50 @@ mov cx,ax
 mov dx,bx
 mov ax,word ptr[bp+16]
 mov bx,1
+mov si,word ptr[bp+4]
+call frac_oper
+pop bp
+ret
+
+expr_abcsdss:
+push bp
+mov bp,sp
+mov ax,word ptr[bp+14]
+mov bx,1
+mov cx,word ptr[bp+12]
+mov dx,1
+mov si,word ptr[bp+8]
+call frac_oper
+mov cx,word ptr[bp+10]
+mov dx,1
+mov si,word ptr[bp+6]
+call frac_oper
+mov cx,ax
+mov dx,bx
+mov ax,word ptr[bp+16]
+mov bx,1
+mov si,word ptr[bp+4]
+call frac_oper
+pop bp
+ret
+
+expr_abcssds:
+push bp
+mov bp,sp
+mov ax,word ptr[bp+14]
+mov bx,1
+mov cx,word ptr[bp+12]
+mov dx,1
+mov si,word ptr[bp+8]
+call frac_oper
+mov cx,ax
+mov dx,bx
+mov ax,word ptr[bp+16]
+mov bx,1
+mov si,word ptr[bp+6]
+call frac_oper
+mov cx,word ptr[bp+10]
+mov dx,1
 mov si,word ptr[bp+4]
 call frac_oper
 pop bp
