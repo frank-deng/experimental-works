@@ -9,12 +9,6 @@ xor ax,ax
 mov di,offset map
 rep stosw
 
-mov ax,0
-mov bx,0
-call fracdisp
-call newline
-call fracdisp
-call newline
 mov ax,1
 mov bx,3
 mov cx,1
@@ -48,31 +42,120 @@ call frac_oper
 call fracdisp
 call newline
 
-mov ax,15
+mov ax,5
+push ax
+mov ax,1
+push ax
+mov ax,5
+push ax
+mov ax,5
+push ax
+mov ax,3
 push ax
 mov ax,1
 push ax
 mov ax,2
 push ax
-mov ax,3
+mov bp,sp
+sub bp,4
+call expr_abcssds
+call fracdisp
+call newline
+
+mov ax,5
 push ax
-mov ax,4
+mov ax,6
 push ax
-mov ax,0
+mov ax,7
 push ax
-mov ax,3
+mov ax,8
 push ax
-mov ax,1
-push ax
-call enum_expr
+mov ax,15
+call enum_perm_oper
 
 mov ax, 4C00h
 int 21h
+
+enum_perm_oper:
+push bp
+mov bp,sp
+push ax
+push bx
+push cx
+push dx
+push si
+push di
+;push ax ;idx
+xor bx,bx
+loop_perm:
+mov cx,64
+
+loop_oper:
+xor dx,dx
+mov dl,byte ptr[bx+perm]
+mov si,dx
+shl si
+mov ax,word ptr [bp+si+4]
+call int16disp
+mov dl,byte ptr[bx+perm+1]
+mov si,dx
+shl si
+mov ax,word ptr [bp+si+4]
+call int16disp
+mov dl,byte ptr[bx+perm+2]
+mov si,dx
+shl si
+mov ax,word ptr [bp+si+4]
+call int16disp
+mov dl,byte ptr[bx+perm+3]
+mov si,dx
+shl si
+mov ax,word ptr [bp+si+4]
+call int16disp
+
+mov dx,cx
+dec dx
+and dx,03fh
+mov ax,dx
+and ax,3
+call int16disp
+shr dx,1
+shr dx,1
+mov ax,dx
+and ax,3
+call int16disp
+shr dx,1
+shr dx,1
+mov ax,dx
+call int16disp
+call newline
+loop loop_oper
+
+add bx,4
+cmp bx,96
+jge loop_perm_end
+jmp loop_perm
+loop_perm_end:
+pop di
+pop si
+pop dx
+pop cx
+pop bx
+pop ax
+pop bp
+ret
+
 
 ;idx=+18 a=+16 b=+14 c=+12 d=+10 s0=+8 s1=+6 s2=+4
 enum_expr:
 push bp
 mov bp,sp
+push ax
+push bx
+push cx
+push dx
+push si
+push di
 call expr_abcdsss
 call write_res
 call expr_abcsdss
@@ -83,8 +166,14 @@ call expr_abscsds
 call write_res
 call expr_abscdss
 call write_res
+pop di
+pop si
+pop dx
+pop cx
+pop bx
+pop ax
 pop bp
-ret
+ret 16
 
 write_res:
 call fracdisp
@@ -315,10 +404,13 @@ ret
 int16disp:
 push bp
 mov bp,sp
+sub sp,8
 push ax
 push bx
 push cx
 push dx
+push si
+push di
 push ds
 push es
 mov bx,ss
@@ -336,10 +428,13 @@ inc dx
 int 21h
 pop es
 pop ds
+pop di
+pop si
 pop dx
 pop cx
 pop bx
 pop ax
+mov sp,bp
 pop bp
 ret
 
