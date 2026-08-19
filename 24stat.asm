@@ -89,27 +89,26 @@ push di
 xor bx,bx
 loop_perm:
 mov cx,64
-
 loop_oper:
 xor dx,dx
 mov dl,byte ptr[bx+perm]
 mov si,dx
-shl si
+shl si,1
 mov ax,word ptr [bp+si+4]
 call int16disp
 mov dl,byte ptr[bx+perm+1]
 mov si,dx
-shl si
+shl si,1
 mov ax,word ptr [bp+si+4]
 call int16disp
 mov dl,byte ptr[bx+perm+2]
 mov si,dx
-shl si
+shl si,1
 mov ax,word ptr [bp+si+4]
 call int16disp
 mov dl,byte ptr[bx+perm+3]
 mov si,dx
-shl si
+shl si,1
 mov ax,word ptr [bp+si+4]
 call int16disp
 
