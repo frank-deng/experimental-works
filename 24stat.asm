@@ -9,77 +9,9 @@ xor ax,ax
 mov di,offset map
 rep stosw
 
-mov ax,1
-mov bx,3
-mov cx,1
-mov dx,5
-mov si,3
-call frac_oper
-call fracdisp
-call newline
-mov ax,1
-mov bx,3
-mov cx,2
-mov dx,5
-mov si,0
-call frac_oper
-call fracdisp
-call newline
-mov ax,1
-mov bx,3
-mov cx,2
-mov dx,5
-mov si,1
-call frac_oper
-call fracdisp
-call newline
-mov ax,1
-mov bx,0
-mov cx,2
-mov dx,0
-mov bx,0
-call frac_oper
-call fracdisp
-call newline
-
-mov ax,5
-push ax
-mov ax,1
-push ax
-mov ax,5
-push ax
-mov ax,5
-push ax
-mov ax,3
-push ax
-mov ax,1
-push ax
-mov ax,2
-push ax
-mov bp,sp
-sub bp,4
-call expr_abcssds
-call fracdisp
-call newline
-
-mov ax,word ptr[map+24*256]
-call int16disp
-call newline
-mov ax,5
-push ax
-mov ax,6
-push ax
-mov ax,7
-push ax
-mov ax,8
-push ax
-mov ax,14
-call enum_perm_oper
-mov ax,word ptr[map+24*256]
-call int16disp
-call newline
-call newline
+;call misc_test
 call enum_nums
+call get_res
 
 mov ax, 4C00h
 int 21h
@@ -107,7 +39,6 @@ push bx
 push cx
 push dx
 xchg ax,di
-;call enum_nums_test
 call int16disp
 call newline
 call enum_perm_oper
@@ -525,6 +456,41 @@ pop dx
 pop ax
 ret
 
+get_res:
+xor bx,bx
+loop_goal:
+xor ah,ah
+mov al,bh
+call int16disp
+mov ah,02h
+mov dl,','
+int 21h
+mov cx,114
+xor ax,ax
+xor bl,bl
+loop_map:
+mov dx,[bx+map]
+inc bl
+inc bl
+loop_cnt:
+test dx,dx
+jz loop_cnt_end
+inc ax
+mov si,dx
+dec dx
+and dx,si
+jmp loop_cnt
+loop_cnt_end:
+loop loop_map
+call int16disp
+call newline
+inc bh
+cmp bh,99
+jg loop_goal_end
+jmp loop_goal
+loop_goal_end:
+ret
+
 frac_oper_table dw frac_add,frac_sub,frac_mul,frac_div
 perm:
 db 0,1,2,3, 0,1,3,2, 0,2,1,3, 0,2,3,1, 0,3,1,2, 0,3,2,1
@@ -598,6 +564,86 @@ pop ax
 mov sp,bp
 pop bp
 ret 8
+
+misc_test:
+push bp
+mov bp,sp
+mov ax,1
+mov bx,3
+mov cx,1
+mov dx,5
+mov si,3
+call frac_oper
+call fracdisp
+call newline
+mov ax,1
+mov bx,3
+mov cx,2
+mov dx,5
+mov si,0
+call frac_oper
+call fracdisp
+call newline
+mov ax,1
+mov bx,3
+mov cx,2
+mov dx,5
+mov si,1
+call frac_oper
+call fracdisp
+call newline
+mov ax,1
+mov bx,0
+mov cx,2
+mov dx,0
+mov bx,0
+call frac_oper
+call fracdisp
+call newline
+
+mov ax,5
+push ax
+mov ax,1
+push ax
+mov ax,5
+push ax
+mov ax,5
+push ax
+mov ax,3
+push ax
+mov ax,1
+push ax
+mov ax,2
+push ax
+
+push bp
+mov bp,sp
+sub bp,4
+call expr_abcssds
+call fracdisp
+call newline
+pop bp
+
+mov ax,word ptr[map+24*256]
+call int16disp
+call newline
+mov ax,5
+push ax
+mov ax,6
+push ax
+mov ax,7
+push ax
+mov ax,8
+push ax
+mov ax,14
+call enum_perm_oper
+mov ax,word ptr[map+24*256]
+call int16disp
+call newline
+call newline
+mov sp,bp
+pop bp
+ret
 
 map:
 code ends
