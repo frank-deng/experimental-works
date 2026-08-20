@@ -4,7 +4,7 @@ assume cs:code,ds:code,es:code,ss:code
 code segment
 org 100h
 start:
-mov cx,11187
+mov cx,12800
 xor ax,ax
 mov di,offset map
 rep stosw
@@ -62,6 +62,9 @@ call expr_abcssds
 call fracdisp
 call newline
 
+mov ax,word ptr[map+24*256]
+call int16disp
+call newline
 mov ax,5
 push ax
 mov ax,6
@@ -70,8 +73,11 @@ mov ax,7
 push ax
 mov ax,8
 push ax
-mov ax,15
+mov ax,14
 call enum_perm_oper
+mov ax,word ptr[map+24*256]
+call int16disp
+call newline
 
 mov ax, 4C00h
 int 21h
@@ -85,49 +91,49 @@ push cx
 push dx
 push si
 push di
-;push ax ;idx
 xor bx,bx
 loop_perm:
 mov cx,64
 loop_oper:
+push [bp-2]
 xor dx,dx
 mov dl,byte ptr[bx+perm]
 mov si,dx
 shl si,1
 mov ax,word ptr [bp+si+4]
-call int16disp
+push ax
 mov dl,byte ptr[bx+perm+1]
 mov si,dx
 shl si,1
 mov ax,word ptr [bp+si+4]
-call int16disp
+push ax
 mov dl,byte ptr[bx+perm+2]
 mov si,dx
 shl si,1
 mov ax,word ptr [bp+si+4]
-call int16disp
+push ax
 mov dl,byte ptr[bx+perm+3]
 mov si,dx
 shl si,1
 mov ax,word ptr [bp+si+4]
-call int16disp
+push ax
 
 mov dx,cx
 dec dx
 and dx,03fh
 mov ax,dx
 and ax,3
-call int16disp
+push ax
 shr dx,1
 shr dx,1
 mov ax,dx
 and ax,3
-call int16disp
+push ax
 shr dx,1
 shr dx,1
 mov ax,dx
-call int16disp
-call newline
+push ax
+call enum_expr
 loop loop_oper
 
 add bx,4
@@ -143,7 +149,6 @@ pop bx
 pop ax
 pop bp
 ret
-
 
 ;idx=+18 a=+16 b=+14 c=+12 d=+10 s0=+8 s1=+6 s2=+4
 enum_expr:
@@ -171,37 +176,34 @@ pop dx
 pop cx
 pop bx
 pop ax
+mov sp,bp
 pop bp
 ret 16
 
 write_res:
-call fracdisp
 test bx,bx
 jz write_res_end
 cwd
 idiv bx
 test dx,dx
 jnz write_res_end
-cmp ax,1
+cmp ax,0
 jl write_res_end
 cmp ax,99
 jg write_res_end
-call int16disp
-mov dx,226
-mul dx
+xchg ah,al
 mov di,ax
-mov dx,[bp+18]
-mov bx,dx
+mov ax,[bp+18]
+mov bx,ax
 mov cl,3
-shl bx,cl
+shr bx,cl
 and bl,0feh
-mov cl,dl
+mov cl,al
 and cl,15
 mov ax,08000h
 ror ax,cl
 or word ptr[bx+di+map],ax
 write_res_end:
-call newline
 ret
 
 expr_abcdsss:
@@ -470,8 +472,39 @@ db 1,0,2,3, 1,0,3,2, 1,2,0,3, 1,2,3,0, 1,3,0,2, 1,3,2,0
 db 2,0,1,3, 2,0,3,1, 2,1,0,3, 2,1,3,0, 2,3,0,1, 2,3,1,0
 db 3,0,1,2, 3,0,2,1, 3,1,0,2, 3,1,2,0, 3,2,0,1, 3,2,1,0
 fname db "24STAT.CSV",0,0
-map:
 
+enum_expr_test:
+push bp
+mov bp,sp
+push ax
+push bx
+push cx
+push dx
+push si
+push di
+mov cx,8
+mov si,14
+loop_enum_expr_test:
+mov ax,word ptr[bp+si+4]
+call int16disp
+dec si
+dec si
+mov ah,02h
+mov dl,' '
+int 21h
+loop loop_enum_expr_test
+call newline
+pop di
+pop si
+pop dx
+pop cx
+pop bx
+pop ax
+mov sp,bp
+pop bp
+ret 16
+
+map:
 code ends
 end start
 
