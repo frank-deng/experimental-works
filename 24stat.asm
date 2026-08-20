@@ -39,9 +39,10 @@ push bx
 push cx
 push dx
 xchg ax,di
-call int16disp
-call newline
+call update_progress
 call enum_perm_oper
+;call enum_nums_test
+;add sp,8
 xchg ax,di
 inc di
 inc dx
@@ -71,6 +72,11 @@ pop cx
 pop bx
 pop ax
 pop bp
+ret
+
+update_progress:
+call int16disp
+call newline
 ret
 
 enum_perm_oper:
@@ -182,18 +188,17 @@ cmp ax,0
 jl write_res_end
 cmp ax,99
 jg write_res_end
-xchg ah,al
-mov di,ax
+mov bh,al
 mov ax,[bp+18]
-mov bx,ax
-mov cl,3
-shr bx,cl
-and bl,0feh
 mov cl,al
 and cl,15
+shr ax,1
+shr ax,1
+mov bl,al
+and bl,0feh
 mov ax,08000h
 ror ax,cl
-or word ptr[bx+di+map],ax
+or word ptr[bx+map],ax
 write_res_end:
 ret
 
@@ -354,21 +359,19 @@ ret
 int162str:
 push ax
 push bx
-push cx
 push dx
 push si
 push di
-mov si,di
-inc di
-mov bx,10
 xor cx,cx
+mov bx,10
+mov si,di
 or ax,ax
 jns int162str_div_loop
 neg ax
 mov byte ptr es:[di],'-'
 inc di
 int162str_div_loop:
-xor dx,dx
+cwd
 div bx
 push dx
 inc cx
@@ -380,15 +383,11 @@ add dl,'0'
 mov byte ptr es:[di],dl
 inc di
 loop int162str_store
-int162str_end:
-mov bx,di
-sub bx,si
-dec bx
-mov byte ptr es:[si],bl
+mov cx,di
+sub cx,si
 pop di
 pop si
 pop dx
-pop cx
 pop bx
 pop ax
 ret
@@ -408,15 +407,11 @@ push es
 mov bx,ss
 mov ds,bx
 mov es,bx
-mov di,bp
-sub di,8
+lea di,[bp-8]
 call int162str
 mov ah,40h
 mov bx,1
-xor ch,ch
-mov cl,byte ptr [di]
 mov dx,di
-inc dx
 int 21h
 pop es
 pop ds
@@ -451,6 +446,16 @@ mov ah,02h
 mov dl,0dh
 int 21h
 mov dl,0ah
+int 21h
+pop dx
+pop ax
+ret
+
+disp_space:
+push ax
+push dx
+mov ah,02h
+mov dl,' '
 int 21h
 pop dx
 pop ax
@@ -622,9 +627,41 @@ sub bp,4
 call expr_abcssds
 call fracdisp
 call newline
+call newline
 pop bp
 
+push bp
+mov ax,15
+push ax
+mov bp,sp
+sub bp,18
+mov ax,word ptr[bp+18]
+call int16disp
+call disp_space
 mov ax,word ptr[map+24*256]
+call int16disp
+call disp_space
+mov ax,word ptr[map+24*256+2]
+call int16disp
+call newline
+mov ax,120
+mov bx,5
+call write_res
+mov ax,word ptr[map+24*256]
+call int16disp
+call disp_space
+mov ax,word ptr[map+24*256+2]
+call int16disp
+call newline
+call newline
+pop ax
+pop bp
+jmp misc_test_end
+
+mov ax,word ptr[map+24*256]
+call int16disp
+call newline
+mov ax,word ptr[map+24*256+2]
 call int16disp
 call newline
 mov ax,5
@@ -635,12 +672,16 @@ mov ax,7
 push ax
 mov ax,8
 push ax
-mov ax,14
+mov ax,18
 call enum_perm_oper
 mov ax,word ptr[map+24*256]
 call int16disp
 call newline
+mov ax,word ptr[map+24*256+2]
+call int16disp
 call newline
+
+misc_test_end:
 mov sp,bp
 pop bp
 ret
