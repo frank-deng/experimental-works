@@ -78,9 +78,69 @@ call enum_perm_oper
 mov ax,word ptr[map+24*256]
 call int16disp
 call newline
+call newline
+call enum_nums
 
 mov ax, 4C00h
 int 21h
+
+enum_nums:
+push bp
+mov bp,sp
+push ax
+push bx
+push cx
+push dx
+push si
+push di
+xor di,di
+mov ax,1
+loop_nums0:
+mov bx,ax
+loop_nums1:
+mov cx,bx
+loop_nums2:
+mov dx,cx
+loop_nums3:
+push ax
+push bx
+push cx
+push dx
+xchg ax,di
+;call enum_nums_test
+call int16disp
+call newline
+call enum_perm_oper
+xchg ax,di
+inc di
+inc dx
+cmp dx,13
+jg loop_nums_end3
+jmp loop_nums3
+loop_nums_end3:
+inc cx
+cmp cx,13
+jg loop_nums_end2
+jmp loop_nums2
+loop_nums_end2:
+inc bx
+cmp bx,13
+jg loop_nums_end1
+jmp loop_nums1
+loop_nums_end1:
+inc ax
+cmp ax,13
+jg loop_nums_end0
+jmp loop_nums0
+loop_nums_end0:
+pop di
+pop si
+pop dx
+pop cx
+pop bx
+pop ax
+pop bp
+ret
 
 enum_perm_oper:
 push bp
@@ -148,7 +208,7 @@ pop cx
 pop bx
 pop ax
 pop bp
-ret
+ret 8
 
 ;idx=+18 a=+16 b=+14 c=+12 d=+10 s0=+8 s1=+6 s2=+4
 enum_expr:
@@ -503,6 +563,41 @@ pop ax
 mov sp,bp
 pop bp
 ret 16
+
+enum_nums_test:
+push bp
+mov bp,sp
+push ax
+push bx
+push cx
+push dx
+push si
+push di
+call int16disp
+mov ah,02h
+mov dl,' '
+int 21h
+mov cx,4
+mov si,6
+loop_enum_nums_test:
+mov ax,word ptr[bp+si+4]
+call int16disp
+dec si
+dec si
+mov ah,02h
+mov dl,' '
+int 21h
+loop loop_enum_nums_test
+call newline
+pop di
+pop si
+pop dx
+pop cx
+pop bx
+pop ax
+mov sp,bp
+pop bp
+ret 8
 
 map:
 code ends
