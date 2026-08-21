@@ -4,6 +4,22 @@ assume cs:code,ds:code,es:code,ss:code
 code segment
 org 100h
 start:
+;Check file exists
+mov ah,4eh
+xor cx,cx
+lea dx,fname
+int 21h
+jnc file_exists
+
+;Create file
+mov ah,3ch
+xor cx,cx
+lea dx,fname
+int 21h
+jc file_create_fail
+mov [fhandle],ax
+
+;Init map with zero
 mov cx,12800
 xor ax,ax
 mov di,offset map
@@ -12,8 +28,47 @@ rep stosw
 call enum_nums
 call get_res
 
+end_24stat:
+mov bx,[fhandle]
+cmp bx,0ffffh
+je skip_close_file
+mov ah,3eh
+int 21h
+skip_close_file:
 mov ax, 4C00h
 int 21h
+
+file_exists:
+mov bx,1
+mov ah,40h
+mov cx,fname_end-fname
+lea dx,fname
+int 21h
+mov ah,40h
+mov cx,text_file_exists_end-text_file_exists
+lea dx,text_file_exists
+int 21h
+mov ah,40h
+mov cx,2
+lea dx,text_newline
+int 21h
+jmp end_24stat
+
+file_create_fail:
+mov bx,1
+mov ah,40h
+mov cx,text_file_create_fail_end-text_file_create_fail
+lea dx,text_file_create_fail
+int 21h
+mov ah,40h
+mov cx,fname_end-fname
+lea dx,fname
+int 21h
+mov ah,40h
+mov cx,2
+lea dx,text_newline
+int 21h
+jmp end_24stat
 
 enum_nums:
 push bp
@@ -433,51 +488,33 @@ mov sp,bp
 pop bp
 ret
 
-fracdisp:
-call int16disp
-push ax
-push dx
-mov ah,02h
-mov dl,'/'
-int 21h
-pop dx
-pop ax
-xchg ax,bx
-call int16disp
-xchg ax,bx
-ret
-
-newline:
-push ax
-push dx
-mov ah,02h
-mov dl,0dh
-int 21h
-mov dl,0ah
-int 21h
-pop dx
-pop ax
-ret
-
-disp_space:
-push ax
-push dx
-mov ah,02h
-mov dl,' '
-int 21h
-pop dx
-pop ax
-ret
-
 get_res:
+push bp
+mov bp,sp
+sub sp,24
+push ax
+push bx
+push cx
+push dx
+push si
+push di
+push ds
+push es
+mov bx,ss
+mov ds,bx
+mov es,bx
+
 xor bx,bx
 loop_goal:
 xor ah,ah
 mov al,bh
-call int16disp
-mov ah,02h
-mov dl,','
-int 21h
+
+lea di,[bp-24]
+call int162str
+add di,cx
+mov byte ptr ss:[di],','
+inc di
+
 mov cx,114
 xor ax,ax
 xor bl,bl
@@ -495,11 +532,36 @@ and dx,si
 jmp loop_cnt
 loop_cnt_end:
 loop loop_map
-call int16disp
-call newline
+
+call int162str
+add di,cx
+mov word ptr ss:[di],0a0dh
+inc di
+inc di
+
+push bx
+lea dx,[bp-24]
+mov cx,di
+sub cx,dx
+mov ah,40h
+mov bx,[fhandle]
+int 21h
+pop bx
+
 inc bh
 cmp bh,99
 jle loop_goal
+
+pop es
+pop ds
+pop di
+pop si
+pop dx
+pop cx
+pop bx
+pop ax
+mov sp,bp
+pop bp
 ret
 
 frac_oper_table dw frac_add,frac_sub,frac_mul,frac_div
@@ -508,7 +570,14 @@ db 0,1,2,3, 0,1,3,2, 0,2,1,3, 0,2,3,1, 0,3,1,2, 0,3,2,1
 db 1,0,2,3, 1,0,3,2, 1,2,0,3, 1,2,3,0, 1,3,0,2, 1,3,2,0
 db 2,0,1,3, 2,0,3,1, 2,1,0,3, 2,1,3,0, 2,3,0,1, 2,3,1,0
 db 3,0,1,2, 3,0,2,1, 3,1,0,2, 3,1,2,0, 3,2,0,1, 3,2,1,0
-fname db "24STAT.CSV",0,0
+fname db "24STAT.CSV"
+fname_end dw 0
+text_newline db 0dh,0ah
+text_file_exists db " exists, please check."
+text_file_exists_end:
+text_file_create_fail db "Failed to create output file "
+text_file_create_fail_end:
+fhandle dw 0ffffh
 
 map:
 code ends
