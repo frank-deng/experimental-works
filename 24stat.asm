@@ -26,6 +26,10 @@ mov di,offset map
 rep stosw
 
 call enum_nums
+mov ah,40h
+mov cx,2
+lea dx,text_newline
+int 21h
 call get_res
 
 end_24stat:
@@ -128,10 +132,24 @@ push cx
 push dx
 push si
 push di
-mov ax,di
-call int16disp
 mov ah,02h
 mov dl,0dh
+int 21h
+mov ax,di
+call int16disp
+mov bx,1
+mov ah,40h
+mov cx,proc_text1_end-proc_text1
+lea dx,proc_text1
+int 21h
+mov ax,di
+mov bx,100
+mul bx
+mov bx,1820
+div bx
+call int16disp
+mov ah,02h
+mov dl,'%'
 int 21h
 pop di
 pop si
@@ -504,6 +522,12 @@ mov bx,ss
 mov ds,bx
 mov es,bx
 
+mov ah,40h
+mov bx,[fhandle]
+mov cx,text_csv_title_end-text_csv_title
+lea dx,text_csv_title
+int 21h
+
 xor bx,bx
 loop_goal:
 xor ah,ah
@@ -577,6 +601,10 @@ text_file_exists db " exists, please check."
 text_file_exists_end:
 text_file_create_fail db "Failed to create output file "
 text_file_create_fail_end:
+text_csv_title db "Goal,Solvable In 1820",0dh,0ah
+text_csv_title_end:
+proc_text1 db "/1820 "
+proc_text1_end:
 fhandle dw 0ffffh
 
 map:
