@@ -47,24 +47,16 @@ xchg ax,di
 inc di
 inc dx
 cmp dx,13
-jg loop_nums_end3
-jmp loop_nums3
-loop_nums_end3:
+jle loop_nums3
 inc cx
 cmp cx,13
-jg loop_nums_end2
-jmp loop_nums2
-loop_nums_end2:
+jle loop_nums2
 inc bx
 cmp bx,13
-jg loop_nums_end1
-jmp loop_nums1
-loop_nums_end1:
+jle loop_nums1
 inc ax
 cmp ax,13
-jg loop_nums_end0
-jmp loop_nums0
-loop_nums_end0:
+jle loop_nums0
 pop di
 pop si
 pop dx
@@ -135,9 +127,7 @@ loop loop_oper
 
 add bx,4
 cmp bx,96
-jge loop_perm_end
-jmp loop_perm
-loop_perm_end:
+jl loop_perm
 pop di
 pop si
 pop dx
@@ -192,6 +182,7 @@ mov bh,al
 mov ax,[bp+18]
 mov cl,al
 and cl,15
+shr ax,1
 shr ax,1
 shr ax,1
 mov bl,al
@@ -491,9 +482,7 @@ call int16disp
 call newline
 inc bh
 cmp bh,99
-jg loop_goal_end
-jmp loop_goal
-loop_goal_end:
+jle loop_goal
 ret
 
 frac_oper_table dw frac_add,frac_sub,frac_mul,frac_div
