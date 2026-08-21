@@ -9,7 +9,6 @@ xor ax,ax
 mov di,offset map
 rep stosw
 
-;call misc_test
 call enum_nums
 call get_res
 
@@ -26,6 +25,7 @@ push dx
 push si
 push di
 xor di,di
+call update_progress
 mov ax,1
 loop_nums0:
 mov bx,ax
@@ -39,12 +39,10 @@ push bx
 push cx
 push dx
 xchg ax,di
-call update_progress
 call enum_perm_oper
-;call enum_nums_test
-;add sp,8
 xchg ax,di
 inc di
+call update_progress
 inc dx
 cmp dx,13
 jle loop_nums3
@@ -67,8 +65,27 @@ pop bp
 ret
 
 update_progress:
+push bp
+mov bp,sp
+push ax
+push bx
+push cx
+push dx
+push si
+push di
+mov ax,di
 call int16disp
-call newline
+mov ah,02h
+mov dl,0dh
+int 21h
+pop di
+pop si
+pop dx
+pop cx
+pop bx
+pop ax
+mov sp,bp
+pop bp
 ret
 
 enum_perm_oper:
@@ -492,188 +509,6 @@ db 1,0,2,3, 1,0,3,2, 1,2,0,3, 1,2,3,0, 1,3,0,2, 1,3,2,0
 db 2,0,1,3, 2,0,3,1, 2,1,0,3, 2,1,3,0, 2,3,0,1, 2,3,1,0
 db 3,0,1,2, 3,0,2,1, 3,1,0,2, 3,1,2,0, 3,2,0,1, 3,2,1,0
 fname db "24STAT.CSV",0,0
-
-enum_expr_test:
-push bp
-mov bp,sp
-push ax
-push bx
-push cx
-push dx
-push si
-push di
-mov cx,8
-mov si,14
-loop_enum_expr_test:
-mov ax,word ptr[bp+si+4]
-call int16disp
-dec si
-dec si
-mov ah,02h
-mov dl,' '
-int 21h
-loop loop_enum_expr_test
-call newline
-pop di
-pop si
-pop dx
-pop cx
-pop bx
-pop ax
-mov sp,bp
-pop bp
-ret 16
-
-enum_nums_test:
-push bp
-mov bp,sp
-push ax
-push bx
-push cx
-push dx
-push si
-push di
-call int16disp
-mov ah,02h
-mov dl,' '
-int 21h
-mov cx,4
-mov si,6
-loop_enum_nums_test:
-mov ax,word ptr[bp+si+4]
-call int16disp
-dec si
-dec si
-mov ah,02h
-mov dl,' '
-int 21h
-loop loop_enum_nums_test
-call newline
-pop di
-pop si
-pop dx
-pop cx
-pop bx
-pop ax
-mov sp,bp
-pop bp
-ret 8
-
-misc_test:
-push bp
-mov bp,sp
-mov ax,1
-mov bx,3
-mov cx,1
-mov dx,5
-mov si,3
-call frac_oper
-call fracdisp
-call newline
-mov ax,1
-mov bx,3
-mov cx,2
-mov dx,5
-mov si,0
-call frac_oper
-call fracdisp
-call newline
-mov ax,1
-mov bx,3
-mov cx,2
-mov dx,5
-mov si,1
-call frac_oper
-call fracdisp
-call newline
-mov ax,1
-mov bx,0
-mov cx,2
-mov dx,0
-mov bx,0
-call frac_oper
-call fracdisp
-call newline
-
-mov ax,5
-push ax
-mov ax,1
-push ax
-mov ax,5
-push ax
-mov ax,5
-push ax
-mov ax,3
-push ax
-mov ax,1
-push ax
-mov ax,2
-push ax
-
-push bp
-mov bp,sp
-sub bp,4
-call expr_abcssds
-call fracdisp
-call newline
-call newline
-pop bp
-
-push bp
-mov ax,15
-push ax
-mov bp,sp
-sub bp,18
-mov ax,word ptr[bp+18]
-call int16disp
-call disp_space
-mov ax,word ptr[map+24*256]
-call int16disp
-call disp_space
-mov ax,word ptr[map+24*256+2]
-call int16disp
-call newline
-mov ax,120
-mov bx,5
-call write_res
-mov ax,word ptr[map+24*256]
-call int16disp
-call disp_space
-mov ax,word ptr[map+24*256+2]
-call int16disp
-call newline
-call newline
-pop ax
-pop bp
-jmp misc_test_end
-
-mov ax,word ptr[map+24*256]
-call int16disp
-call newline
-mov ax,word ptr[map+24*256+2]
-call int16disp
-call newline
-mov ax,5
-push ax
-mov ax,6
-push ax
-mov ax,7
-push ax
-mov ax,8
-push ax
-mov ax,18
-call enum_perm_oper
-mov ax,word ptr[map+24*256]
-call int16disp
-call newline
-mov ax,word ptr[map+24*256+2]
-call int16disp
-call newline
-
-misc_test_end:
-mov sp,bp
-pop bp
-ret
 
 map:
 code ends
