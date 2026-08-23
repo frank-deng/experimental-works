@@ -1,4 +1,9 @@
 .model tiny
+MAX_GOAL EQU 99
+MAP_ROW_SIZE EQU 256
+MAP_SIZE EQU (MAX_GOAL+1)*MAP_ROW_SIZE
+hash_map EQU map+MAP_SIZE
+HASH_MAP_SIZE EQU 4096
 .8086
 assume cs:code,ds:code,es:code,ss:code
 code segment
@@ -20,7 +25,7 @@ jc file_create_fail
 mov [fhandle],ax
 
 ;Init map with zero
-mov cx,12800
+mov cx,(MAP_SIZE+HASH_MAP_SIZE)/2
 xor ax,ax
 mov di,offset map
 rep stosw
@@ -164,17 +169,14 @@ ret
 enum_perm_oper:
 push bp
 mov bp,sp
-push ax
 push bx
 push cx
 push dx
 push si
 push di
+push ax
 xor bx,bx
 loop_perm:
-mov cx,64
-loop_oper:
-push [bp-2]
 xor dx,dx
 mov dl,byte ptr[bx+perm]
 mov si,dx
@@ -196,7 +198,10 @@ mov si,dx
 shl si,1
 mov ax,word ptr [bp+si+4]
 push ax
-
+;call proc_hash
+;jz skip_perm
+mov cx,64
+loop_oper:
 mov dx,cx
 dec dx
 and dx,03fh
@@ -214,16 +219,22 @@ mov ax,dx
 push ax
 call enum_expr
 loop loop_oper
-
+skip_perm:
+add sp,8
 add bx,4
 cmp bx,96
 jl loop_perm
+;Clear hash table
+mov cx,HASH_MAP_SIZE/2
+xor ax,ax
+mov di,hash_map
+rep stosw
+pop ax
 pop di
 pop si
 pop dx
 pop cx
 pop bx
-pop ax
 pop bp
 ret 8
 
@@ -255,7 +266,7 @@ pop bx
 pop ax
 mov sp,bp
 pop bp
-ret 16
+ret 6
 
 write_res:
 test bx,bx
@@ -266,7 +277,7 @@ test dx,dx
 jnz write_res_end
 cmp ax,0
 jl write_res_end
-cmp ax,99
+cmp ax,MAX_GOAL
 jg write_res_end
 mov bh,al
 mov ax,[bp+18]
@@ -437,6 +448,54 @@ imul di
 sub ax,cx
 ret
 
+proc_hash:
+push bp
+mov bp,sp
+push ax
+push bx
+push cx
+push dx
+mov ax,[bp+4]
+mov bx,[bp+6]
+sub ax,bx
+add ax,15
+mov dx,[bp+8]
+sub bx,dx
+add bx,15
+sub dx,[bp+10]
+add dx,15
+mov cl,5
+shl bx,cl
+or bx,ax
+shl bx,1
+mov ch,dl
+mov cl,4
+shr ch,cl
+or bl,ch
+mov cl,dl
+and cl,0fh
+mov ax,08000h
+ror ax,cl
+mov cx,word ptr[bx+hash_map]
+and cx,ax
+jnz proc_hash_skip
+or word ptr[bx+hash_map],ax
+pop dx
+pop cx
+pop bx
+pop ax
+mov sp,bp
+pop bp
+ret
+proc_hash_skip:
+pop dx
+pop cx
+pop bx
+pop ax
+mov sp,bp
+pop bp
+ret 8
+
 int162str:
 push ax
 push bx
@@ -444,26 +503,53 @@ push dx
 push si
 push di
 xor cx,cx
-mov bx,10
 mov si,di
 or ax,ax
-jns int162str_div_loop
+jns int162str_proc
 neg ax
-mov byte ptr es:[di],'-'
+mov byte ptr [di],'-'
 inc di
-int162str_div_loop:
+int162str_proc:
+cmp ax,10
+jl int162str_10
+cmp ax,100
+jl int162str_100
+cmp ax,1000
+jl int162str_1000
+cmp ax,10000
+jl int162str_10000
 cwd
+mov bx,10000
 div bx
-push dx
-inc cx
-or ax,ax
-jnz int162str_div_loop
-int162str_store:
-pop dx
-add dl,'0'
-mov byte ptr es:[di],dl
+add al,'0'
+mov byte ptr[di],al
 inc di
-loop int162str_store
+mov ax,dx
+int162str_10000:
+cwd
+mov bx,1000
+div bx
+add al,'0'
+mov byte ptr[di],al
+inc di
+mov ax,dx
+int162str_1000:
+cwd
+mov bx,100
+div bx
+add al,'0'
+mov byte ptr[di],al
+inc di
+mov ax,dx
+int162str_100:
+aam
+add ah,'0'
+mov byte ptr[di],ah
+inc di
+int162str_10:
+add al,'0'
+mov byte ptr[di],al
+inc di
 mov cx,di
 sub cx,si
 pop di
@@ -481,23 +567,18 @@ push ax
 push bx
 push cx
 push dx
-push si
 push di
 push ds
-push es
 mov bx,ss
 mov ds,bx
-mov es,bx
 lea di,[bp-8]
 call int162str
 mov ah,40h
 mov bx,1
 mov dx,di
 int 21h
-pop es
 pop ds
 pop di
-pop si
 pop dx
 pop cx
 pop bx
